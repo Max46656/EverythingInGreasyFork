@@ -1,3 +1,4 @@
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E6%99%82/FavoritesNewArtUpdateOfKemono/README.md) | 中文
 # 最愛「新作品」更新
 為何要一個一個點擊進入追蹤的作者頁面才能看到最新的更新？讓這個腳本為你代勞。支援 Kemono/Coomer。
 

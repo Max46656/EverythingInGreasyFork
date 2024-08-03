@@ -1,3 +1,4 @@
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E6%99%82/Exhentai%20Eagle%20Supper/README.md) | 中文
 # 熊貓 Eagle 支援
 此腳本能夠自動開啟 Exhentai/E-Hentai 的原圖並將其加入 Eagle，無需手動操作。支援 Exhentai 和 E-Hentai 的畫廊頁面和圖片頁面。
 

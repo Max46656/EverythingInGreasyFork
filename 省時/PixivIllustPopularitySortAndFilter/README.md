@@ -1,4 +1,4 @@
-
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E6%99%82/PixivIllustPopularitySortAndFilter/README.zh-Hant.md)
 # PixivIllustPopularitySortAndFilter
 Sort Illustration by likes and display only those above the threshold on followed artist illustrations,
 artist illustrations, and tag illustrations pages.

@@ -1,3 +1,4 @@
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E6%99%82/PixivIllustPopularitySortAndFilter/README.md) | 中文
 # Pixiv作品熱門程度排序與篩選器
 在關注的藝術家作品頁面、藝術家作品頁面和標籤作品頁面中，根據喜歡數排序插畫，並顯示高於閾值的插畫。
 

@@ -1,3 +1,5 @@
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%BE%8E%E8%A7%80/HideEndScreensOfYoutubeVideo/README.zh-Hant.md)
+
 # HideEndScreensOfYoutubeVideo
 
 Although the ending screen of Youtube videos can provide some help,

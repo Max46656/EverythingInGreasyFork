@@ -1,3 +1,4 @@
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E6%99%82/FavoritesNewArtUpdateOfKemono/README.zh-Hant.md)
 # Favorites "New Art" Update
 Why click into each followed artist's page one by one to see the latest updates? Let this script do it for you. Supports Kemono/Coomer.
 

@@ -1,3 +1,5 @@
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E6%99%82/Exhentai%20Eagle%20Supper/README.zh-Hant.md)
+
 # Exhentai Eagle Support
 This script can automatically open original images from Exhentai/E-Hentai and add them to Eagle without manual operation. It supports gallery pages and image pages of Exhentai and E-Hentai.
 

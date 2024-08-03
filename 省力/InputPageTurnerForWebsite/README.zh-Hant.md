@@ -1,3 +1,5 @@
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/InputPageTurnerForWebsite/README.md) | 中文
+
 # Tampermonkey 的頁面翻頁腳本
 
 瀏覽網頁時，不斷尋找小按鈕來快速跳轉到下一頁或上一頁是否很麻煩？

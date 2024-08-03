@@ -1,3 +1,5 @@
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/ThreadsCustomKeyboardNavigation/README.md) | 中文
+
 # Threads自訂鍵盤導航
 
 當瀏覽 Threads 時，您是否希望可以通過自訂鍵盤快捷鍵來快速導航到不同功能？

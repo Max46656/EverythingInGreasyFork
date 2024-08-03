@@ -1,3 +1,5 @@
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/ThreadsCustomKeyboardNavigation/README.zh-Hant.md)
+
 # Threads Custom Keyboard Navigation
 
 When browsing Threads, do you wish you could quickly navigate to different features using custom keyboard shortcuts?

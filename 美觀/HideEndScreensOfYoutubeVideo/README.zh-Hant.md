@@ -1,3 +1,5 @@
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%BE%8E%E8%A7%80/HideEndScreensOfYoutubeVideo/README.md) | 中文
+
 # HideEndScreensOfYoutubeVideo
 
 雖然 YouTube 影片的結尾畫面可以提供一些幫助，但通常會有太多推薦影片或其他幹擾元素。這個腳本旨在移除這些幹擾，讓你可以享受乾淨的影片。
