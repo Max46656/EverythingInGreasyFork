@@ -1,6 +1,6 @@
 [![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/InputPageTurnerForWebsite/README.md) | 中文
 
-# Tampermonkey 的頁面翻頁腳本
+# 按鍵與滑鼠滾輪翻頁器
 
 瀏覽網頁時，不斷尋找小按鈕來快速跳轉到下一頁或上一頁是否很麻煩？
 使用這個腳本，可以使用滑鼠滾輪或鍵盤按鈕可靠地切換頁面。
@@ -28,7 +28,7 @@
 ## 如何為網域新增支援
 
 1. 打開您想要新增支援的網站，然後打開開發者工具。
-2. 選擇開發者控制台，複製控制台中返回的網域名稱。
+2. 選擇開發者控製臺，複製控製臺中返回的網域名稱。
 3. 點擊開發者工具窗口左上角的檢查圖標。
 4. 點擊網站上的上一頁和下一頁按鈕，然後在開發者工具的元素面板中找到 `<a>` 標籤內的 class 屬性並複製它。
 5. 點擊 Tampermonkey 選單，右鍵單擊此腳本以打開 IDE。
