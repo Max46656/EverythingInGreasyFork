@@ -1,4 +1,4 @@
-# getOutMyWay [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%BE%8E%E8%A7%80/getOutMyWay/README.md)
+# getOutMyWay [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%BE%8E%E8%A7%80/getOutMyWay/README.zh-Hant.md)
 
 ## Description
 
