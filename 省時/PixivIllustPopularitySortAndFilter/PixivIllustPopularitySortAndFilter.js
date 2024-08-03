@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.6.9
+// @version      1.7.2
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -23,7 +23,7 @@
 // ==/UserScript==
 /* TODO
 *提示文字多語言翻譯
-*userPage的AllButtonClass除了第一頁以外缺乏正確的css class設定
+
 */
 class pageStrategy {
     getThumbnailClass() {}
@@ -51,7 +51,7 @@ class userStrategy extends pageStrategy{
         return 'nav.kWAFb';
     }
     getAllButtonClass() {
-        return ['jZgOUq','kmjYsK','jYyUpu'];
+        return ['jZgOUq','kmjYsK','jYyUpu','iUWhhQ'];
     }
     getArtsCountClass(){
         return 'div.sc-7zddlj-2 span';
@@ -76,7 +76,7 @@ class tagsStrategy extends pageStrategy{
         return 'div.laRMNP div.hbGpVM';
     }
     getAllButtonClass() {
-        return ['hDldyK','hDldyK','hDldyK'];
+        return ['BSrHG','eGjXJv','iknzpl'];
     }
     getArtsCountClass(){
         return 'span.sc-1pt8s3a-10';
@@ -101,7 +101,7 @@ class subStrategy extends pageStrategy{
         return 'nav.kWAFb';
     }
     getAllButtonClass() {
-        return ['hDldyK','hDldyK','hDldyK'];
+        return ['hDldyK','iknzpl'];
     }
     getArtsCountClass(){
         return null;
@@ -123,9 +123,9 @@ class artScraper {
         const url = self.location.href;
         if (url.includes('https://www.pixiv.net/bookmark_new_illust.php')) {
             return new subStrategy();
-        } else if (url.match(/^https:\/\/www.pixiv.net\/users\/.*\/.*$/)) {
+        } else if (url.match(/^https:\/\/www\.pixiv\.net\/(en\/users|users)\/.*\/.*$/)) {
             return new userStrategy();
-        } else if (url.match(/^https:\/\/www.pixiv.net\/tags\/.*\/.*$/)) {
+        } else if (url.match(/^https:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*\/.*$/)) {
             return new tagsStrategy();
         } else {
             throw new Error('Unsupported page type');
@@ -141,8 +141,8 @@ class artScraper {
         await this.executeAndcountUpSec('renderArtWall', () => this.renderArtWall(renderArtWallAtClass));
         //this.changeElementClassName(document.querySelector(this.strategy.getOutArtWallWayClass()),'sortArtWall');
         let buttonAtClass = this.strategy.getButtonAtClass();
-        //this.addRestoreButton(buttonAtClass, this.strategy.getAllButtonClass()[1]);
-        this.addRerenderButton(renderArtWallAtClass, buttonAtClass, this.strategy.getAllButtonClass()[2]);
+        //this.addRestoreButton(buttonAtClass, this.strategy.getAllButtonClass());
+        this.addRerenderButton(renderArtWallAtClass, buttonAtClass, this.strategy.getAllButtonClass());
 
         const endTime = performance.now();
         console.log(`總耗時: ${(endTime - startTime) / 1000} 秒`);
@@ -169,8 +169,9 @@ class artScraper {
             await this.getArtsInPage(thumbnailClass, artsClass);
 
             // 最後一頁的下一頁按鈕為隱藏
-            let allPageNav = document.querySelectorAll("a.sc-xhhh7v-1-filterProps-Styled-Component");
+            let allPageNav = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
             if (allPageNav[allPageNav.length-1].hasAttribute("hidden")) {
+                console.log("已經至最後一頁");
                 break;
             }
             let takeALook = Math.floor(Math.random() * 10) + 30;
@@ -260,7 +261,8 @@ class artScraper {
                     const likeCountElement = document.createElement('span');
                     likeCountElement.textContent = `${likeCount}`;
                     likeCountElement.className = 'likes';
-                    likeCountElement.style.cssText = 'text-align: center !important; padding-bottom: 20px !important; color: #0069b1 !important; font-size: 12px !important; font-weight: bold !important; text-decoration: none !important; background-color: #cef !important; background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 12 12%22><path fill=%22%230069B1%22 d=%22M9,1 C10.6568542,1 12,2.34314575 12,4 C12,6.70659075 10.1749287,9.18504759 6.52478604,11.4353705 L6.52478518,11.4353691 C6.20304221,11.6337245 5.79695454,11.6337245 5.4752116,11.4353691 C1.82507053,9.18504652 0,6.70659017 0,4 C1.1324993e-16,2.34314575 1.34314575,1 3,1 C4.12649824,1 5.33911281,1.85202454 6,2.91822994 C6.66088719,1.85202454 7.87350176,1 9,1 Z%22/></svg>") !important; background-position: center left 6px !important; background-repeat: no-repeat !important; padding: 3px 6px 3px 18px !important; border-radius: 3px !important;';
+                    likeCountElement.style.cssText =
+                    'text-align: center !important; padding-bottom: 20px !important; color: #0069b1 !important; font-size: 12px !important; font-weight: bold !important; text-decoration: none !important; background-color: #cef !important; background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 12 12%22><path fill=%22%230069B1%22 d=%22M9,1 C10.6568542,1 12,2.34314575 12,4 C12,6.70659075 10.1749287,9.18504759 6.52478604,11.4353705 L6.52478518,11.4353691 C6.20304221,11.6337245 5.79695454,11.6337245 5.4752116,11.4353691 C1.82507053,9.18504652 0,6.70659017 0,4 C1.1324993e-16,2.34314575 1.34314575,1 3,1 C4.12649824,1 5.33911281,1.85202454 6,2.91822994 C6.66088719,1.85202454 7.87350176,1 9,1 Z%22/></svg>") !important; background-position: center left 6px !important; background-repeat: no-repeat !important; padding: 3px 6px 3px 18px !important; border-radius: 3px !important;';
                     referenceElement.appendChild(likeCountElement);
                 }
                 this.allArts.push({ art, likeCount });
@@ -271,8 +273,8 @@ class artScraper {
     }
 
     async toNextPage() {
-        let pageButtonsClass='a.sc-d98f2c-0.sc-xhhh7v-2.cCkJiq.sc-xhhh7v-1-filterProps-Styled-Component.kKBslM';
-        const pageButtons = document.querySelectorAll(pageButtonsClass);
+        let pageButtonsShape='a:has(polyline[points="1,2 5,6 9,2"])';
+        const pageButtons = document.querySelectorAll(pageButtonsShape);
         let nextPageButton = pageButtons[pageButtons.length - 1];
         nextPageButton.click();
     }
@@ -430,8 +432,7 @@ class artScraper {
 
     // 拉桿樣式
     async addStartButton(ParentClass,buttonClass) {
-        if(document.getElementById("StartButton"))
-        {
+        if(document.getElementById("StartButton")){
             return;
         }
 
@@ -445,7 +446,7 @@ class artScraper {
         await this.addPageRangeInput(buttonContainer,startButton);
 
         startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
-        startButton.className = buttonClass;
+        buttonClass.forEach(cls => startButton.classList.add(cls));
         startButton.id = "StartButton";
         startButton.addEventListener('click', async () => {
             GM_setValue("targetPages", this.targetPages);
@@ -475,7 +476,7 @@ class artScraper {
 
         const rerenderButton = document.createElement('button');
         rerenderButton.textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`; // 顯示目前繪畫數量
-        rerenderButton.className = buttonClass;
+        buttonClass.forEach(cls => rerenderButton.classList.add(cls));
         rerenderButton.id = "RerenderButton";
         rerenderButton.addEventListener('click', async () => {
             GM_setValue("likesMinLimit", this.likesMinLimit);
@@ -494,20 +495,21 @@ class artScraper {
         const likesMinLimitsRange = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 7500, 10000];
 
         const likeIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        likeIcon.id="LikeIcon";
-        likeIcon.setAttribute("viewBox", "0 0 32 32");
-        likeIcon.setAttribute("height", "16");
-        likeIcon.setAttribute("width", "16");
-        likeIcon.classList.add("dxYRhf");
-        likeIcon.innerHTML = `
-        <path d="M21,5.5 C24.8659932,5.5 28,8.63400675 28,12.5 C28,18.2694439 24.2975093,23.1517313 17.2206059,27.1100183
-        C16.4622493,27.5342993 15.5379984,27.5343235 14.779626,27.110148 C7.70250208,23.1517462 4,18.2694529 4,12.5
-        C4,8.63400691 7.13400681,5.5 11,5.5 C12.829814,5.5 14.6210123,6.4144028 16,7.8282366
-        C17.3789877,6.4144028 19.170186,5.5 21,5.5 Z"></path>
-        <path d="M16,11.3317089 C15.0857201,9.28334665 13.0491506,7.5 11,7.5
-        C8.23857625,7.5 6,9.73857647 6,12.5 C6,17.4386065 9.2519779,21.7268174 15.7559337,25.3646328
-        C15.9076021,25.4494645 16.092439,25.4494644 16.2441073,25.3646326 C22.7480325,21.7268037 26,17.4385986 26,12.5
-        C26,9.73857625 23.7614237,7.5 21,7.5 C18.9508494,7.5 16.9142799,9.28334665 16,11.3317089 Z" class="sc-j89e3c-0 dUurgf"></path>`;
+        likeIcon.id = "LikeIcon";
+        likeIcon.setAttributeNS(null, "viewBox", "0 0 32 32");
+        likeIcon.setAttributeNS(null, "height", "16");
+        likeIcon.setAttributeNS(null, "width", "16");
+        likeIcon.classList.add("dxYRhf", "fiLugu");
+
+        const path1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path1.setAttributeNS(null, "d", "M21,5.5 C24.8659932,5.5 28,8.63400675 28,12.5 C28,18.2694439 24.2975093,23.1517313 17.2206059,27.1100183 C16.4622493,27.5342993 15.5379984,27.5343235 14.779626,27.110148 C7.70250208,23.1517462 4,18.2694529 4,12.5 C4,8.63400691 7.13400681,5.5 11,5.5 C12.829814,5.5 14.6210123,6.4144028 16,7.8282366 C17.3789877,6.4144028 19.170186,5.5 21,5.5 Z");
+
+        const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path2.setAttributeNS(null, "d", "M16,11.3317089 C15.0857201,9.28334665 13.0491506,7.5 11,7.5 C8.23857625,7.5 6,9.73857647 6,12.5 C6,17.4386065 9.2519779,21.7268174 15.7559337,25.3646328 C15.9076021,25.4494645 16.092439,25.4494644 16.2441073,25.3646326 C22.7480325,21.7268037 26,17.4385986 26,12.5 C26,9.73857625 23.7614237,7.5 21,7.5 C18.9508494,7.5 16.9142799,9.28334665 16,11.3317089 Z");
+        path2.setAttributeNS(null, "class", "sc-j89e3c-0 dUurgf");
+
+        likeIcon.appendChild(path1);
+        likeIcon.appendChild(path2);
 
         const likeRangeInput = document.createElement('input');
         likeRangeInput.type = 'range';
@@ -535,16 +537,18 @@ class artScraper {
 
     async addPageRangeInput(container, startButton) {
         const pageIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        pageIcon.setAttribute("viewBox", "0 0 16 16");
-        pageIcon.setAttribute("height", "16");
-        pageIcon.setAttribute("width", "16");
-        pageIcon.classList.add("pageInput");
-        pageIcon.innerHTML = `
-        <path d="M8.25739 9.1716C7.46696 9.69512 6.51908 10 5.5 10C2.73858 10 0.5 7.76142 0.5 5C0.5
-        2.23858 2.73858 0 5.5 0C8.26142 0 10.5 2.23858 10.5 5C10.5 6.01908 10.1951 6.96696 9.67161
-        7.75739L11.7071 9.79288C12.0976 10.1834 12.0976 10.8166 11.7071 11.2071C11.3166 11.5976 10.6834
-        11.5976 10.2929 11.2071L8.25739 9.1716ZM8.5 5C8.5 6.65685 7.15685 8 5.5 8C3.84315 8 2.5 6.65685
-        2.5 5C2.5 3.34315 3.84315 2 5.5 2C7.15685 2 8.5 3.34315 8.5 5Z" transform="translate(3 3)" fill-rule="evenodd" clip-rule="evenodd"></path>`;
+        pageIcon.setAttributeNS(null, "viewBox", "0 0 16 16");
+        pageIcon.setAttributeNS(null, "height", "16");
+        pageIcon.setAttributeNS(null, "width", "16");
+        pageIcon.classList.add("pageInput", "fiLugu");
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttributeNS(null, "d", "M8.25739 9.1716C7.46696 9.69512 6.51908 10 5.5 10C2.73858 10 0.5 7.76142 0.5 5C0.5 2.23858 2.73858 0 5.5 0C8.26142 0 10.5 2.23858 10.5 5C10.5 6.01908 10.1951 6.96696 9.67161 7.75739L11.7071 9.79288C12.0976 10.1834 12.0976 10.8166 11.7071 11.2071C11.3166 11.5976 10.6834 11.5976 10.2929 11.2071L8.25739 9.1716ZM8.5 5C8.5 6.65685 7.15685 8 5.5 8C3.84315 8 2.5 6.65685 2.5 5C2.5 3.34315 3.84315 2 5.5 2C7.15685 2 8.5 3.34315 8.5 5Z");
+        path.setAttributeNS(null, "transform", "translate(3 3)");
+        path.setAttributeNS(null, "fill-rule", "evenodd");
+        path.setAttributeNS(null, "clip-rule", "evenodd");
+
+        pageIcon.appendChild(path);
 
         const pageRangeInput = document.createElement('input');
         pageRangeInput.type = 'range';
@@ -711,9 +715,10 @@ class customMenu{
 
 class readingStand {
     static expandAllArtworks() {
-        const artistHomePattern = /^https:\/\/www.pixiv.net\/users\/[0-9]*$/;
-        const tagHomePattern = /^https:\/\/www.pixiv.net\/tags\/[^\/]+$/;
-        if (artistHomePattern.test(self.location.href) || tagHomePattern.test(self.location.href)) {
+        const artistHomePattern = /^https:\/\/www\.pixiv\.net\/(en\/users|users)\/[0-9]*$/;
+        const tagHomePattern = /^.*:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*$/;
+        const tagPagePattern = /^.*:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*\/artworks*$/;
+        if (artistHomePattern.test(self.location.href) || !tagPagePattern.test(self.location.href) && tagHomePattern.test(self.location.href)) {
             self.location.href = self.location.href + "/artworks?p=1";
         }
     }
@@ -740,6 +745,6 @@ let config = {childList: true,};
 observer.observe(title, config);
 //初始化
 let johnTheHornyOne = new artScraper(10, 50);
-johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass()[0]);
+johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
 
 const johnTheRestaurantWaiter = new customMenu();
