@@ -15,6 +15,7 @@
 
 1. 安裝[Violentmonkey](https://violentmonkey.github.io) 或[Tampermonkey](https://www.tampermonkey.net/) 瀏覽器擴充套件。
 2. 進入[greasyfork](https://greasyfork.org/zh-TW/scripts/502344-getoutmyway)以安裝本腳本。
+3. 搞定。
 
 ## 使用方法
 

@@ -15,6 +15,7 @@ This script hides specific HTML elements based on the current domain. Users can 
 
 1. Install the [Violentmonkey](https://violentmonkey.github.io) or [Tampermonkey](https://www.tampermonkey.net/) browser extension.
 2. Go to [GreasyFork](https://greasyfork.org/zh-TW/scripts/502344-getoutmyway) to install this script.
+3. Done.
 
 ## Usage
 
