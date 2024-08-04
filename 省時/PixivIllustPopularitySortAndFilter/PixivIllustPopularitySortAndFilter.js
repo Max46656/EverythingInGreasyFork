@@ -430,6 +430,14 @@ class artScraper {
         parentElement.appendChild(buttonContainer);
     } */
 
+    getGoText() {
+        return `${this.likesMinLimit} Likes for ${this.targetPages} ${this.targetPages == 1 ? "Page" : "Pages"} Go!`;
+    }
+
+    getRerenderText() {
+        return `${this.likesMinLimit} Likes Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`;
+    }
+
     // 拉桿樣式
     async addStartButton(ParentClass,buttonClass) {
         if(document.getElementById("StartButton")){
@@ -445,24 +453,23 @@ class artScraper {
         this.addLikeRangeInput(buttonContainer,startButton);
         await this.addPageRangeInput(buttonContainer,startButton);
 
-        startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
+        startButton.textContent = this.getGoText();
         buttonClass.forEach(cls => startButton.classList.add(cls));
         startButton.id = "StartButton";
         startButton.addEventListener('click', async () => {
             GM_setValue("targetPages", this.targetPages);
             GM_setValue("likesMinLimit", this.likesMinLimit);
             await this.eatAllArts();
-            startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
+            startButton.textContent = this.getGoText();
         });
 
         const parentElement = await this.getElementOrListBySelector(ParentClass);
         buttonContainer.appendChild(startButton);
         parentElement.appendChild(buttonContainer);
     }
-
     async addRerenderButton(renderArtWallAtClass, ParentClass, buttonClass) {
         if(document.getElementById("RerenderButton")){
-            document.getElementById("RerenderButton").textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`;
+            document.getElementById("RerenderButton").textContent = this.getRerenderText();
             return;
         }
         document.querySelector("nav#myScriptButtonContainer input[id=LikeRangeInput]").style.display="none";
@@ -475,13 +482,13 @@ class artScraper {
         buttonContainer.style.alignItems = 'center';
 
         const rerenderButton = document.createElement('button');
-        rerenderButton.textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`; // 顯示目前繪畫數量
+        rerenderButton.textContent = this.getRerenderText(); // 顯示目前繪畫數量
         buttonClass.forEach(cls => rerenderButton.classList.add(cls));
         rerenderButton.id = "RerenderButton";
         rerenderButton.addEventListener('click', async () => {
             GM_setValue("likesMinLimit", this.likesMinLimit);
             await this.renderArtWall(renderArtWallAtClass);
-            rerenderButton.textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`; // 更新繪畫數量
+            rerenderButton.textContent = this.getRerenderText(); // 更新繪畫數量
         });
 
         this.addLikeRangeInput(buttonContainer, rerenderButton);
@@ -523,12 +530,12 @@ class artScraper {
         if(document.querySelector('.TableArtWall')){
             likeRangeInput.addEventListener('input', (event) => {
                 this.likesMinLimit = likesMinLimitsRange[event.target.value];
-                Button.textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`;
+                Button.textContent = this.getRerenderText();
             });
         }else{
             likeRangeInput.addEventListener('input', (event) => {
                 this.likesMinLimit = likesMinLimitsRange[event.target.value];
-                Button.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
+                Button.textContent = this.getGoText();
             });
         }
         container.appendChild(likeIcon);
@@ -572,7 +579,7 @@ class artScraper {
         pageRangeInput.classList.add('pageInput');
         pageRangeInput.addEventListener('input', (event) => {
             this.targetPages = event.target.value;
-            startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
+            startButton.textContent = this.getGoText();
         });
         container.appendChild(pageIcon);
         container.appendChild(pageRangeInput);
@@ -589,7 +596,7 @@ class artScraper {
                 const value = parseInt(event.target.value);
                 if (value >= 1 && value <= max) {
                     this.targetPages = value;
-                    startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
+                    startButton.textContent = this.getGoText();
                 }
             });
             container.appendChild(pageInputBox);
@@ -717,7 +724,7 @@ class readingStand {
     static expandAllArtworks() {
         const artistHomePattern = /^https:\/\/www\.pixiv\.net\/(en\/users|users)\/[0-9]*$/;
         const tagHomePattern = /^.*:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*$/;
-        const tagPagePattern = /^.*:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*\/artworks*$/;
+        const tagPagePattern = /^.*:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*\/artworks.*$/;
         if (artistHomePattern.test(self.location.href) || !tagPagePattern.test(self.location.href) && tagHomePattern.test(self.location.href)) {
             self.location.href = self.location.href + "/artworks?p=1";
         }
