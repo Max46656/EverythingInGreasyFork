@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name        巴哈動漫瘋Plus
+// @name        流暢巴哈動畫瘋
 // @description 我宣示我同意並滿足分級製度的年齡並已誠實的觀看廣告。
 // @namespace    https://github.com/Max46656
-// @version     1.0.0
+// @version     1.0.1
 // @author      Max
 // @match       https://ani.gamer.com.tw/animeVideo.php*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=gamer.com.tw
