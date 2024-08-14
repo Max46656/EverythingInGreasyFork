@@ -12,6 +12,7 @@
 ## 省力
 - [按鍵與滑鼠滾輪翻頁器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/InputPageTurnerForWebsite)
 - [Threads鍵盤功能導航](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/ThreadsCustomKeyboardNavigation)
+- [順暢巴哈動漫瘋](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/SmoothBahamutAnime)
 
 ## 美觀
 - [借一步說話](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%BE%8E%E8%A7%80/getOutMyWay)
