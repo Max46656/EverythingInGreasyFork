@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.7.3
+// @version      1.7.4
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -148,7 +148,7 @@ class artScraper {
         console.log(`總耗時: ${(endTime - startTime) / 1000} 秒`);
     }
 
-    async getElementOrListBySelector(selector) {
+    async getElementBySelector(selector) {
         let elements = document.querySelectorAll(selector);
         while (elements.length === 0) {
             await this.delay(50);
@@ -156,6 +156,16 @@ class artScraper {
             //console.log("selector",selector,"找不到，將重試")
         }
         return elements[0];
+    }
+
+      async getElementListBySelector(selector) {
+        let elements = document.querySelectorAll(selector);
+        while (elements.length === 0) {
+            await this.delay(50);
+            elements = document.querySelectorAll(selector);
+            //console.log("selector",selector,"找不到，將重試")
+        }
+        return elements;
     }
 
     async readingPages(thumbnailClass, artsClass) {
@@ -215,12 +225,12 @@ class artScraper {
     }
 
     async getArtsInPage(thumbnailClass, artsClass) {
-        let pageStandard = await this.getElementOrListBySelector(artsClass);
+        let pageStandard = await this.getElementListBySelector(artsClass);
         pageStandard = pageStandard.length - 1;
         let thumbnailCount = 0;
 
         while (thumbnailCount < pageStandard) {
-            const thumbnails = await this.getElementOrListBySelector(thumbnailClass);
+            const thumbnails = await this.getElementListBySelector(thumbnailClass);
             thumbnailCount = thumbnails.length;
             if (thumbnailCount < pageStandard) {
                 console.log(`缺少${pageStandard - thumbnailCount}張圖片，請關閉開發者工具且保持視窗在本分頁以確保所有圖片都載入`);
@@ -229,13 +239,13 @@ class artScraper {
                 //滑到頁面底部
                 if(window.innerHeight + window.scrollY >= document.documentElement.scrollHeight){
                     window.scrollTo(0, 0);
-                    pageStandard = await this.getElementOrListBySelector(artsClass);
+                    pageStandard = await this.getElementListBySelector(artsClass);
                     pageStandard = pageStandard.length - 1;
                 }
             }
         }
 
-        const arts = await this.getElementOrListBySelector(artsClass);
+        const arts = await this.getElementListBySelector(artsClass);
         console.log(`找到${arts.length}張圖片，開始抓取圖片`);
 
         for (let art of arts) {
@@ -315,7 +325,7 @@ class artScraper {
 
 
     async renderArtWall(renderArtWallAtClass) {
-        const parentElement = await this.getElementOrListBySelector(renderArtWallAtClass);
+        const parentElement = await this.getElementBySelector(renderArtWallAtClass);
         this.clearElement(parentElement);
 
         const table = document.createElement('table');
@@ -455,7 +465,7 @@ class artScraper {
             startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
         });
 
-        const parentElement = await this.getElementOrListBySelector(ParentClass);
+        const parentElement = await this.getElementBySelector(ParentClass);
         buttonContainer.appendChild(startButton);
         parentElement.appendChild(buttonContainer);
     }
@@ -486,7 +496,7 @@ class artScraper {
 
         this.addLikeRangeInput(buttonContainer, rerenderButton);
 
-        const parentElement = await this.getElementOrListBySelector(ParentClass);
+        const parentElement = await this.getElementBySelector(ParentClass);
         buttonContainer.appendChild(rerenderButton);
         parentElement.appendChild(buttonContainer);
     }
@@ -600,13 +610,13 @@ class artScraper {
         if (this.strategy.getArtsCountClass() === null) {
             return 34;
         }
-        const artsCountElement = await this.getElementOrListBySelector(this.strategy.getArtsCountClass());
+        const artsCountElement = await this.getElementBySelector(this.strategy.getArtsCountClass());
         //console.log(artsCountElement);
         if (artsCountElement) {
             // 刪除數字中的逗號
             const artsCountText = artsCountElement.textContent.replace(/,/g, '');
             const artsCount = parseInt(artsCountText);
-            const arts = await this.getElementOrListBySelector(this.strategy.getArtsClass());
+            const arts = await this.getElementListBySelector(this.strategy.getArtsClass());
             const artsPerPage = arts.length;
             const maxPage = Math.ceil(artsCount / artsPerPage);
             //console.log("artsPerPage", artsPerPage, 'artsCount', artsCount);
@@ -635,7 +645,7 @@ class artScraper {
             window.location.href = url.toString();
         });
 
-        const parentElement = await this.getElementOrListBySelector(ParentClass);
+        const parentElement = await this.getElementBySelector(ParentClass);
         parentElement.appendChild(restoreButton);
     }
 
