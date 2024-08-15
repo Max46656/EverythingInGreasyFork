@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         熊貓 Eagle 支援
 // @name:ja      Exhentaiイーグルサポート
-// @name:en      Exhentai Eagle Supper
+// @name:en      Exhentai Eagle Support
 // @description  自動開啟 Exhentai 原圖並將其加入 Eagle
 // @description:ja  Exhentaiのオリジナル畫像を自動的に開き、Eagleに追加します
 // @description:en  Automatically open Exhentai original images and add them to Eagle
