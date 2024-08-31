@@ -6,15 +6,14 @@
 // @name:ko      키보드 및 마우스 휠 페이지 전환기
 // @name:es      Navegador de Páginas con Teclado y Rueda del Ratón
 // @namespace    https://github.com/Max46656
-// @version      1.2.4
-// @description  使用滑鼠滾輪或按鍵快速切換上下頁。在Pixiv頁面載入後自動展開所有作品。
-// @description:zh-TW 使用滑鼠滾輪或按鍵快速切換上下頁。在Pixiv頁面載入後，自動展開所有作品。
-// @description:ja マウスホイールをスクロールするか、キーを押すことで、簡単にページを上下に切り替えることができます。Pixivのページが完全に読み込まれた後、すべての作品を自動的に展開します。
-// @description:en Quickly navigate between pages by scrolling the mouse wheel or pressing keys. Automatically expands all works after the Pixiv page is fully loaded.
-// @description:ko 마우스 휠을 스크롤하거나 키를 눌러 페이지를 쉽게 전환할 수 있습니다. Pixiv 페이지가 완전히 로드된 후 모든 작품을 자동으로 확장합니다.
-// @description:es Navega rápidamente entre páginas desplazando la rueda del ratón o presionando teclas. Expande automáticamente todas las obras después de que la página de Pixiv se haya cargado por completo.
+// @version      1.2.5
+// @description  使用滑鼠滾輪或按鍵快速切換上下頁。
+// @description:zh-TW 使用滑鼠滾輪或按鍵快速切換上下頁。
+// @description:ja マウスホイールをスクロールするか、キーを押すことで、簡単にページを上下に切り替えることができます。
+// @description:en Quickly navigate between pages by scrolling the mouse wheel or pressing keys.
+// @description:ko 마우스 휠을 스크롤하거나 키를 눌러 페이지를 쉽게 전환할 수 있습니다.
+// @description:es Navega rápidamente entre páginas desplazando la rueda del ratón o presionando teclas.
 // @author       Max
-// @match        https://www.pixiv.net/*
 // @match        https://*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant    GM_registerMenuCommand
