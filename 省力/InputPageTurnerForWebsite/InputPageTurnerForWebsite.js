@@ -3,12 +3,16 @@
 // @name:zh-TW   按鍵與滑鼠滾輪翻頁器
 // @name:ja      キーとマウスホイールでのページめくり機
 // @name:en      Keyboard and Mouse Wheel Page Turner
+// @name:ko      키보드 및 마우스 휠 페이지 전환기
+// @name:es      Navegador de Páginas con Teclado y Rueda del Ratón
 // @namespace    https://github.com/Max46656
-// @version      1.14
+// @version      1.2.4
 // @description  使用滑鼠滾輪或按鍵快速切換上下頁。在Pixiv頁面載入後自動展開所有作品。
 // @description:zh-TW 使用滑鼠滾輪或按鍵快速切換上下頁。在Pixiv頁面載入後，自動展開所有作品。
 // @description:ja マウスホイールをスクロールするか、キーを押すことで、簡単にページを上下に切り替えることができます。Pixivのページが完全に読み込まれた後、すべての作品を自動的に展開します。
-// @description:en Quickly navigation between pages by scrolling the mouse wheel or pressing keys. Automatically expands all works after the Pixiv page is fully loaded.
+// @description:en Quickly navigate between pages by scrolling the mouse wheel or pressing keys. Automatically expands all works after the Pixiv page is fully loaded.
+// @description:ko 마우스 휠을 스크롤하거나 키를 눌러 페이지를 쉽게 전환할 수 있습니다. Pixiv 페이지가 완전히 로드된 후 모든 작품을 자동으로 확장합니다.
+// @description:es Navega rápidamente entre páginas desplazando la rueda del ratón o presionando teclas. Expande automáticamente todas las obras después de que la página de Pixiv se haya cargado por completo.
 // @author       Max
 // @match        https://www.pixiv.net/*
 // @match        https://*/*
@@ -17,52 +21,99 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @license MPL2.0
+// @downloadURL https://update.greasyfork.org/scripts/494851/%E6%8C%89%E9%8D%B5%E8%88%87%E6%BB%91%E9%BC%A0%E6%BB%BE%E8%BC%AA%E7%BF%BB%E9%A0%81%E5%99%A8.user.js
+// @updateURL https://update.greasyfork.org/scripts/494851/%E6%8C%89%E9%8D%B5%E8%88%87%E6%BB%91%E9%BC%A0%E6%BB%BE%E8%BC%AA%E7%BF%BB%E9%A0%81%E5%99%A8.meta.js
 // ==/UserScript==
 
 
-class pageInputNavigation {
+class PageButtonManager {
     constructor() {
-        this.pageButtons = this.getPageButtonsByDomain();
-        this.buttonClicked = false;
+        this.pageButtonsMap = {};
+        this.loadPageButtons();
+    }
+
+    loadPageButtons() {
+        this.pageButtonsMap = GM_getValue('pageButtonsMap', {});
+    }
+
+    async savePageButtons() {
+        await GM_setValue('pageButtonsMap', this.pageButtonsMap);
+    }
+
+    getButtonsForDomain(domain) {
+        return this.pageButtonsMap[domain] || {
+            nextButton: '.next',
+            prevButton: '.prev'
+        };
+    }
+
+    setButtonsForDomain(domain, buttons) {
+        this.pageButtonsMap[domain] = buttons;
+        this.savePageButtons();
+    }
+
+    getAllDomains() {
+        return Object.keys(this.pageButtonsMap);
+    }
+}
+
+class NavigationPaginationWithInput {
+   constructor(buttonManager) {
+        this.buttonManager = buttonManager;
+        this.pageButtons = this.buttonManager.getButtonsForDomain(self.location.hostname);
+        console.log(this.pageButtons);
+        this.init();
+    }
+
+    async init() {
+        await this.loadSettings();
         this.setEventListeners();
     }
 
-    getPageButtonsByDomain(){
+    async loadSettings() {
+        this.togglePaginationMode = await GM_getValue('togglePaginationMode', 'key');
+        this.modifierKey = await GM_getValue('modifierKey', 'Control');
+        this.nextPageKey = await GM_getValue('nextPageKey', 'W');
+        this.prevPageKey = await GM_getValue('prevPageKey', 'Q');
+        console.group("Settings");
+        console.log("togglePaginationMode",this.togglePaginationMode);
+        console.log("modifierKey",this.modifierKey);
+        console.log("nextPageKey",this.nextPageKey);
+        console.log("prevPageKey",this.prevPageKey);
+        console.groupEnd();
+    }
 
-        const pageButtons=GM_getValue("pageButtons",null);
-        const domain = self.location.hostname;
-        //console.log(pageButtons);
-        if(pageButtons[domain]!=null){
-            console.log(domain);
-            console.log(pageButtons[domain]);
-            return pageButtons[domain];
-        }
-        console.log(domain,' not found ','use general website',pageButtons["general website"]);
-        return pageButtons["general website"];
+    async saveSettings() {
+        await GM_setValue('togglePaginationMode', this.togglePaginationMode);
+        await GM_setValue('modifierKey', this.modifierKey);
+        await GM_setValue('nextPageKey', this.nextPageKey);
+        await GM_setValue('prevPageKey', this.prevPageKey);
     }
 
     async toNextPage() {
         const pageButtons = document.querySelectorAll(this.pageButtons.nextButton);
-        let nextPageButton=pageButtons[pageButtons.length-1];
-        // console.log(nextPageButton);
+        let nextPageButton = pageButtons[pageButtons.length-1];
         nextPageButton.click();
     }
 
     async toPrevPage() {
         const prevPageButton = document.querySelectorAll(this.pageButtons.prevButton)[0];
-        // console.log(prevPageButton);
         prevPageButton.click();
     }
 
-    setEventListeners() {
+    async setEventListeners() {
         this.scrollHandler = () => this.handleScroll();
-        this.keyPressHandler = (event) => this.handleKeyPress(event);
-        self.addEventListener("keypress", this.keyPressHandler);
-        //console.log("開始聆聽");
+        this.keydownHandler = (event) => this.handleKeydown(event);
+
+        if (this.togglePaginationMode !== "key") {
+            self.addEventListener("scroll", this.scrollHandler);
+        } else {
+            self.addEventListener("keydown", this.keydownHandler);
+        }
     }
 
     handleScroll(scrollThreshold=3) {
-        const isBottom = document.documentElement.scrollHeight - self.innerHeight - self.pageYOffset <= this.scrollThreshold;
+        const isBottom = document.documentElement.scrollHeight - self.innerHeight - self.pageYOffset <= scrollThreshold;
         if (isBottom) {
             this.toNextPage();
             console.log("滾輪下一頁");
@@ -73,267 +124,208 @@ class pageInputNavigation {
         }
     }
 
-    handleKeyPress(event) {
-        const pageKey = GM_getValue("pageKey", ["Z", "X"]);
-        let prevPageUpper = pageKey[0].toUpperCase();
-        let nextPageUpper = pageKey[1].toUpperCase();
-        let prevPageLower = pageKey[0].toLowerCase();
-        let nextPageLower = pageKey[1].toLowerCase();
-        if (event.key == prevPageUpper || event.key == prevPageLower) {
-            this.toPrevPage();
-            console.log("按鍵上一頁");
-        } else if (event.key == nextPageUpper || event.key == nextPageLower) {
-            this.toNextPage();
-            console.log("按鍵下一頁");
+    handleKeydown(event) {
+        if (event.getModifierState(this.modifierKey)) {
+            if (event.key.toUpperCase() === this.nextPageKey.toUpperCase()) {
+                event.preventDefault();
+                this.toNextPage();
+                console.log("快捷鍵下一頁");
+            } else if (event.key.toUpperCase() === this.prevPageKey.toUpperCase()) {
+                event.preventDefault();
+                this.toPrevPage();
+                console.log("快捷鍵上一頁");
+            }
         }
     }
 }
 
-class inputCustomMenu{
-    constructor() {
-        this.registerMenuCommand(this);
-        this.loadPageKey();
+class MenuManager {
+    constructor(buttonManager) {
+        this.buttonManager = buttonManager;
+        this.initMenu();
     }
+
+    getMenuLabels() {
+        const userLang = navigator.language || navigator.userLanguage;
+        const labels = {
+            'zh-TW': {
+                viewAndModify: '修改上下頁的按鈕元素選取器',
+                showAllDomains: '顯示所有網域',
+                togglePageMode: '切換翻頁模式',
+                customizeModifierKey: '自訂啟動快捷鍵',
+                customizeNextPageKey: '自訂下一頁快捷鍵',
+                customizePrevPageKey: '自訂上一頁快捷鍵',
+                enterDomain: '輸入網域：',
+                currentButtons: '當前按鈕：',
+                enterNextButton: '輸入下一頁按鈕選擇器：',
+                enterPrevButton: '輸入上一頁按鈕選擇器：',
+                savedDomains: '已儲存的網域：',
+                enterDomainToView: '輸入要檢視的網域：',
+                enterModifierKey: '輸入啟動快捷鍵 (Control, Alt, Shift, CapsLock)：',
+                enterNextPageKey: '輸入下一頁快捷鍵：',
+                enterPrevPageKey: '輸入上一頁快捷鍵：',
+                invalidInput: '無效的輸入，請重試。'
+            },
+            'en': {
+                viewAndModify: 'Modify Page Up/Down Button Selectors',
+                showAllDomains: 'Show All Domains',
+                togglePageMode: 'Toggle Page Mode',
+                customizeModifierKey: 'Customize Modifier Key',
+                customizeNextPageKey: 'Customize Next Page Key',
+                customizePrevPageKey: 'Customize Previous Page Key',
+                enterDomain: 'Enter the domain:',
+                currentButtons: 'Current buttons:',
+                enterNextButton: 'Enter the next page button selector:',
+                enterPrevButton: 'Enter the previous page button selector:',
+                savedDomains: 'Saved domains:',
+                enterDomainToView: 'Enter the domain to view:',
+                enterModifierKey: 'Enter modifier key (Control, Alt, Shift, CapsLock):',
+                enterNextPageKey: 'Enter next page key:',
+                enterPrevPageKey: 'Enter previous page key:',
+                invalidInput: 'Invalid input, please try again.'
+            },
+            'ja': {
+                viewAndModify: 'ページの上下ボタン要素セレクターの変更',
+                showAllDomains: 'すべてのドメインを表示',
+                togglePageMode: 'ページモードを切り替える',
+                customizeModifierKey: '修飾キーをカスタマイズ',
+                customizeNextPageKey: '次のページキーをカスタマイズ',
+                customizePrevPageKey: '前のページキーをカスタマイズ',
+                enterDomain: 'ドメインを入力してください：',
+                currentButtons: '現在のボタン：',
+                enterNextButton: '次のページボタンのセレクタを入力してください：',
+                enterPrevButton: '前のページボタンのセレクタを入力してください：',
+                savedDomains: '保存されたドメイン：',
+                enterDomainToView: '表示するドメインを入力してください：',
+                enterModifierKey: '修飾キーを入力してください（Control、Alt、Shift、CapsLock）：',
+                enterNextPageKey: '次のページキーを入力してください：',
+                enterPrevPageKey: '前のページキーを入力してください：',
+                invalidInput: '無効な入力です。もう一度お試しください。'
+            },
+            'ko': {
+                viewAndModify: '페이지 위/아래 버튼 선택기 수정',
+                showAllDomains: '모든 도메인 보기',
+                togglePageMode: '페이지 모드 전환',
+                customizeModifierKey: '수정 키 사용자화',
+                customizeNextPageKey: '다음 페이지 키 사용자화',
+                customizePrevPageKey: '이전 페이지 키 사용자화',
+                enterDomain: '도메인을 입력하세요:',
+                currentButtons: '현재 버튼:',
+                enterNextButton: '다음 페이지 버튼 선택기 입력:',
+                enterPrevButton: '이전 페이지 버튼 선택기 입력:',
+                savedDomains: '저장된 도메인:',
+                enterDomainToView: '보기할 도메인을 입력하세요:',
+                enterModifierKey: '수정 키를 입력하세요 (Control, Alt, Shift, CapsLock):',
+                enterNextPageKey: '다음 페이지 키 입력:',
+                enterPrevPageKey: '이전 페이지 키 입력:',
+                invalidInput: '잘못된 입력입니다. 다시 시도하세요.'
+            },
+            'es': {
+                viewAndModify: 'Modificar Selectores de Botones de Página Arriba/Abajo',
+                showAllDomains: 'Mostrar Todos los Dominios',
+                togglePageMode: 'Alternar Modo de Página',
+                customizeModifierKey: 'Personalizar Tecla Modificadora',
+                customizeNextPageKey: 'Personalizar Tecla de Siguiente Página',
+                customizePrevPageKey: 'Personalizar Tecla de Página Anterior',
+                enterDomain: 'Ingrese el dominio:',
+                currentButtons: 'Botones actuales:',
+                enterNextButton: 'Ingrese el selector del botón de siguiente página:',
+                enterPrevButton: 'Ingrese el selector del botón de página anterior:',
+                savedDomains: 'Dominios guardados:',
+                enterDomainToView: 'Ingrese el dominio a visualizar:',
+                enterModifierKey: 'Ingrese tecla modificadora (Control, Alt, Shift, CapsLock):',
+                enterNextPageKey: 'Ingrese tecla de siguiente página:',
+                enterPrevPageKey: 'Ingrese tecla de página anterior:',
+                invalidInput: 'Entrada inválida, por favor intente de nuevo.'
+            }
+        };
+        return labels[userLang] || labels['en'];
+    }
+
+    initMenu() {
+        const labels = this.getMenuLabels();
+        GM_registerMenuCommand(labels.viewAndModify, this.viewAndModifyButtons.bind(this));
+        GM_registerMenuCommand(labels.showAllDomains, this.showAllDomains.bind(this));
+        GM_registerMenuCommand(labels.togglePageMode, this.inputModeSwitch.bind(this));
+        GM_registerMenuCommand(labels.customizeModifierKey, this.customizeModifierKey.bind(this));
+        GM_registerMenuCommand(labels.customizeNextPageKey, this.customizeNextPageKey.bind(this));
+        GM_registerMenuCommand(labels.customizePrevPageKey, this.customizePrevPageKey.bind(this));
+    }
+
+    async viewAndModifyButtons() {
+        const labels = this.getMenuLabels();
+        const domain = prompt(labels.enterDomain, window.location.hostname);
+        if (domain) {
+            const currentButtons = this.buttonManager.getButtonsForDomain(domain);
+            alert(`${labels.currentButtons}\nNext: ${currentButtons.nextButton}\nPrev: ${currentButtons.prevButton}`);
+            const newNextButton = prompt(labels.enterNextButton, currentButtons.nextButton);
+            const newPrevButton = prompt(labels.enterPrevButton, currentButtons.prevButton);
+            if (newNextButton && newPrevButton) {
+                this.buttonManager.setButtonsForDomain(domain, { nextButton: newNextButton, prevButton: newPrevButton });
+                alert(`Updated buttons for ${domain}`);
+            }
+        }
+    }
+
+    async showAllDomains() {
+        const labels = this.getMenuLabels();
+        const allDomains = this.buttonManager.getAllDomains();
+        const domain = prompt(`${labels.savedDomains}\n${allDomains.join('\n')}\n\n${labels.enterDomainToView}`);
+        if (domain) {
+            const buttons = this.buttonManager.getButtonsForDomain(domain);
+            alert(`Buttons for domain ${domain}:\nNext: ${buttons.nextButton}\nPrev: ${buttons.prevButton}`);
+        }
+    }
+
     async inputModeSwitch() {
-        //console.log("切換模式"+this.buttonClicked);
-        if (this.buttonClicked==true) {
+        if (this.togglePaginationMode === 'scroll') {
+            this.togglePaginationMode = 'key';
             self.removeEventListener("scroll", this.scrollHandler);
-            self.addEventListener("keypress", this.keyPressHandler);
+            self.addEventListener("keydown", this.keydownHandler);
             console.log("切換為按鍵翻頁模式");
-            this.buttonClicked=false;
         } else {
+            this.togglePaginationMode = 'scroll';
             self.addEventListener("scroll", this.scrollHandler);
-            self.removeEventListener("keypress", this.keyPressHandler);
+            self.removeEventListener("keydown", this.keydownHandler);
             console.log("切換為滾輪翻頁模式");
-            this.buttonClicked=true;
         }
+        this.saveSettings();
     }
 
-    async customizeKeys() {
-        //console.log(this.getFeatureMessageLocalization("EnterNewPrevPageLetter"));
-        const newPrevPage = prompt(`${this.getFeatureMessageLocalization("EnterNewPrevPageLetter")}${this.pageKey[0]}`);
-        const newNextPage = prompt(`${this.getFeatureMessageLocalization("EnterNewNextPageLetter")}${this.pageKey[1]}`);
-
-        if (newPrevPage && newPrevPage.length === 1 && newNextPage && newNextPage.length === 1) {
-            this.pageKey[0] = newPrevPage;
-            this.pageKey[1] = newNextPage;
-            this.savePageKey();
+    async customizeModifierKey() {
+        const labels = this.getMenuLabels();
+        const newModifierKey = prompt(labels.enterModifierKey, this.navigation.modifierKey);
+        if (['Control', 'Alt', 'Shift', 'CapsLock'].includes(newModifierKey)) {
+            this.navigation.modifierKey = newModifierKey;
+            await this.navigation.saveSettings();
         } else {
-            alert(this.getFeatureMessageLocalization("CustomKeyError"));
+            alert(labels.invalidInput);
         }
     }
 
-    loadPageKey() {
-        this.pageKey = GM_getValue("pageKey", ["Z", "X"]);
+    async customizeNextPageKey() {
+        const labels = this.getMenuLabels();
+        const newNextPageKey = prompt(labels.enterNextPageKey, this.navigation.nextPageKey);
+        if (newNextPageKey && newNextPageKey.length === 1) {
+            this.navigation.nextPageKey = newNextPageKey;
+            await this.navigation.saveSettings();
+        } else {
+            alert(labels.invalidInput);
+        }
     }
 
-    savePageKey() {
-        GM_setValue("pageKey", this.pageKey);
-    }
-
-    getFeatureMessageLocalization(word) {
-        let display = {
-            "zh-TW": {
-                "TogglePageMode": "切換翻頁模式",
-                "CustomizeKeys": "自訂按鍵",
-                "EnterNewPrevPageLetter": "請輸入要替換上一頁的一個英文字母或數字，目前為：",
-                "EnterNewNextPageLetter": "請輸入要替換下一頁的一個英文字母或數字，目前為：",
-                "CustomKeyError": "自訂按鍵錯誤：輸入無效，請確保輸入一個英文字母或數字。"
-            },
-            "en": {
-                "TogglePageMode": "Toggle Page Navigation Mode",
-                "CustomizeKeys": "Customize Keys",
-                "EnterNewPrevPageLetter": "Enter a single English letter or number to replace the previous page,right now it's",
-                "EnterNewNextPageLetter": "Enter a single English letter or number to replace the next page,now it's",
-                "CustomKeyError": "Custom Key Error: Invalid input, please ensure to input a single English letter or number."
-            },
-            "ja": {
-                "TogglePageMode": "ページ切り替えモードの切り替え",
-                "CustomizeKeys": "キーのカスタマイズ",
-                "EnterNewPrevPageLetter": "前のページを置き換える英字または數字を 1 つ入力してください。今のボタンは：",
-                "EnterNewNextPageLetter": "次のページを置き換える英字または數字を 1 つ入力してください。今のボタンは：",
-                "CustomKeyError": "カスタムキーエラー：入力が無効です。単一の英文字または數字を入力してください。"
-            }
-        };
-        //console.log(navigator.language);
-        //console.log(display[navigator.language][word]);
-        return display[navigator.language][word];
-    }
-
-    registerMenuCommand(instance) {
-        //console.log("註冊選單");
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("TogglePageMode"), () => instance.inputModeSwitch());
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("CustomizeKeys"), () => instance.customizeKeys());
+    async customizePrevPageKey() {
+        const labels = this.getMenuLabels();
+        const newPrevPageKey = prompt(labels.enterPrevPageKey, this.navigation.prevPageKey);
+        if (newPrevPageKey && newPrevPageKey.length === 1) {
+            this.navigation.prevPageKey = newPrevPageKey;
+            await this.navigation.saveSettings();
+        } else {
+            alert(labels.invalidInput);
+        }
     }
 }
 
-class pageButtonsOfDomain{
-    constructor(){
-        this.allPageButtons = GM_getValue("PageButtons",{
-            "www.pixiv.net": {
-                "nextButton": ".sc-d98f2c-0.sc-xhhh7v-2.cCkJiq.sc-xhhh7v-1-filterProps-Styled-Component.kKBslM",
-                "prevButton": ".sc-d98f2c-0.sc-xhhh7v-2.cCkJiq.sc-xhhh7v-1-filterProps-Styled-Component.kKBslM",
-            },
-            "exhentai.org": {
-                "nextButton": "#dnext",
-                "prevButton": "#dprev",
-            },
-            "e-hentai.org": {
-                "nextButton": "#dnext",
-                "prevButton": "#dprev",
-            },
-            "nhentai.net": {
-                "nextButton": ".next",
-                "prevButton": ".previous",
-            },
-            "www.asmr.one": {
-                "nextButton": ".ant-pagination-item-link",
-                "prevButton": ".ant-pagination-item-link",
-            },
-            "www.bilibili.com": {
-                "nextButton": ".vui_pagenation--btn-side",
-                "prevButton": ".vui_pagenation--btn-side",
-            },
-            "search.bilibili.com": {
-                "nextButton": ".vui_pagenation--btn-side",
-                "prevButton": ".vui_pagenation--btn-side",
-            },
-            "www.goddessfantasy.net": {
-                "nextButton": ".navPages",
-                "prevButton": ".navPages",
-            },
-            "general website": {
-                "nextButton": ".next",
-                "prevButton": ".prev",
-            },
-        })
-        GM_setValue('pageButtons', this.allPageButtons);
-    }
-
-    getAllPageButtons(){
-        return this.allPageButtons;
-    }
-    addPageButtons(domain, buttons) {
-        this.allPageButtons[domain] = buttons;
-        this.savePageButtonsToStorage(this.allPageButtons);
-    }
-
-    getPageButtons(domain) {
-        return this.pageButtonsOfDomain[domain];
-    }
-
-    savePageButtonsToStorage(pageButtons) {
-        GM_setValue('pageButtons', JSON.stringify(pageButtons));
-    }
-
-    getPageButtonsFromStorage() {
-        let storedPageButtons = GM_getValue('pageButtons');
-        return storedPageButtons ? JSON.parse(storedPageButtons) : {};
-    }
-
-    getFeatureMessageLocalization(word) {
-        let display = {
-            "zh-TW": {
-                "addNewDomainSupper": "新增支援網站",
-            },
-            "en": {
-                "addNewDomainSupper": "Add new supper domain",
-            },
-            "ja": {
-                "addNewDomainSupper": "サポートサイトを追加",
-            }
-        };
-        return display[navigator.language][word];
-    }
-}
-
-const johnTheButtonCollector = new pageButtonsOfDomain();
-const johnTheAlmondHolder = new pageInputNavigation();
-const johnTheRestaurantWaiter = new inputCustomMenu();
-
-/* class addNewDomainSupper {
-  constructor() {
-    this.floatingWindow = this.createFloatingWindow();
-    this.setupListeners();
-    //this.registerMenuCommand(this);
-  }
-
- registerMenuCommand(instance) {
-    GM_registerMenuCommand(instance.getFeatureMessageLocalization("addNewDomainSupper"), () => instance.createFloatingWindow())
-  }
-    getFeatureMessageLocalization(word) {
-    let display = {
-      "zh-TW": {
-        "addNewDomainSupper": "新增支援網站",
-      },
-      "en": {
-        "addNewDomainSupper": "Add new supper domain",
-      },
-      "ja": {
-        "addNewDomainSupper": "サポートサイトを追加",
-      }
-    };
-    return display[navigator.language][word];
-  }
-  createFloatingWindow() {
-    const floatingWindow = document.createElement('div');
-    floatingWindow.style.position = 'fixed';
-    floatingWindow.style.top = '50%';
-    floatingWindow.style.left = '50%';
-    floatingWindow.style.transform = 'translate(-50%, -50%)';
-    floatingWindow.style.background = '#fff';
-    floatingWindow.style.border = '1px solid #000';
-    floatingWindow.style.color = '000';
-    floatingWindow.style.padding = '20px';
-    document.body.appendChild(floatingWindow);
-    return floatingWindow;
-  }
-
-  setupListeners() {
-    this.floatingWindow.addEventListener('click', this.handleClick.bind(this));
-  }
-
-  handleClick(event) {
-    const target = event.target;
-    if (target.tagName === 'BUTTON') {
-      const action = target.textContent;
-      if (action === '確認') {
-        this.confirm();
-      } else if (action === '取消') {
-        this.cancel();
-      }
-    }
-  }
-
-  confirm() {
-    const prevInput = this.floatingWindow.querySelector('.prev-input');
-    const nextInput = this.floatingWindow.querySelector('.next-input');
-    const selectOption = this.floatingWindow.querySelector('.select-option');
-    const selectedOption = selectOption.value;
-    const prevValue = prevInput.value;
-    const nextValue = nextInput.value;
-    const domain = window.location.hostname;
-
-    let buttons = {};
-    if (selectedOption === 'class') {
-      buttons = {
-        prevButton: `.${prevValue}`,
-        nextButton: `.${nextValue}`
-      };
-    } else if (selectedOption === 'id') {
-      buttons = {
-        prevButton: `#${prevValue}`,
-        nextButton: `#${nextValue}`
-      };
-    }
-
-    PageButtonsOfDomain.addPageButtons(domain, buttons);
-    this.floatingWindow.remove();
-  }
-
-  cancel() {
-    this.floatingWindow.remove();
-  }
-} */
-
-//const transferStudent = new addNewDomainSupper();
+const buttonManager = new PageButtonManager();
+new NavigationPaginationWithInput(buttonManager);
+new MenuManager(buttonManager);
