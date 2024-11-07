@@ -6,7 +6,7 @@
 // @name:ko      키보드 및 마우스 휠 페이지 전환기
 // @name:es      Navegador de Páginas con Teclado y Rueda del Ratón
 // @namespace    https://github.com/Max46656
-// @version      1.2.5
+// @version      1.2.6
 // @description  使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:zh-TW 使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:ja マウスホイールをスクロールするか、キーを押すことで、簡単にページを上下に切り替えることができます。
@@ -80,6 +80,7 @@ class NavigationPaginationWithInput {
         console.log("nextPageKey",this.nextPageKey);
         console.log("prevPageKey",this.prevPageKey);
         console.groupEnd();
+        this.saveSettings();
     }
 
     async saveSettings() {
@@ -97,6 +98,7 @@ class NavigationPaginationWithInput {
 
     async toPrevPage() {
         const prevPageButton = document.querySelectorAll(this.pageButtons.prevButton)[0];
+      console.log(this.pageButtons.prevButton,prevPageButton);
         prevPageButton.click();
     }
 
@@ -139,8 +141,9 @@ class NavigationPaginationWithInput {
 }
 
 class MenuManager {
-    constructor(buttonManager) {
+    constructor(buttonManager,navigation) {
         this.buttonManager = buttonManager;
+        this.navigation = navigation;
         this.initMenu();
     }
 
@@ -326,5 +329,5 @@ class MenuManager {
 }
 
 const buttonManager = new PageButtonManager();
-new NavigationPaginationWithInput(buttonManager);
-new MenuManager(buttonManager);
+const Navigation = new NavigationPaginationWithInput(buttonManager);
+new MenuManager(buttonManager,Navigation);
