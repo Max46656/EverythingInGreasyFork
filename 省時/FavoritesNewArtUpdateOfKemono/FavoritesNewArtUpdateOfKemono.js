@@ -3,26 +3,27 @@
 // @name:ja      お気に入りの「新しいアート」更新
 // @name:en      Favorites"NewArt"Update
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.0.1
+// @version      1.1.0
 // @description  為何要一個一個點擊進入追蹤的作者頁面才能看到最新的更新？讓這個腳本為你代勞。支援Kemono/Coomer。
 // @description:ja それぞれのフォローアーティストのページに一つずつクリックして最新の更新を見る必要がありますか？このスクリプトに任せてください。Kemono/Coomerに対応しています。
 // @description:en Why click into each followed artist's page one by one to see the latest updates? Let this script do it for you. Suppper Kemono/Coomer.
 // @author       Max
+// @match        *://kemono.su/account/favorites/artists*
+// @match        *://*.kemono.su/account/favorites/artists*
+// @match        *://coomer.su/account/favorites/artists*
+// @match        *://*.coomer.su/account/favorites/artists*
 // @match        *://kemono.su/favorites*
 // @match        *://coomer.su/favorites*
 // @match        *://*.kemono.su/favorites*
 // @match        *://*.coomer.su/favorites*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.su
-// @grant        none
 // @license MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.user.js
 // @updateURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.meta.js
 // ==/UserScript==
 
 class ArtistUpdateCatcher {
-    constructor(rateLimit, batchSize,timeRange) {
-        this.rateLimit = rateLimit;
-        this.batchSize = batchSize;
+    constructor(timeRange) {
         this.timeRange = timeRange;
         this.queue = [];
         this.observer = null;
@@ -44,158 +45,170 @@ class ArtistUpdateCatcher {
 
     setupMutationObserver() {
         const observer = new MutationObserver(() => {
-            this.loadArtistCards(); // 每當 DOM 改變時重新載入 artistCards
+            this.loadArtistCards();
         });
         observer.observe(document.body, { childList: true, subtree: true });
         this.observer = observer;
     }
 
     async fetchUpdateArticles(url) {
-        const articles = [];
-        try {
-            const response = await fetch(url);
-            if (response.status === 429) {
+    const articles = [];
+    const isKemono = url.includes('kemono');
+    let cleanUrl = url.replace(/^.*(?=\/[^\/]+\/user\/[^\/]+)/, "");
+    let creatorPostsApi,creatorInfoApi;
+    if(isKemono){
+        creatorPostsApi ='https://kemono.su/api/v1' + cleanUrl + '?o=0';
+        creatorInfoApi = 'https://kemono.su/api/v1' + cleanUrl + '/profile?o=0';
+    }else{
+        creatorPostsApi ='https://coomer.su/api/v1' + cleanUrl + '?o=0';
+        creatorInfoApi = 'https://coomer.su/api/v1' + cleanUrl + '/profile?o=0';
+    }
+    try {
+        const postsResponse = await fetch(creatorPostsApi);
+            if (!postsResponse.ok) {
                 await this.delay(2000);
                 return this.fetchUpdateArticles(url); // 重新嘗試
             }
-            const text = await response.text();
+        const posts = await postsResponse.json();
+
+        if (posts.length === 0) {
+            return articles;
+        }
+
+        const firstPostTime = new Date(posts[0].published || posts[0].added).getTime();
+        const seventyTwoHoursLater = firstPostTime - this.timeRange;
+
+        const newerPosts = posts.filter(post => {
+            const postTime = new Date(post.published || post.added).getTime();
+            return postTime >= seventyTwoHoursLater;
+        });
+
+        const infoResponse = await fetch(creatorInfoApi);
+        const info = await infoResponse.json();
+        const userName = info.name;
+
+      for (let post of newerPosts) {
+            const articleId = post.id;
+            const service = post.service;
+            const user = post.user;
+            const title = post.title;
+            const filePath = post.file ? post.file.path : '';
+            const timestamp = post.published || post.added;
+            const attachmentsCount = post.attachments ? post.attachments.length : 0;
+
+            const href = `/${service}/user/${user}/post/${articleId}`;
+            const imgSrc = `${filePath}`;
+
+            const articleHtml = `
+                <article class="post-card post-card--preview" data-id=${articleId} data-service=${service} data-user=${user} style="position: relative; overflow: hidden; border-radius: 2%;font-size: larger;">
+                  <a class="fancy-link fancy-link--kemono" href=${href}>
+                      <header class="post-card__header">${userName}</header>
+                      <div class="post-card__image-container"><img class="post-card__image" src=${imgSrc}></div>
+                      <footer class="post-card__footer">
+                          <div>
+                    <div style="width: clamp(30px, 6%, 30px);display: flex; align-items: center; gap: 10%;">${attachmentsCount}
+                                  <svg viewBox="0 0 10 10" style="width: 100%; height: 100%; fill: white;">
+                                      <path d="M8,3 C8.55228475,3 9,3.44771525 9,4 L9,9 C9,9.55228475 8.55228475,10 8,10 L3,10
+                                          C2.44771525,10 2,9.55228475 2,9 L6,9 C7.1045695,9 8,8.1045695 8,7 L8,3 Z M1,1 L6,1
+                                          C6.55228475,1 7,1.44771525 7,2 L7,7 C7,7.55228475 6,8 6,8 L1,8 C0.44771525,8
+                                          0,7.55228475 0,7 L0,2 C0,1.44771525 0.44771525,1 1,1 Z" transform="">
+                                      </path>
+                                  </svg>
+                              </div>
+                              <div>
+                                  <div>${title}</div>
+                              </div>
+                          </div>
+                      </footer>
+                  </a>
+                  <time class="timestamp" datetime=${timestamp}></time>
+              </article>`;
             const parser = new DOMParser();
-            const doc = parser.parseFromString(text, 'text/html');
-
-            const allArticles = doc.querySelectorAll('article');
-            const firstArticleTime = new Date(allArticles[0].querySelector('time').getAttribute('datetime'));
-
-            for (let article of allArticles) {
-                const articleTime = new Date(article.querySelector('time').getAttribute('datetime'));
-                if (firstArticleTime - articleTime <= this.timeRange) {
-                    articles.push(article);
-                } else {
-                    break; // 超出時間範圍，停止添加
-                }
-            }
-        } catch (error) {
-            console.error(`Failed to fetch articles from ${url}:`, error);
+            const doc = parser.parseFromString(articleHtml, 'text/html');
+            const articleElement = doc.body.firstChild;
+            articles.push(articleElement);
         }
-        return articles;
+    } catch (error) {
+        //console.error(`Failed to fetch articles from ${url}:`, error);
     }
+    return articles;
+}
 
 
-    createArtistInfo(iconDiv, nameText, link) {
-        const artistInfo = document.createElement('div');
-        artistInfo.className = 'artist-info';
+      async replaceArtistCard(artistCard, articles) {
+        const userId = artistCard.getAttribute("data-id");
+        const service = artistCard.getAttribute("data-service");
+        const userName = artistCard.querySelector(".user-card__name").textContent.trim();
+        const userIcon = artistCard.querySelector(".fancy-image__image").src;
+        const userHref = `/${service}/user/${userId}`;
 
-        const linkElement = document.createElement('a');
-        linkElement.href = link;
-        linkElement.className = 'artist-link';
-        linkElement.style.display = 'block'; // 確保 a 元素能夠包住內容
+        const parentElement = artistCard.parentElement;
+        parentElement.removeChild(artistCard);
 
-        const iconHTML = iconDiv.outerHTML;
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'artist-name';
-        nameDiv.textContent = nameText;
+        for (const article of articles) {
 
-        linkElement.innerHTML = iconHTML;
-        linkElement.appendChild(nameDiv);
+            const userProfile = document.createElement("a");
+          userProfile.setAttribute("data-id",userId);
+          userProfile.setAttribute("data-service",service);
+          userProfile.setAttribute("href",userHref);
+          userProfile.style = `
+              position: absolute;
+              top: 8%;
+              left: 1%;
+              z-index: 10;
+              display: inline-flex;
+              align-items: center;
+              background: rgba(0, 0, 0, 0.01);
+              border-radius: 5%;
+              text-decoration: none;
+              width: 15%;
+              height:min-content`;
 
-        artistInfo.appendChild(linkElement);
-
-        return artistInfo;
-    }
-
-    async replaceArtistCard(artistCard, articles) {
-        if (articles.length > 0) {
-            const iconDiv = artistCard.querySelector('.user-card__icon');
-            const nameText = artistCard.querySelector('.user-card__name').textContent;
-            const newArtistInfo = this.createArtistInfo(iconDiv, nameText, artistCard.href);
-
-            const container = document.createElement('div');
-            container.className = 'artist-update-container';
-            container.style.position = 'relative';
-
-            // 以最近的更新為主
-            const firstArticle = this.processArticle(articles[0], newArtistInfo);
-
-            if (articles.length > 1) {
-                // 創建展開/縮小控製元素作為 footer
-                const toggleControl = document.createElement('footer');
-                toggleControl.className = 'post-card__footer';
-                toggleControl.innerHTML = `<span style="float: right;"><span style="display: inline-block; width: 20px; text-align: center;">▼</span> 展開 ${articles.length - 1} 更新</span>`;
-                toggleControl.style.cssText = `
-                    position: absolute;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    cursor: pointer;
-                    z-index: 1;
-                `;
-
-                const articlesContainer = document.createElement('div');
-                articlesContainer.className = 'articles-container';
-                articlesContainer.style.display = 'none'; // 預設隱藏
-
-                // 處理剩餘的更新
-                for (let i = 1; i < articles.length; i++) {
-                    const processedArticle = this.processArticle(articles[i], newArtistInfo);
-                    articlesContainer.appendChild(processedArticle);
-                }
-
-                // 添加展開/縮小功能
-                toggleControl.addEventListener('click', (e) => {
-                    e.preventDefault(); // 防止點擊事件傳播到 <a> 標籤
-                    const isExpanded = articlesContainer.style.display !== 'none';
-                    articlesContainer.style.display = isExpanded ? 'none' : 'block';
-                    toggleControl.innerHTML = isExpanded
-                        ? `<span style="float: right;"><span style="display: inline-block; width: 20px; text-align: center;">▼</span> 展開 ${articles.length - 1} 個更新</span>`
-                    : `<span style="float: right;"><span style="display: inline-block; width: 20px; text-align: center;">▲</span> 縮小</span>`;
-                });
-
-                // 將 toggleControl 添加到第一個更新的 <a> 標籤中
-                const firstArticleLink = firstArticle.querySelector('a');
-                firstArticleLink.appendChild(toggleControl);
-
-                container.appendChild(firstArticle);
-                container.appendChild(articlesContainer);
-            } else {
-                container.appendChild(firstArticle);
-            }
-
-            artistCard.parentNode.replaceChild(container, artistCard);
+          userProfile.innerHTML=`
+                    <div>
+                        <span class="fancy-image">
+                            <picture class="fancy-image__picture">
+                                <img class="fancy-image__image" src=${userIcon} loading="lazy" style="width: 100%; border-radius: 50%;">
+                            </picture>
+                        </span>
+                    </div>`;
+          article.prepend(userProfile);
+          parentElement.prepend(article);
         }
     }
 
-    processArticle(article, artistInfo) {
-        const clonedArticle = article.cloneNode(true);
-        const existingFooter = clonedArticle.querySelector('footer');
-        if (existingFooter) {
-            existingFooter.remove();
-        }
-        clonedArticle.style.position = 'relative';
-        const clonedArtistInfo = artistInfo.cloneNode(true);
-        clonedArtistInfo.style.cssText = `
-            position: absolute;
-            bottom: 30px;
-            left: 0;
-            z-index: 2;
-        `;
-        clonedArticle.appendChild(clonedArtistInfo);
-        return clonedArticle;
-    }
+  sortArticlesByDatetime() {
+    const articles = Array.from(document.querySelectorAll('article'));
+    articles.sort((a, b) => {
+        const timeA = a.querySelector('time') ? a.querySelector('time').getAttribute('datetime') : '';
+        const timeB = b.querySelector('time') ? b.querySelector('time').getAttribute('datetime') : '';
 
-    async processQueue() {
-        while (this.queue.length > 0) {
-            const batch = this.queue.splice(0, this.batchSize);
-            for (let card of batch) {
-                const articles = await this.fetchUpdateArticles(card.href);
-                try{
-                    await this.replaceArtistCard(card, articles);
-                    document.title = "[🈱favoritesReading]";
-                }catch(e){
-                    document.title = "[🈲waitForApi]";
-                }
-            }
-        }
-        document.title = "[🈵pageDone!]";
-    }
+        return new Date(timeB) - new Date(timeA);
+    });
+
+    const container = articles[0].parentElement;
+    articles.forEach(article => {
+        container.appendChild(article);
+    });
+}
+
+      async processQueue() {
+          while (this.queue.length > 0) {
+              const card = this.queue.shift();
+              try {
+                  const articles = await this.fetchUpdateArticles(card.href);
+                  await this.replaceArtistCard(card, articles);
+                  document.title = "[🈱favoritesReading]";
+              } catch (e) {
+                  //console.error(`Error processing card ${card}:`, e);
+                  document.title = "[🈲waitForApi]";
+                  await this.delay(1000);
+              }
+          }
+          this.sortArticlesByDatetime();
+          document.title = "[🈵pageDone!]";
+      }
+
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
