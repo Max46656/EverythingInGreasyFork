@@ -3,7 +3,7 @@
 // @name:ja      お気に入りの「新しいアート」更新
 // @name:en      Favorites"NewArt"Update
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.1.0
+// @version      1.1.1
 // @description  為何要一個一個點擊進入追蹤的作者頁面才能看到最新的更新？讓這個腳本為你代勞。支援Kemono/Coomer。
 // @description:ja それぞれのフォローアーティストのページに一つずつクリックして最新の更新を見る必要がありますか？このスクリプトに任せてください。Kemono/Coomerに対応しています。
 // @description:en Why click into each followed artist's page one by one to see the latest updates? Let this script do it for you. Suppper Kemono/Coomer.
@@ -36,10 +36,19 @@ class ArtistUpdateCatcher {
     }
 
     loadArtistCards() {
-        this.artistCards = document.querySelectorAll('a.user-card');
+        this.artistCards = Array.from(document.querySelectorAll('a.user-card'));
+
+        const invalidCards = this.artistCards.filter(card => !card.href);
+
+        if (invalidCards.length > 0) {
+            console.warn(`${invalidCards.length}項作者卡尚未載入完成，重試中`);
+            setTimeout(() => this.loadArtistCards(), 1000);
+            return;
+        }
+
         this.queue = Array.from(this.artistCards);
-        if (this.queue.length > 0) {
-            this.start();
+        if (this.queue.length > 0 &&invalidCards.length == 0) {
+            this.processQueue();
         }
     }
 
@@ -52,54 +61,54 @@ class ArtistUpdateCatcher {
     }
 
     async fetchUpdateArticles(url) {
-    const articles = [];
-    const isKemono = url.includes('kemono');
-    let cleanUrl = url.replace(/^.*(?=\/[^\/]+\/user\/[^\/]+)/, "");
-    let creatorPostsApi,creatorInfoApi;
-    if(isKemono){
-        creatorPostsApi ='https://kemono.su/api/v1' + cleanUrl + '?o=0';
-        creatorInfoApi = 'https://kemono.su/api/v1' + cleanUrl + '/profile?o=0';
-    }else{
-        creatorPostsApi ='https://coomer.su/api/v1' + cleanUrl + '?o=0';
-        creatorInfoApi = 'https://coomer.su/api/v1' + cleanUrl + '/profile?o=0';
-    }
-    try {
-        const postsResponse = await fetch(creatorPostsApi);
+        const articles = [];
+        const isKemono = url.includes('kemono');
+        let cleanUrl = url.replace(/^.*(?=\/[^\/]+\/user\/[^\/]+)/, "");
+        let creatorPostsApi,creatorInfoApi;
+        if(isKemono){
+            creatorPostsApi ='https://kemono.su/api/v1' + cleanUrl + '?o=0';
+            creatorInfoApi = 'https://kemono.su/api/v1' + cleanUrl + '/profile?o=0';
+        }else{
+            creatorPostsApi ='https://coomer.su/api/v1' + cleanUrl + '?o=0';
+            creatorInfoApi = 'https://coomer.su/api/v1' + cleanUrl + '/profile?o=0';
+        }
+        try {
+            const postsResponse = await fetch(creatorPostsApi);
             if (!postsResponse.ok) {
                 await this.delay(2000);
-                return this.fetchUpdateArticles(url); // 重新嘗試
+                return this.fetchUpdateArticles(url);
             }
-        const posts = await postsResponse.json();
+            const posts = await postsResponse.json();
 
-        if (posts.length === 0) {
-            return articles;
-        }
+            if (posts.length === 0) {
+                return articles;
+            }
 
-        const firstPostTime = new Date(posts[0].published || posts[0].added).getTime();
-        const seventyTwoHoursLater = firstPostTime - this.timeRange;
+            const firstPostTime = new Date(posts[0].published || posts[0].added).getTime();
+            const seventyTwoHoursLater = firstPostTime - this.timeRange;
 
-        const newerPosts = posts.filter(post => {
-            const postTime = new Date(post.published || post.added).getTime();
-            return postTime >= seventyTwoHoursLater;
-        });
+            const newerPosts = posts.filter(post => {
+                const postTime = new Date(post.published || post.added).getTime();
+                return postTime >= seventyTwoHoursLater;
+            });
 
-        const infoResponse = await fetch(creatorInfoApi);
-        const info = await infoResponse.json();
-        const userName = info.name;
+            const infoResponse = await fetch(creatorInfoApi);
+            const info = await infoResponse.json();
+            const userName = info.name;
 
-      for (let post of newerPosts) {
-            const articleId = post.id;
-            const service = post.service;
-            const user = post.user;
-            const title = post.title;
-            const filePath = post.file ? post.file.path : '';
-            const timestamp = post.published || post.added;
-            const attachmentsCount = post.attachments ? post.attachments.length : 0;
+            for (let post of newerPosts) {
+                const articleId = post.id;
+                const service = post.service;
+                const user = post.user;
+                const title = post.title;
+                const filePath = post.file ? post.file.path : '';
+                const timestamp = post.published || post.added;
+                const attachmentsCount = post.attachments ? post.attachments.length : 0;
 
-            const href = `/${service}/user/${user}/post/${articleId}`;
-            const imgSrc = `${filePath}`;
+                const href = `/${service}/user/${user}/post/${articleId}`;
+                const imgSrc = `${filePath}`;
 
-            const articleHtml = `
+                const articleHtml = `
                 <article class="post-card post-card--preview" data-id=${articleId} data-service=${service} data-user=${user} style="position: relative; overflow: hidden; border-radius: 2%;font-size: larger;">
                   <a class="fancy-link fancy-link--kemono" href=${href}>
                       <header class="post-card__header">${userName}</header>
@@ -123,35 +132,37 @@ class ArtistUpdateCatcher {
                   </a>
                   <time class="timestamp" datetime=${timestamp}></time>
               </article>`;
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(articleHtml, 'text/html');
-            const articleElement = doc.body.firstChild;
-            articles.push(articleElement);
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(articleHtml, 'text/html');
+                const articleElement = doc.body.firstChild;
+                articles.push(articleElement);
+            }
+        } catch (error) {
+            //console.error(`獲取字作品 ${url} 失敗:`, error);
         }
-    } catch (error) {
-        //console.error(`Failed to fetch articles from ${url}:`, error);
+        return articles;
     }
-    return articles;
-}
 
 
-      async replaceArtistCard(artistCard, articles) {
+    async replaceArtistCard(artistCard, articles) {
+        const parentElement = document.querySelector('div.card-list__items');
+        if(!parentElement.contains(artistCard)){
+            return;
+        }
         const userId = artistCard.getAttribute("data-id");
         const service = artistCard.getAttribute("data-service");
         const userName = artistCard.querySelector(".user-card__name").textContent.trim();
         const userIcon = artistCard.querySelector(".fancy-image__image").src;
         const userHref = `/${service}/user/${userId}`;
 
-        const parentElement = artistCard.parentElement;
         parentElement.removeChild(artistCard);
 
         for (const article of articles) {
-
             const userProfile = document.createElement("a");
-          userProfile.setAttribute("data-id",userId);
-          userProfile.setAttribute("data-service",service);
-          userProfile.setAttribute("href",userHref);
-          userProfile.style = `
+            userProfile.setAttribute("data-id",userId);
+            userProfile.setAttribute("data-service",service);
+            userProfile.setAttribute("href",userHref);
+            userProfile.style = `
               position: absolute;
               top: 8%;
               left: 1%;
@@ -164,7 +175,7 @@ class ArtistUpdateCatcher {
               width: 15%;
               height:min-content`;
 
-          userProfile.innerHTML=`
+            userProfile.innerHTML=`
                     <div>
                         <span class="fancy-image">
                             <picture class="fancy-image__picture">
@@ -172,51 +183,113 @@ class ArtistUpdateCatcher {
                             </picture>
                         </span>
                     </div>`;
-          article.prepend(userProfile);
-          parentElement.prepend(article);
+            article.prepend(userProfile);
+            parentElement.prepend(article);
         }
     }
 
-  sortArticlesByDatetime() {
-    const articles = Array.from(document.querySelectorAll('article'));
-    articles.sort((a, b) => {
-        const timeA = a.querySelector('time') ? a.querySelector('time').getAttribute('datetime') : '';
-        const timeB = b.querySelector('time') ? b.querySelector('time').getAttribute('datetime') : '';
+    sortArticlesByDatetime() {
+        const articles = Array.from(document.querySelectorAll('article'));
+        articles.sort((a, b) => {
+            const timeA = a.querySelector('time') ? a.querySelector('time').getAttribute('datetime') : '';
+            const timeB = b.querySelector('time') ? b.querySelector('time').getAttribute('datetime') : '';
 
-        return new Date(timeB) - new Date(timeA);
-    });
+            return new Date(timeB) - new Date(timeA);
+        });
 
-    const container = articles[0].parentElement;
-    articles.forEach(article => {
-        container.appendChild(article);
-    });
-}
+        const container = articles[0].parentElement;
+        articles.forEach(article => {
+            container.appendChild(article);
+        });
+    }
 
-      async processQueue() {
-          while (this.queue.length > 0) {
-              const card = this.queue.shift();
-              try {
-                  const articles = await this.fetchUpdateArticles(card.href);
-                  await this.replaceArtistCard(card, articles);
-                  document.title = "[🈱favoritesReading]";
-              } catch (e) {
-                  //console.error(`Error processing card ${card}:`, e);
-                  document.title = "[🈲waitForApi]";
-                  await this.delay(1000);
-              }
-          }
-          this.sortArticlesByDatetime();
-          document.title = "[🈵pageDone!]";
-      }
+    async processQueue(){
+        while (this.queue.length > 0) {
+            const card = this.queue.shift();
+            try {
+                if (!card.href) {
+                    throw new Error("Card href 為null");
+                }
+
+                const articles = await this.fetchUpdateArticles(card.href);
+                await this.replaceArtistCard(card, articles);
+                document.title = "[🈱favoritesReading]";
+            } catch (e){
+                console.error(`${card}錯誤：`, e);
+                document.title = "[🈲waitForApi]";
+                if (card) this.queue.push(card);
+                await this.delay(1000);
+            }
+        }
+        this.sortArticlesByDatetime();
+        document.title = "[🈵pageDone!]";
+    }
+
 
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    start() {
-        this.processQueue();
+}
+
+class PageIndicatorObserver {
+    constructor(selector, checkInterval = 1000) {
+        this.selector = selector;
+        this.checkInterval = checkInterval;
+        this.pageIndicator = null;
+        this.retryInterval = null;
+        this.observer = null;
+        this.init();
+    }
+
+    init() {
+        this.retryInterval = setInterval(() => {
+            this.pageIndicator = document.querySelector(this.selector);
+            if (this.pageIndicator) {
+                clearInterval(this.retryInterval);
+                this.setupObserver();
+            } else {
+                console.log(`${this.selector} 頁數顯示器未獲取`);
+            }
+        }, this.checkInterval);
+    }
+
+    setupObserver() {
+        if (!this.pageIndicator)
+            return;
+
+        console.log("pageIndicator:", this.pageIndicator);
+
+        this.observer = new MutationObserver((mutationsList) => {
+            mutationsList.forEach((mutation) => {
+                //console.log("翻頁偵測:，", this.pageIndicator.textContent);
+                this.stop();
+                location.reload();
+            });
+        });
+
+        const observerOptions = {
+          childList: true,
+          subtree: true,
+        };
+
+        this.observer.observe(this.pageIndicator, observerOptions);
+    }
+
+    stop() {
+        if (this.retryInterval) {
+            clearInterval(this.retryInterval);
+            this.retryInterval = null;
+        }
+        if (this.observer) {
+            this.observer.disconnect();
+            this.observer = null;
+        }
+        //console.log("停止觀察");
     }
 }
 
 new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
+
+new PageIndicatorObserver("#paginator-top", 500);
