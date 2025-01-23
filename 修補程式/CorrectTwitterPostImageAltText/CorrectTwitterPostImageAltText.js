@@ -71,7 +71,7 @@ class AltTextUpdater {
         const tweetImgContainers = document.querySelectorAll(
           `${this.selectors.tweetWithImg}, ${this.selectors.photoWithTweet}`
         );
-        tweetsWithImg.forEach((tweet) => {
+        tweetImgContainers.forEach((tweet) => {
             this.updateAltText(tweet);
         });
     }
