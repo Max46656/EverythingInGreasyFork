@@ -9,7 +9,7 @@
 // @name:ko      Twitter 게시물의 정확한 이미지 대체 텍스트
 
 // @namespace    https://github.com/Max46656
-// @version      1.0.1
+// @version      1.0.2
 // @author       Max
 // @match        https://twitter.com/*
 // @match        https://x.com/*
@@ -25,14 +25,17 @@
 // @description:de  Aktualisiert den alternativen Text für Twitter-Bilder, um Benutzername, Konto und Domain für eine bessere Erkennung einzuschließen.
 // @description:it  Aggiorna il testo alternativo delle immagini su Twitter per includere nome utente, account e dominio per una migliore identificazione.
 // @description:ko  Twitter 게시물의 이미지 대체 텍스트를 사용자 이름, 계정 및 도메인을 포함하여 업데이트하여 인식률을 높입니다.
+// @downloadURL https://update.greasyfork.org/scripts/500416/%E6%AD%A3%E7%A2%BA%E7%9A%84Twitter%E8%B2%BC%E6%96%87%E5%9C%96%E7%89%87%E6%9B%BF%E4%BB%A3%E6%96%87%E5%AD%97.user.js
+// @updateURL https://update.greasyfork.org/scripts/500416/%E6%AD%A3%E7%A2%BA%E7%9A%84Twitter%E8%B2%BC%E6%96%87%E5%9C%96%E7%89%87%E6%9B%BF%E4%BB%A3%E6%96%87%E5%AD%97.meta.js
 // ==/UserScript==
 
 class AltTextUpdater {
     constructor() {
         this.selectors = {
-            tweetWithImg: "article:has(img)",
+            //tweetWithImg: "article:has(img)",
             photoWithTweet: "div[aria-labelledby='modal-header']",
-            textContainer: "div.css-175oi2r.r-1awozwy.r-18u37iz.r-1wbh5a2.r-dnmrzs span.css-1jxf684.r-bcqeeo.r-1ttztb7.r-qvutc0.r-poiln3"
+            userName: "div.css-175oi2r.r-1awozwy.r-18u37iz.r-1wbh5a2.r-dnmrzs span.css-1jxf684.r-bcqeeo.r-1ttztb7.r-qvutc0.r-poiln3 span",
+            account:"div.css-146c3p1.r-dnmrzs.r-1udh08x.r-1udbk01.r-3s2u2q.r-bcqeeo.r-1ttztb7.r-qvutc0.r-37j5jr.r-a023e6.r-rjixqe.r-16dba41.r-18u37iz.r-1wvb978 span"
         };
 
         this.langPatterns = {
@@ -69,7 +72,8 @@ class AltTextUpdater {
 
     updateTweetsWithImages() {
         const tweetImgContainers = document.querySelectorAll(
-          `${this.selectors.tweetWithImg}, ${this.selectors.photoWithTweet}`
+          //`${this.selectors.tweetWithImg}, ${this.selectors.photoWithTweet}`
+          `${this.selectors.photoWithTweet}`
         );
         tweetImgContainers.forEach((tweet) => {
             this.updateAltText(tweet);
@@ -80,14 +84,14 @@ class AltTextUpdater {
         const lang = this.detectLanguage();
         const { imgAlt, connector,domain} = this.langPatterns[lang];
         const img = tweet.querySelector(`img[alt="${imgAlt}"]`);
-        //console.log(img);
 
         if (img) {
-            const targetSpans = tweet.querySelectorAll(this.selectors.textContainer);
-            const spansWithText = Array.from(targetSpans).filter(span => span.textContent);
-            const userName = spansWithText[0];
-            const account = spansWithText[2];
-            img.setAttribute("alt", `${userName.textContent}(${account.textContent})${connector}${imgAlt}${domain}`);
+            const userNameSpan = tweet.querySelector(this.selectors.userName);
+            const accountSpan = tweet.querySelector(this.selectors.account);
+            const userName = userNameSpan.textContent;
+            const account = accountSpan.textContent;
+            //console.log(userNameSpan.textContent,accountSpan.textContent);
+            img.setAttribute("alt", `${userName}(${account})${connector}${imgAlt}${domain}`);
         }
     }
         detectLanguage() {
