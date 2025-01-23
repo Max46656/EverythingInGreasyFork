@@ -20,3 +20,4 @@
 
 ## 修補程式
 - [脆的千喜問題](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E4%BF%AE%E8%A3%9C%E7%A8%8B%E5%BC%8F/ThreadsS1KProblem)
+- [更正Twitter圖片的替代文字](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E4%BF%AE%E8%A3%9C%E7%A8%8B%E5%BC%8F/CorrectTwitterPostImageAltText)
