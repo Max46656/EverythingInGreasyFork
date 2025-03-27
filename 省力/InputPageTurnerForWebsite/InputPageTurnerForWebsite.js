@@ -6,7 +6,7 @@
 // @name:ko      키보드 및 마우스 휠 페이지 전환기
 // @name:es      Navegador de Páginas con Teclado y Rueda del Ratón
 // @namespace    https://github.com/Max46656
-// @version      1.2.6
+// @version      1.2.7
 // @description  使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:zh-TW 使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:ja マウスホイールをスクロールするか、キーを押すことで、簡単にページを上下に切り替えることができます。
@@ -19,15 +19,15 @@
 // @grant    GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM.info
 // @license MPL2.0
-// @downloadURL https://update.greasyfork.org/scripts/494851/%E6%8C%89%E9%8D%B5%E8%88%87%E6%BB%91%E9%BC%A0%E6%BB%BE%E8%BC%AA%E7%BF%BB%E9%A0%81%E5%99%A8.user.js
-// @updateURL https://update.greasyfork.org/scripts/494851/%E6%8C%89%E9%8D%B5%E8%88%87%E6%BB%91%E9%BC%A0%E6%BB%BE%E8%BC%AA%E7%BF%BB%E9%A0%81%E5%99%A8.meta.js
 // ==/UserScript==
 
 
 class PageButtonManager {
     constructor() {
         this.pageButtonsMap = {};
+        this.domain = window.location.hostname;
         this.loadPageButtons();
     }
 
@@ -39,15 +39,287 @@ class PageButtonManager {
         await GM_setValue('pageButtonsMap', this.pageButtonsMap);
     }
 
-    getButtonsForDomain(domain) {
-        return this.pageButtonsMap[domain] || {
-            nextButton: '.next',
-            prevButton: '.prev'
-        };
+    getButtonsByCommonCases() {
+        let buttonsByUserSetting = this.getButtonsByDomain();
+        if (buttonsByUserSetting !== null) {
+            return buttonsByUserSetting;
+        }
+        let nextSelectorList = [
+            "a.next",
+            "a#next",
+            ".next>a",
+            ".next>button",
+            "a[alt=next]",
+            ".page-next>a",
+            "a.next_page",
+            "#next_page",
+            ".curPage+a",
+            ".nextPage",
+            ".pagination-next>a",
+            ".pagination>.active+a",
+            "a[data-pagination=next]",
+            ".pageButtonsCurrent+a",
+            "a[class*=nextpage]",
+            "li.page-current+li>a",
+            "[class^=pag] a[rel=next]",
+            "[class^=Pag] [aria-label=next]",
+            "[class^=Pag] [aria-label=Next]",
+            "[aria-label='Next Page']",
+            "[aria-label='Next page']",
+            "[aria-label$='next page']",
+            ".pagination-nav__item--next>a",
+            "a.pageright",
+            ".pager_on+a.pager",
+            ".pager__next>a",
+            ".page-numbers.current+a",
+            "a.page-numbers.next",
+            "body [class*=paginat] li.active+span+li>a",
+            "body [class*=paginat] li.active+li>a",
+            "body [class^=pag] .current+a",
+            "body [class*=-pag] .current+a",
+            ".page_current+a",
+            "input[value='next']",
+            "input[value='Next page']",
+            "input[value='下一頁']",
+            "input[value='下一頁']",
+            "a#pb_next",
+            "a#rightFix",
+            "a#btnPreGn",
+            "a.page-next",
+            "a.pages-next",
+            "a.page.right",
+            ".paging>.active+.item",
+            ".pg_area>em+a",
+            "button.next:not([disabled])",
+            ".btn_next:not([disabled])",
+            ".btn-next:not([disabled])",
+            "a#linkNext",
+            "body a[class*=page__next]",
+            "body [class*=pager]>a.next",
+            "body [class*=pagination-next]>a",
+            "body [class*=pagination-next]>button",
+            "body [class*=page--current]+li>a",
+            "body [class*=Pages]>.curr+a",
+            "body [class*=page]>.cur+a",
+            "body [class*=paginat] [class*=current]+li>a",
+            "body [class*=paginat] [class*=next-next]",
+            "body [class*=paginat] [class*=next]",
+            "body [class*=paginat] [class*=right]",
+            ".page>em+a",
+            "[name*=nextPage]",
+            "a:has(polyline[points='1,2 5,6 9,2'])", //箭頭polyline
+            //以下未測試
+            "a.nav-next:not([disabled])",
+            "button.pagination-arrow-right",
+            "[data-page-direction='next']",
+            ".carousel-control-next",
+            "a.pagination-link[rel='next']",
+            ".nav-item.next-item",
+            "button.btn-arrow-right:not([disabled])",
+            // ARIA 無障礙設計
+            "[aria-label='Go to next']",
+            "[role='button'][aria-label='Next page']:not([aria-disabled='true'])",
+            "[aria-label='下一頁面']",
+            "[aria-label='次のページ']",
+            "[aria-label='Página siguiente']",
+            // Icon
+            ".next-btn > svg[class*='arrow-right']",
+            "button > i[class*='chevron-right']:not([disabled])",
+            "a > span[class*='icon-forward']",
+            // XPath：文字與結構檢查
+            "//button[contains(@class, 'Page')][text()='Next']",
+            "//button[contains(@class, 'page')][text()='next']",
+            "//a[contains(@class, 'next') and not(@aria-disabled='true')]",
+            "//button[contains(text(), '下一頁')]",
+            "//a[contains(text(), '次へ')]",
+            "//div[contains(@class, 'pagination')]//a[text()='>']",
+            "//button[contains(@class, 'btn') and text()='Suivant']", // 法文
+            "//a[contains(@class, 'nav') and text()='Siguiente']", // 西班牙文
+            "//li[contains(@class, 'current')]/following-sibling::li[1]/a", //可能有問題
+        ];
+        let prevSelectorList = [
+            "a.previous",
+            "a.prev",
+            "a#prev",
+            ".prev>a",
+            ".prev>button",
+            "a[alt=prev]",
+            ".page-prev>a",
+            "a.prev_page",
+            "#prev_page",
+            "//*[contains(@class, 'pag')]//*[@class='curPage']/preceding-sibling::*[1]/a", // 原 .curPage~a
+            ".prevPage",
+            ".pagination-prev>a",
+            "//*[contains(@class, 'pagination')]//*[@class='active']/preceding-sibling::*[1]/a", // 原 .pagination>.active~a
+            "a[data-pagination=prev]",
+            "//*[contains(@class, 'pag')]//*[@class='pageButtonsCurrent']/preceding-sibling::*[1]/a", // 原 .pageButtonsCurrent~a
+            "a[class*=prevpage]",
+            "//li[contains(@class, 'page-current')]/preceding-sibling::li[1]/a", // 原 li.page-current~li>a
+            "[class^=pag] a[rel=prev]",
+            "[class^=Pag] [aria-label=prev]",
+            "[class^=Pag] [aria-label=Prev]",
+            "[aria-label='Previous Page']",
+            "[aria-label='Previous page']",
+            "[aria-label$='previous page']",
+            ".pagination-nav__item--next>a",
+            "a.pageleft",
+            "//*[contains(@class, 'pager_on')]//*[@class='pager']/preceding-sibling::*[1]/a", // 原 .pager_on~a.pager
+            ".pager__prev>a",
+            "//*[contains(@class, 'page-numbers')]//*[@class='current']/preceding-sibling::*[1]/a", // 原 .page-numbers.current~a
+            "a.page-numbers.prev",
+            "//*[contains(@class, 'paginat')]//li[contains(@class, 'active')]/preceding-sibling::span[1]/preceding-sibling::li[1]/a", // 原 body [class*=paginat] li.active~span~li>a
+            "//*[contains(@class, 'paginat')]//li[contains(@class, 'active')]/preceding-sibling::li[1]/a", // 原 body [class*=paginat] li.active~li>a
+            "//body/*[contains(@class, 'pag')]//*[@class='current']/preceding-sibling::*[1]/a", // 原 body [class^=pag] .current~a
+            "//body/*[contains(@class, '-pag')]//*[@class='current']/preceding-sibling::*[1]/a", // 原 body [class*=-pag] .current~a
+            "//*[contains(@class, 'page_current')]/preceding-sibling::*[1]/a", // 原 .page_current~a
+            "input[value='prev']",
+            "input[value='Previous page']",
+            "input[value='上一頁']",
+            "a#pb_prev",
+            "a#leftFix",
+            "a#btnPreGp",
+            "a.page-prev",
+            "a.pages-prev",
+            "a.page.left",
+            "//*[contains(@class, 'paging')]//*[@class='active']/preceding-sibling::*[1]/*[contains(@class, 'item')]", // 原 .paging>.active~.item
+            "//*[contains(@class, 'pg_area')]//em/preceding-sibling::*[1]/a", // 原 .pg_area>em~a
+            "button.prev:not([disabled])",
+            ".btn_prev:not([disabled])",
+            ".btn-prev:not([disabled])",
+            "a#linkPrev",
+            "body a[class*=page__prev]",
+            "body [class*=pager]>a.prev",
+            "body [class*=pagination-prev]>a",
+            "body [class*=pagination-prev]>button",
+            "//body/*[contains(@class, 'page--current')]/preceding-sibling::li[1]/a", // 原 body [class*=page--current]~li>a
+            "//body/*[contains(@class, 'Pages')]//*[@class='curr']/preceding-sibling::*[1]/a", // 原 body [class*=Pages]>.curr~a
+            "//body/*[contains(@class, 'page')]//*[@class='cur']/preceding-sibling::*[1]/a", // 原 body [class*=page]>.cur~a
+            "//body/*[contains(@class, 'paginat')]//*[@class and contains(@class, 'current')]/preceding-sibling::li[1]/a", // 原 body [class*=paginat] [class*=current]~li>a
+            "body [class*=paginat] [class*=prev-prev]",
+            "body [class*=paginat] [class*=prev]",
+            "body [class*=paginat] [class*=left]",
+            "//*[contains(@class, 'page')]//em/preceding-sibling::*[1]/a", // 原 .page>em~a
+            "[name*=prevPage]",
+            "a:has(polyline[points='1,2 5,6 9,2'])", //箭頭polyline
+            //以下未測試
+            "a.nav-prev:not([disabled])",
+            "button.pagination-arrow-left",
+            "[data-page-direction='prev']",
+            ".carousel-control-prev",
+            "a.pagination-link[rel='prev']",
+            ".nav-item.prev-item",
+            "button.btn-arrow-left:not([disabled])",
+            // ARIA 無障礙設計
+            "[aria-label='Go to previous']",
+            "[role='button'][aria-label='Previous page']:not([aria-disabled='true'])",
+            "[aria-label='上一頁面']",
+            "[aria-label='前のページ']",
+            "[aria-label='Página anterior']", // 西班牙文
+            // Icon
+            ".prev-btn > svg[class*='arrow-left']",
+            "button > i[class*='chevron-left']:not([disabled])",
+            "a > span[class*='icon-back']",
+            // XPath：文字與結構檢查
+            "//button[contains(@class, 'Page')][text()='Previous']",
+            "//button[contains(@class, 'page')][text()='previous']",
+            "//a[contains(@class, 'prev') and not(@aria-disabled='true')]",
+            "//button[contains(text(), '上一頁')]",
+            "//a[contains(text(), '前へ')]",
+            "//div[contains(@class, 'pagination')]//a[text()='<']",
+            "//button[contains(@class, 'btn') and text()='Précédent']", // 法文
+            "//a[contains(@class, 'nav') and text()='Anterior']", // 西班牙文
+            "//li[contains(@class, 'current')]/preceding-sibling::li[1]/a",
+        ];
+        let prevButton;
+        let prevSelector;
+        for (let selector of prevSelectorList) {
+            if (selector.startsWith('//')) {
+                let result = document.evaluate(selector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                if (result.snapshotLength >= 1) {
+                    prevButton = result.snapshotItem(0);
+                    console.log("prev XPathSelector:",selector);
+                    prevSelector = selector;
+                    break;
+                }
+            } else {
+                let elements = document.querySelectorAll(selector);
+                if (elements.length >= 1) {
+                    prevButton = elements[0];
+                    console.log("prev CSSSelector:",selector);
+                    prevSelector = selector;
+                    break;
+                }
+            }
+        }
+
+        let nextButton;
+        let nextSelcetor;
+        for (let selector of nextSelectorList) {
+            if (selector.startsWith('//')) {
+                let result = document.evaluate(selector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                if (result.snapshotLength >= 1) {
+                    nextButton = result.snapshotItem(result.snapshotLength - 1);
+                    console.log("next XPathSelector:",selector);
+                    nextSelcetor = selector;
+                    break;
+                }
+            } else {
+                let elements = document.querySelectorAll(selector);
+                if (elements.length >= 1) {
+                    nextButton = elements[elements.length - 1];
+                    console.log("next XPathSelector:",selector);
+                    nextSelcetor = selector;
+                    break;
+                }
+            }
+        }
+        console.log("prevButton,nextButton",[prevButton,nextButton]);
+        if(prevButton == null && nextButton == null){
+            console.error(`${GM_info.script.name} : 該網站不使用常見元素，請手動設定CSS或XPath選取器以設定上下頁元素`)
+        }
+        return {"prevSelector":prevSelector,"nextSelcetor":nextSelcetor,"prev":prevButton,"next":nextButton};
     }
 
-    setButtonsForDomain(domain, buttons) {
-        this.pageButtonsMap[domain] = buttons;
+    getButtonsByDomain() {
+        let pageButtons = {"prev":null,"next":null};
+        if(this.pageButtonsMap[this.domain]===undefined){
+            return null;
+        }
+        const prevSelector = this.pageButtonsMap[this.domain].prevButton;
+        const nextSelector = this.pageButtonsMap[this.domain].nextButton;
+        if (prevSelector.startsWith('//')) {
+            let xPathResult = document.evaluate(prevSelector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+            if (xPathResult.snapshotLength >= 0) {
+                pageButtons.prev = xPathResult.snapshotItem(0);
+            }
+        } else {
+            let elements = document.querySelectorAll(prevSelector);
+            if (elements.length >= 0) {
+                pageButtons.prev = elements[0];
+            }
+        }
+
+        if (nextSelector.startsWith('//')) {
+            let xPathResult = document.evaluate(nextSelector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+            if (xPathResult.snapshotLength >= 0) {
+                pageButtons.next = xPathResult.snapshotItem(xPathResult.snapshotLength - 1);
+            }
+        } else {
+            let elements = document.querySelectorAll(nextSelector);
+            if (elements.length >= 0) {
+                pageButtons.next = elements[elements.length - 1];
+            }
+        }
+
+        return pageButtons;
+    }
+
+    getSelectorByDomain(domain){
+        return this.pageButtonsMap[domain];
+    }
+
+    setButtonsForDomain(buttons) {
+        this.pageButtonsMap[this.domain] = buttons;
         this.savePageButtons();
     }
 
@@ -57,14 +329,13 @@ class PageButtonManager {
 }
 
 class NavigationPaginationWithInput {
-   constructor(buttonManager) {
+    constructor(buttonManager) {
         this.buttonManager = buttonManager;
-        this.pageButtons = this.buttonManager.getButtonsForDomain(self.location.hostname);
-        console.log(this.pageButtons);
         this.init();
     }
 
     async init() {
+        //this.buttonManager.getButtonsByCommonCases();
         await this.loadSettings();
         this.setEventListeners();
     }
@@ -90,19 +361,17 @@ class NavigationPaginationWithInput {
         await GM_setValue('prevPageKey', this.prevPageKey);
     }
 
-    async toNextPage() {
-        const pageButtons = document.querySelectorAll(this.pageButtons.nextButton);
-        let nextPageButton = pageButtons[pageButtons.length-1];
-        nextPageButton.click();
+    toNextPage() {
+        this.pageButtons = this.buttonManager.getButtonsByCommonCases();
+        this.pageButtons.next.click();
     }
 
-    async toPrevPage() {
-        const prevPageButton = document.querySelectorAll(this.pageButtons.prevButton)[0];
-      console.log(this.pageButtons.prevButton,prevPageButton);
-        prevPageButton.click();
+    toPrevPage() {
+        this.pageButtons = this.buttonManager.getButtonsByCommonCases();
+        this.pageButtons.prev.click();
     }
 
-    async setEventListeners() {
+    setEventListeners() {
         this.scrollHandler = () => this.handleScroll();
         this.keydownHandler = (event) => this.handleKeydown(event);
 
@@ -117,11 +386,11 @@ class NavigationPaginationWithInput {
         const isBottom = document.documentElement.scrollHeight - self.innerHeight - self.pageYOffset <= scrollThreshold;
         if (isBottom) {
             this.toNextPage();
-            console.log("滾輪下一頁");
+            //console.log("滾輪下一頁");
         }
         if (self.pageYOffset <= 0) {
             this.toPrevPage();
-            console.log("滾輪上一頁");
+            //console.log("滾輪上一頁");
         }
     }
 
@@ -130,11 +399,11 @@ class NavigationPaginationWithInput {
             if (event.key.toUpperCase() === this.nextPageKey.toUpperCase()) {
                 event.preventDefault();
                 this.toNextPage();
-                console.log("快捷鍵下一頁");
+                //console.log("快捷鍵下一頁");
             } else if (event.key.toUpperCase() === this.prevPageKey.toUpperCase()) {
                 event.preventDefault();
                 this.toPrevPage();
-                console.log("快捷鍵上一頁");
+                //console.log("快捷鍵上一頁");
             }
         }
     }
@@ -197,7 +466,7 @@ class MenuManager {
                 currentButtons: '現在のボタン：',
                 enterNextButton: '次のページボタンのセレクタを入力してください：',
                 enterPrevButton: '前のページボタンのセレクタを入力してください：',
-                savedDomains: '保存されたドメイン：',
+                savedDomains: '儲存されたドメイン：',
                 enterDomainToView: '表示するドメインを入力してください：',
                 enterModifierKey: '修飾キーを入力してください（Control、Alt、Shift、CapsLock）：',
                 enterNextPageKey: '次のページキーを入力してください：',
@@ -241,7 +510,7 @@ class MenuManager {
                 invalidInput: 'Entrada inválida, por favor intente de nuevo.'
             }
         };
-        return labels[userLang] || labels['en'];
+        return labels[userLang] || labels.en;
     }
 
     initMenu() {
@@ -256,26 +525,42 @@ class MenuManager {
 
     async viewAndModifyButtons() {
         const labels = this.getMenuLabels();
-        const domain = prompt(labels.enterDomain, window.location.hostname);
-        if (domain) {
-            const currentButtons = this.buttonManager.getButtonsForDomain(domain);
-            alert(`${labels.currentButtons}\nNext: ${currentButtons.nextButton}\nPrev: ${currentButtons.prevButton}`);
-            const newNextButton = prompt(labels.enterNextButton, currentButtons.nextButton);
-            const newPrevButton = prompt(labels.enterPrevButton, currentButtons.prevButton);
+        //const domain = prompt(labels.enterDomain, window.location.hostname);
+        const domain = window.location.hostname;
+        if (domain !== null) {
+            const currentButtons = this.buttonManager.getSelectorByDomain(domain);
+            console.log(currentButtons);
+            let newPrevButton;
+            let newNextButton;
+            if(currentButtons !== undefined){
+                alert(`${labels.currentButtons}\nNext: ${currentButtons.nextButton}\nPrev: ${currentButtons.prevButton}`);
+                newNextButton = prompt(labels.enterNextButton, currentButtons.nextButton);
+                newPrevButton = prompt(labels.enterPrevButton, currentButtons.prevButton);
+            }else{
+                console.log( this.buttonManager.getButtonsByCommonCases());
+                const aotoSelcetor = this.buttonManager.getButtonsByCommonCases()
+                newNextButton = prompt(labels.enterNextButton, aotoSelcetor.nextSelcetor);
+                newPrevButton = prompt(labels.enterPrevButton, aotoSelcetor.prevSelector);
+            }
             if (newNextButton && newPrevButton) {
-                this.buttonManager.setButtonsForDomain(domain, { nextButton: newNextButton, prevButton: newPrevButton });
+                this.buttonManager.setButtonsForDomain({ nextButton: newNextButton, prevButton: newPrevButton });
                 alert(`Updated buttons for ${domain}`);
             }
+
         }
     }
 
     async showAllDomains() {
         const labels = this.getMenuLabels();
         const allDomains = this.buttonManager.getAllDomains();
-        const domain = prompt(`${labels.savedDomains}\n${allDomains.join('\n')}\n\n${labels.enterDomainToView}`);
+        const domain = prompt(`${labels.savedDomains}\n${allDomains.join('\n')}\n\n${labels.enterDomainToView}`,window.location.hostname);
         if (domain) {
-            const buttons = this.buttonManager.getButtonsForDomain(domain);
-            alert(`Buttons for domain ${domain}:\nNext: ${buttons.nextButton}\nPrev: ${buttons.prevButton}`);
+            const buttons = this.buttonManager.getSelectorByDomain(domain);
+            if(buttons){
+                alert(`Buttons Selcetor for this domain ${domain}:\nNext: ${buttons.nextButton}\nPrev: ${buttons.prevButton}`);
+            }else{
+                alert(`User Selcetor for this domain is undefined`);
+            }
         }
     }
 
