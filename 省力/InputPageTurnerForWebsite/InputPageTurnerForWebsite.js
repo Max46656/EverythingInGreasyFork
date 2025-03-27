@@ -6,7 +6,7 @@
 // @name:ko      키보드 및 마우스 휠 페이지 전환기
 // @name:es      Navegador de Páginas con Teclado y Rueda del Ratón
 // @namespace    https://github.com/Max46656
-// @version      1.2.7
+// @version      1.2.8
 // @description  使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:zh-TW 使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:ja マウスホイールをスクロールするか、キーを押すことで、簡単にページを上下に切り替えることができます。
@@ -81,7 +81,7 @@ class PageButtonManager {
             "input[value='next']",
             "input[value='Next page']",
             "input[value='下一頁']",
-            "input[value='下一頁']",
+            "input[value='下一页']",
             "a#pb_next",
             "a#rightFix",
             "a#btnPreGn",
@@ -237,7 +237,7 @@ class PageButtonManager {
                 let result = document.evaluate(selector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
                 if (result.snapshotLength >= 1) {
                     prevButton = result.snapshotItem(0);
-                    console.log("prev XPathSelector:",selector);
+                    console.log(`${GM_info.script.name}: prev XPathSelector:`,selector);
                     prevSelector = selector;
                     break;
                 }
@@ -245,7 +245,7 @@ class PageButtonManager {
                 let elements = document.querySelectorAll(selector);
                 if (elements.length >= 1) {
                     prevButton = elements[0];
-                    console.log("prev CSSSelector:",selector);
+                    console.log(`${GM_info.script.name}: prev CSSSelector:`,selector);
                     prevSelector = selector;
                     break;
                 }
@@ -259,7 +259,7 @@ class PageButtonManager {
                 let result = document.evaluate(selector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
                 if (result.snapshotLength >= 1) {
                     nextButton = result.snapshotItem(result.snapshotLength - 1);
-                    console.log("next XPathSelector:",selector);
+                    console.log(`${GM_info.script.name}: next XPathSelector:`,selector);
                     nextSelcetor = selector;
                     break;
                 }
@@ -267,13 +267,13 @@ class PageButtonManager {
                 let elements = document.querySelectorAll(selector);
                 if (elements.length >= 1) {
                     nextButton = elements[elements.length - 1];
-                    console.log("next XPathSelector:",selector);
+                    console.log(`${GM_info.script.name}: next XPathSelector:`,selector);
                     nextSelcetor = selector;
                     break;
                 }
             }
         }
-        console.log("prevButton,nextButton",[prevButton,nextButton]);
+        console.log(`${GM_info.script.name}: prevButton,nextButton`,[prevButton,nextButton]);
         if(prevButton == null && nextButton == null){
             console.error(`${GM_info.script.name} : 該網站不使用常見元素，請手動設定CSS或XPath選取器以設定上下頁元素`)
         }
@@ -342,15 +342,9 @@ class NavigationPaginationWithInput {
 
     async loadSettings() {
         this.togglePaginationMode = await GM_getValue('togglePaginationMode', 'key');
-        this.modifierKey = await GM_getValue('modifierKey', 'Control');
+        this.modifierKey = await GM_getValue('modifierKey', 'CapsLock');
         this.nextPageKey = await GM_getValue('nextPageKey', 'W');
         this.prevPageKey = await GM_getValue('prevPageKey', 'Q');
-        console.group("Settings");
-        console.log("togglePaginationMode",this.togglePaginationMode);
-        console.log("modifierKey",this.modifierKey);
-        console.log("nextPageKey",this.nextPageKey);
-        console.log("prevPageKey",this.prevPageKey);
-        console.groupEnd();
         this.saveSettings();
     }
 
@@ -359,6 +353,12 @@ class NavigationPaginationWithInput {
         await GM_setValue('modifierKey', this.modifierKey);
         await GM_setValue('nextPageKey', this.nextPageKey);
         await GM_setValue('prevPageKey', this.prevPageKey);
+        console.group(`${GM_info.script.name} Setting: `);
+        console.log("togglePaginationMode",this.togglePaginationMode);
+        console.log("modifierKey",this.modifierKey);
+        console.log("nextPageKey",this.nextPageKey);
+        console.log("prevPageKey",this.prevPageKey);
+        console.groupEnd();
     }
 
     toNextPage() {
@@ -466,7 +466,7 @@ class MenuManager {
                 currentButtons: '現在のボタン：',
                 enterNextButton: '次のページボタンのセレクタを入力してください：',
                 enterPrevButton: '前のページボタンのセレクタを入力してください：',
-                savedDomains: '儲存されたドメイン：',
+                savedDomains: '保存されたドメイン：',
                 enterDomainToView: '表示するドメインを入力してください：',
                 enterModifierKey: '修飾キーを入力してください（Control、Alt、Shift、CapsLock）：',
                 enterNextPageKey: '次のページキーを入力してください：',
@@ -529,7 +529,6 @@ class MenuManager {
         const domain = window.location.hostname;
         if (domain !== null) {
             const currentButtons = this.buttonManager.getSelectorByDomain(domain);
-            console.log(currentButtons);
             let newPrevButton;
             let newNextButton;
             if(currentButtons !== undefined){
@@ -537,7 +536,6 @@ class MenuManager {
                 newNextButton = prompt(labels.enterNextButton, currentButtons.nextButton);
                 newPrevButton = prompt(labels.enterPrevButton, currentButtons.prevButton);
             }else{
-                console.log( this.buttonManager.getButtonsByCommonCases());
                 const aotoSelcetor = this.buttonManager.getButtonsByCommonCases()
                 newNextButton = prompt(labels.enterNextButton, aotoSelcetor.nextSelcetor);
                 newPrevButton = prompt(labels.enterPrevButton, aotoSelcetor.prevSelector);
@@ -557,26 +555,26 @@ class MenuManager {
         if (domain) {
             const buttons = this.buttonManager.getSelectorByDomain(domain);
             if(buttons){
-                alert(`Buttons Selcetor for this domain ${domain}:\nNext: ${buttons.nextButton}\nPrev: ${buttons.prevButton}`);
+                alert(`本網域元素選擇器為 ${domain}:\nNext: ${buttons.nextButton}\nPrev: ${buttons.prevButton}`);
             }else{
-                alert(`User Selcetor for this domain is undefined`);
+                alert(`本網域沒有使用者設定的元素選擇器`);
             }
         }
     }
 
     async inputModeSwitch() {
-        if (this.togglePaginationMode === 'scroll') {
-            this.togglePaginationMode = 'key';
-            self.removeEventListener("scroll", this.scrollHandler);
-            self.addEventListener("keydown", this.keydownHandler);
-            console.log("切換為按鍵翻頁模式");
+        if (this.navigation.togglePaginationMode === 'scroll') {
+            this.navigation.togglePaginationMode = 'key';
+            self.removeEventListener("scroll", this.navigation.scrollHandler);
+            self.addEventListener("keydown", this.navigation.keydownHandler);
+            console.log(`${GM_info.script.name}: 切換為按鍵翻頁模式`);
         } else {
-            this.togglePaginationMode = 'scroll';
-            self.addEventListener("scroll", this.scrollHandler);
-            self.removeEventListener("keydown", this.keydownHandler);
-            console.log("切換為滾輪翻頁模式");
+            this.navigation.togglePaginationMode = 'scroll';
+            self.addEventListener("scroll", this.navigation.scrollHandler);
+            self.removeEventListener("keydown", this.navigation.keydownHandler);
+            console.log(`${GM_info.script.name}: 切換為滾輪翻頁模式`);
         }
-        this.saveSettings();
+            await this.navigation.saveSettings();
     }
 
     async customizeModifierKey() {
