@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.7.6
+// @version      1.7.7
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -36,72 +36,71 @@ class pageStrategy {
 
 class userStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'li.sc-9y4be5-2 img'
+        return 'li.sc-7d21cb21-2 img'
     }
     getArtsClass() {
-        return 'div.cDZIoX li';
+        return 'ul.sc-7d21cb21-1 li';
     }
     getRenderArtWallClass() {
-        return 'div.cDZIoX';
+        return 'div.sc-7d21cb21-0';
     }
     getOutArtWallWayClass(){
-        return '.sc-1nr368f-4.sc-1xj6el2-3.ggHNyV.CAStc';
+        return '.sc-8d5ac044-4.sc-43a7160e-3.gqvfWY.kyPQdN';
     }
     getButtonAtClass() {
-        return 'nav.kWAFb';
+        return 'nav.sc-a0b4b67e-0';
     }
     getAllButtonClass() {
-        return ['jZgOUq','kmjYsK','jYyUpu','iUWhhQ'];
+        return ['bkpjdx','fiSVRw','eXEGlp','lbkOeY'];
     }
     getArtsCountClass(){
-        return 'div.sc-7zddlj-2 span';
+        return 'div.sc-a6755c3a-2 span';
     }
 }
 
 class tagsStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'div.fxGVAF a.fGjAxR img'
+        return 'li.sc-ad8346e6-2 a.sc-a57c16e6-16 img'
     }
     getArtsClass() {
-        return 'div.juyBTC div.ggHNyV li';
+        return 'ul.sc-ad8346e6-1 li.sc-ad8346e6-2';
     }
     getRenderArtWallClass() {
-        return 'ul.hdRpMN';
+        return 'section.sc-3d8ed48f-0 div.sc-ad8346e6-0';
         // return 'div.ggHNyV:has(ul.hdRpMN)';
     }
     getOutArtWallWayClass(){
-        return 'div.ggHNyV:has(table)';
+        return 'div.sc-ad8346e6-0';
     }
     getButtonAtClass() {
-        return 'div.laRMNP div.hbGpVM';
+        return 'section.sc-3d8ed48f-0 div.sc-8d5ac044-4 div.sc-a6755c3a-0';
     }
     getAllButtonClass() {
-        return ['BSrHG','eGjXJv','iknzpl'];
+        return ['fjKrJc','eXEGlp','tsqgr'];
     }
     getArtsCountClass(){
-        return 'span.sc-1pt8s3a-10';
+        return 'div.sc-a6755c3a-2 div.sc-b5e6ab10-0 span';
     }
 }
 
 class subStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'div.fxGVAF a.fGjAxR img'
+        return 'div.sc-a57c16e6-0 a.sc-a57c16e6-16 img'
     }
     getArtsClass() {
-        return 'ul.jtUPOE li';
+        return 'ul.sc-7d21cb21-1 li';
     }
     getRenderArtWallClass() {
-        return 'div.cwAKCq';
-        // return 'div.ggHNyV:has(ul.hdRpMN)';
+        return 'div.sc-7d21cb21-0';
     }
     getOutArtWallWayClass(){
-        return 'div.FIoEP';
+        return 'div.sc-8d5ac044-4.sc-8d5ac044-5';
     }
     getButtonAtClass() {
-        return 'div.hbGpVM';
+        return 'div.sc-2e1e8eba-2:has(a[href="/novel/bookmark_new.php"])';
     }
     getAllButtonClass() {
-        return ['hDldyK','iknzpl'];
+        return ['kdFEos','fBbBCV'];
     }
     getArtsCountClass(){
         return null;
@@ -139,7 +138,9 @@ class artScraper {
         await this.executeAndcountUpSec('sortArts', this.sortArts.bind(this));
         let renderArtWallAtClass = this.strategy.getRenderArtWallClass();
         await this.executeAndcountUpSec('renderArtWall', () => this.renderArtWall(renderArtWallAtClass));
-        //this.changeElementClassName(document.querySelector(this.strategy.getOutArtWallWayClass()),'sortArtWall');
+        if(GM_getValue("leftAlign", false)){
+            this.changeElementClassName(document.querySelector(this.strategy.getOutArtWallWayClass()),'sortArtWall');
+        }
         let buttonAtClass = this.strategy.getButtonAtClass();
         //this.addRestoreButton(buttonAtClass, this.strategy.getAllButtonClass());
         this.addRerenderButton(renderArtWallAtClass, buttonAtClass, this.strategy.getAllButtonClass());
@@ -187,7 +188,7 @@ class artScraper {
             let takeALook = Math.floor(Math.random() * 10) + 30;
             let waitTime = Math.floor(Math.random() * 3000) + 2000;
 
-            if(i > 400 && i % takeALook * 10 == 0){
+            if(i > 150 && i % takeALook * 10 == 0){
                 console.log("請等待API冷卻時間");
                 await this.delay(waitTime * 10);
             }else if(i > 40 && i % takeALook == 0){
@@ -212,6 +213,7 @@ class artScraper {
             }
 
             const iterationEndTime = performance.now();
+            console.log("已讀取頁數",i);
         }
 
         while(this.allArtsWithoutLike.length != 0){
@@ -516,7 +518,7 @@ class artScraper {
 
         const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path2.setAttributeNS(null, "d", "M16,11.3317089 C15.0857201,9.28334665 13.0491506,7.5 11,7.5 C8.23857625,7.5 6,9.73857647 6,12.5 C6,17.4386065 9.2519779,21.7268174 15.7559337,25.3646328 C15.9076021,25.4494645 16.092439,25.4494644 16.2441073,25.3646326 C22.7480325,21.7268037 26,17.4385986 26,12.5 C26,9.73857625 23.7614237,7.5 21,7.5 C18.9508494,7.5 16.9142799,9.28334665 16,11.3317089 Z");
-        path2.setAttributeNS(null, "class", "sc-j89e3c-0 dUurgf");
+        path2.setAttributeNS(null, "class", "sc-j89e3c-0 iGgiqT");
 
         likeIcon.appendChild(path1);
         likeIcon.appendChild(path2);
@@ -550,7 +552,7 @@ class artScraper {
         pageIcon.setAttributeNS(null, "viewBox", "0 0 16 16");
         pageIcon.setAttributeNS(null, "height", "16");
         pageIcon.setAttributeNS(null, "width", "16");
-        pageIcon.classList.add("pageInput", "fiLugu");
+        pageIcon.classList.add("pageInput", "iGgiqT");
 
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttributeNS(null, "d", "M8.25739 9.1716C7.46696 9.69512 6.51908 10 5.5 10C2.73858 10 0.5 7.76142 0.5 5C0.5 2.23858 2.73858 0 5.5 0C8.26142 0 10.5 2.23858 10.5 5C10.5 6.01908 10.1951 6.96696 9.67161 7.75739L11.7071 9.79288C12.0976 10.1834 12.0976 10.8166 11.7071 11.2071C11.3166 11.5976 10.6834 11.5976 10.2929 11.2071L8.25739 9.1716ZM8.5 5C8.5 6.65685 7.15685 8 5.5 8C3.84315 8 2.5 6.65685 2.5 5C2.5 3.34315 3.84315 2 5.5 2C7.15685 2 8.5 3.34315 8.5 5Z");
@@ -672,28 +674,26 @@ class artScraper {
 
 }
 
-class customMenu{
+class customMenu {
     constructor() {
         this.registerMenuCommand(this);
-        this.rowsOfArtsWall=this.getRowsOfArtsWall();
+        this.rowsOfArtsWall = this.getRowsOfArtsWall();
     }
 
-    rowsOfArtsWallMenu(){
-        const rows=parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${this.getRowsOfArtsWall()}`));
-        // console.log(Number.isInteger(rows));
-        if(rows && Number.isInteger(rows) && rows>0){
-            this.setRowsOfArtsWall(rows);
-        }else {
+    rowsOfArtsWallMenu() {
+        const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
+        if (rows && Number.isInteger(rows) && rows > 0) {
+             GM_setValue("rowsOfArtsWall", rows);
+        } else {
             alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
         }
     }
 
-    getRowsOfArtsWall() {
-        return GM_getValue("rowsOfArtsWall", 7);
-    }
-
-    setRowsOfArtsWall(intger) {
-        GM_setValue("rowsOfArtsWall",intger);
+    toggleLeftAlignMenu() {
+        const currentState = GM_getValue("leftAlign", false);
+        const newState = !currentState;
+        GM_setValue("leftAlign", newState);
+        alert(this.getFeatureMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
     }
 
     getFeatureMessageLocalization(word) {
@@ -702,24 +702,36 @@ class customMenu{
                 "rowsOfArtsWall": "行數設定",
                 "rowsOfArtsWallPrompt": "一行顯示幾個繪畫?(請根據瀏覽器放大程度決定) 目前為：",
                 "rowsOfArtsWallMenuError": "請輸入一個數字，且不能小於1",
+                "leftAlign": "置左排版",
+                "leftAlignToggleMessage": "置左排版已",
+                "enabled": "啟用",
+                "disabled": "停用"
             },
             "en": {
                 "rowsOfArtsWall": "row setting",
                 "rowsOfArtsWallPrompt": "How many paintings should be displayed in one row?(Please decide based on browser magnification level) Currently:",
                 "rowsOfArtsWallMenuError": "Please enter a number, and it cannot be less than 1",
+                "leftAlign": "Left-aligned Layout",
+                "leftAlignToggleMessage": "Left-aligned layout is now ",
+                "enabled": "enabled",
+                "disabled": "disabled"
             },
             "ja": {
                 "rowsOfArtsWall": "行設定",
                 "rowsOfArtsWallPrompt": "1 行に何枚の絵畫を表示する必要がありますか?(ブラウザの倍率レベルに基づいて決定してください) 現在：",
                 "rowsOfArtsWallMenuError": "數値を入力してください。1 未満にすることはできません",
+                "leftAlign": "左揃えレイアウト",
+                "leftAlignToggleMessage": "左揃えレイアウトが",
+                "enabled": "有効",
+                "disabled": "無効"
             }
         };
         return display[navigator.language][word];
     }
 
     registerMenuCommand(instance) {
-        //console.log("註冊選單");
         GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
     }
 }
 
