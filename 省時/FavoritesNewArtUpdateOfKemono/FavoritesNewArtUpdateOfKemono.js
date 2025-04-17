@@ -3,7 +3,7 @@
 // @name:ja      お気に入りの「新しいアート」更新
 // @name:en      Favorites"NewArt"Update
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.1.1
+// @version      1.1.2
 // @description  為何要一個一個點擊進入追蹤的作者頁面才能看到最新的更新？讓這個腳本為你代勞。支援Kemono/Coomer。
 // @description:ja それぞれのフォローアーティストのページに一つずつクリックして最新の更新を見る必要がありますか？このスクリプトに任せてください。Kemono/Coomerに対応しています。
 // @description:en Why click into each followed artist's page one by one to see the latest updates? Let this script do it for you. Suppper Kemono/Coomer.
@@ -178,9 +178,9 @@ class ArtistUpdateCatcher {
             userProfile.innerHTML=`
                     <div>
                         <span class="fancy-image">
-                            <picture class="fancy-image__picture">
+                            <pictrue class="fancy-image__pictrue">
                                 <img class="fancy-image__image" src=${userIcon} loading="lazy" style="width: 100%; border-radius: 50%;">
-                            </picture>
+                            </pictrue>
                         </span>
                     </div>`;
             article.prepend(userProfile);
@@ -263,15 +263,15 @@ class PageIndicatorObserver {
 
         this.observer = new MutationObserver((mutationsList) => {
             mutationsList.forEach((mutation) => {
-                //console.log("翻頁偵測:，", this.pageIndicator.textContent);
+                //console.log("翻頁偵測:，");
                 this.stop();
-                location.reload();
+                window.location.reload();
             });
         });
 
         const observerOptions = {
-          childList: true,
           subtree: true,
+          characterData: true,
         };
 
         this.observer.observe(this.pageIndicator, observerOptions);
@@ -293,3 +293,4 @@ class PageIndicatorObserver {
 new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
 
 new PageIndicatorObserver("#paginator-top", 500);
+
