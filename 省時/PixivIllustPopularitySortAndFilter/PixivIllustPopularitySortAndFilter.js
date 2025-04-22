@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.7.7
+// @version      1.7.8
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -17,6 +17,7 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM.info
 // @license MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.meta.js
@@ -146,7 +147,7 @@ class artScraper {
         this.addRerenderButton(renderArtWallAtClass, buttonAtClass, this.strategy.getAllButtonClass());
 
         const endTime = performance.now();
-        console.log(`總耗時: ${(endTime - startTime) / 1000} 秒`);
+        console.log(`${GM_info.script.name} 總耗時: ${(endTime - startTime) / 1000} 秒`);
     }
 
     async getElementBySelector(selector) {
@@ -176,23 +177,27 @@ class artScraper {
         }
         for (let i = 0; i <= this.targetPages; i++) {
             const iterationStartTime = performance.now();
-
+            //console.log("理應處理至",i,"目前處理至",document.querySelector("nav button span").textContent)
+            //當頁面的載入速度慢於腳本處理速度，會導致圖片被重複抓取
+            if(document.querySelector("nav button span").textContent<=i){
+              i--;
+            }
             await this.getArtsInPage(thumbnailClass, artsClass);
 
             // 最後一頁的下一頁按鈕為隱藏
             let allPageNav = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
             if (allPageNav[allPageNav.length-1].hasAttribute("hidden")) {
-                console.log("已經至最後一頁");
+                console.log(`${GM_info.script.name}已經處理至最後一頁`);
                 break;
             }
             let takeALook = Math.floor(Math.random() * 10) + 30;
             let waitTime = Math.floor(Math.random() * 3000) + 2000;
 
             if(i > 150 && i % takeALook * 10 == 0){
-                console.log("請等待API冷卻時間");
+                console.log(`${GM_info.script.name}請等待API冷卻時間`);
                 await this.delay(waitTime * 10);
             }else if(i > 40 && i % takeALook == 0){
-                console.log("請等待API冷卻時間");
+                console.log(`${GM_info.script.name}請等待API冷卻時間`);
                 await this.delay(waitTime);
             }
 
@@ -201,7 +206,7 @@ class artScraper {
                     try{
                         await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
                     }catch (e){
-                        console.log("請等待API冷卻時間");
+                        console.log(`${GM_info.script.name}請等待API冷卻時間`);
                         await this.delay(waitTime);
                     }
                 }
@@ -209,49 +214,67 @@ class artScraper {
 
 
             if (i < this.targetPages - 1) {
-                await this.toNextPage();
+                this.toNextPage();
             }
 
             const iterationEndTime = performance.now();
-            console.log("已讀取頁數",i);
+            //console.log("已處理圖片量",this.allArts.length+this.allArtsWithoutLike.length);
         }
 
         while(this.allArtsWithoutLike.length != 0){
             try{
                 await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
             }catch (e){
-                console.log("請等待API冷卻時間");
+                console.log(`${GM_info.script.name}請等待API冷卻時間`);
                 await this.delay(Math.floor(Math.random() * 1000));
             }
         }
     }
 
     async getArtsInPage(thumbnailClass, artsClass) {
-        let pageStandard = await this.getElementListBySelector(artsClass);
-        pageStandard = pageStandard.length - 1;
-        let thumbnailCount = 0;
+        let retryCount = 0;
+        const maxRetries = 2;
+        //出於某種黑魔法不斷上下拖動有助於圖片元素的確實載入
+        while (retryCount < maxRetries) {
+            let pageStandard = await this.getElementListBySelector(artsClass);
+            pageStandard = pageStandard.length - 1;
+            let thumbnailCount = 0;
 
-        while (thumbnailCount < pageStandard) {
-            const thumbnails = await this.getElementListBySelector(thumbnailClass);
-            thumbnailCount = thumbnails.length;
-            if (thumbnailCount < pageStandard) {
-                console.log(`缺少${pageStandard - thumbnailCount}張圖片，請關閉開發者工具且保持視窗在本分頁以確保所有圖片都載入`);
-                window.scrollBy(0, window.innerHeight);
-                await this.delay(100);
-                //滑到頁面底部
-                if(window.innerHeight + window.scrollY >= document.documentElement.scrollHeight){
-                    window.scrollTo(0, 0);
-                    pageStandard = await this.getElementListBySelector(artsClass);
-                    pageStandard = pageStandard.length - 1;
+            while (thumbnailCount < pageStandard) {
+                const thumbnails = await this.getElementListBySelector(thumbnailClass);
+                thumbnailCount = thumbnails.length;
+                if (thumbnailCount < pageStandard) {
+                    console.log(`${GM_info.script.name}: 缺少${pageStandard - thumbnailCount}張圖片，請關閉開發者工具且保持視窗在本分頁以確保所有圖片都載入`);
+                    window.scrollBy(0, window.innerHeight);
+                    await this.delay(100);
+                    // 滑到頁面底部
+                    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight) {
+                        window.scrollTo(0, 0);
+                        pageStandard = await this.getElementListBySelector(artsClass);
+                        pageStandard = pageStandard.length - 1;
+                    }
                 }
             }
-        }
 
-        const arts = await this.getElementListBySelector(artsClass);
-        console.log(`找到${arts.length}張圖片，開始抓取圖片`);
+            const arts = await this.getElementListBySelector(artsClass);
+            //console.log(`找到${arts.length}張圖片，開始抓取圖片`);
 
-        for (let art of arts) {
-            this.allArtsWithoutLike.push(art);
+            const artsArray = Array.from(arts);
+            const firstThreeArts = artsArray.slice(0, 3);
+            const allArtsSet = new Set(this.allArtsWithoutLike);
+            const areFirstThreePresent = firstThreeArts.every(art => allArtsSet.has(art));
+
+            if (areFirstThreePresent && retryCount < maxRetries) {
+                //console.log(`前3張圖片已存在，重試第${retryCount + 1}次`);
+                retryCount++;
+                await this.delay(50);
+                window.scrollTo(0, 0);
+                continue;
+            }
+            for (let art of arts) {
+                this.allArtsWithoutLike.push(art);
+            }
+          break;
         }
     }
 
@@ -284,7 +307,7 @@ class artScraper {
         this.allArtsWithoutLike = [];
     }
 
-    async toNextPage() {
+    toNextPage() {
         let pageButtonsShape='a:has(polyline[points="1,2 5,6 9,2"])';
         const pageButtons = document.querySelectorAll(pageButtonsShape);
         let nextPageButton = pageButtons[pageButtons.length - 1];
@@ -669,7 +692,7 @@ class artScraper {
         const startTime = performance.now();
         await fn();
         const endTime = performance.now();
-        console.log(`${label} 花費時間: ${(endTime - startTime) / 1000} 秒`);
+        console.log(`${GM_info.script.name} ${label} 花費時間: ${(endTime - startTime) / 1000} 秒`);
     }
 
 }
@@ -681,11 +704,11 @@ class customMenu {
     }
 
     rowsOfArtsWallMenu() {
-        const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
+        const rows = parseInt(prompt(`${this.getFeatrueMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
         if (rows && Number.isInteger(rows) && rows > 0) {
              GM_setValue("rowsOfArtsWall", rows);
         } else {
-            alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
+            alert(this.getFeatrueMessageLocalization("rowsOfArtsWallMenuError"));
         }
     }
 
@@ -730,8 +753,8 @@ class customMenu {
     }
 
     registerMenuCommand(instance) {
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
+        GM_registerMenuCommand(instance.getFeatrueMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
+        GM_registerMenuCommand(instance.getFeatrueMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
     }
 }
 
