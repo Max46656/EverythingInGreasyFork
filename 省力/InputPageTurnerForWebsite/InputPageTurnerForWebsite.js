@@ -6,7 +6,7 @@
 // @name:ko      키보드 및 마우스 휠 페이지 전환기
 // @name:es      Navegador de Páginas con Teclado y Rueda del Ratón
 // @namespace    https://github.com/Max46656
-// @version      1.2.8
+// @version      1.2.9
 // @description  使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:zh-TW 使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:ja マウスホイールをスクロールするか、キーを押すことで、簡単にページを上下に切り替えることができます。
@@ -21,14 +21,67 @@
 // @grant        GM_getValue
 // @grant        GM.info
 // @license MPL2.0
+// @downloadURL https://update.greasyfork.org/scripts/494851/%E6%8C%89%E9%8D%B5%E8%88%87%E6%BB%91%E9%BC%A0%E6%BB%BE%E8%BC%AA%E7%BF%BB%E9%A0%81%E5%99%A8.user.js
+// @updateURL https://update.greasyfork.org/scripts/494851/%E6%8C%89%E9%8D%B5%E8%88%87%E6%BB%91%E9%BC%A0%E6%BB%BE%E8%BC%AA%E7%BF%BB%E9%A0%81%E5%99%A8.meta.js
 // ==/UserScript==
 
 
 class PageButtonManager {
     constructor() {
         this.pageButtonsMap = {};
-        this.domain = window.location.hostname;
         this.loadPageButtons();
+    }
+
+    getConsoleLabels() {
+        const userLang = navigator.language || navigator.userLanguage;
+        const labels = {
+            'zh-TW': {
+                xPathSelectorDetected: '基於XPath的選擇器已獲取：',
+                cssSelectorDetected: '基於CSS的選擇器已獲取：',
+                nextPageButton: '下一頁的按鈕。',
+                prevPageButton: '上一頁的按鈕。',
+                manualSelectorRequired: '該網站不使用常見元素，請手動設定CSS或XPath選取器以設定上下頁元素。',
+                currentConfiguration: '目前的設定為：',
+                pageNavigationButtons: '上下頁元素為：'
+            },
+            'en': {
+                xPathSelectorDetected: 'XPath-based selector detected:',
+                cssSelectorDetected: 'CSS-based selector detected:',
+                nextPageButton: 'Next page button.',
+                prevPageButton: 'Previous page button.',
+                manualSelectorRequired: 'This website does not use common elements. Please manually set CSS or XPath selectors for next/previous page elements.',
+                currentConfiguration: 'Current configuration:',
+                pageNavigationButtons: 'Page navigation elements:'
+            },
+            'ja': {
+                xPathSelectorDetected: 'XPathベースのセレクターが検出されました：',
+                cssSelectorDetected: 'CSSベースのセレクターが検出されました：',
+                nextPageButton: '次のページボタン。',
+                prevPageButton: '前のページボタン。',
+                manualSelectorRequired: 'このウェブサイトは一般的な要素を使用していません。次/前のページ要素のためにCSSまたはXPathセレクターを手動で設定してください。',
+                currentConfiguration: '現在の設定：',
+                pageNavigationButtons: 'ページナビゲーション要素：'
+            },
+            'ko': {
+                xPathSelectorDetected: 'XPath 기반 선택기가 감지되었습니다:',
+                cssSelectorDetected: 'CSS 기반 선택기가 감지되었습니다:',
+                nextPageButton: '다음 페이지 버튼.',
+                prevPageButton: '이전 페이지 버튼.',
+                manualSelectorRequired: '이 웹사이트는 일반적인 요소를 사용하지 않습니다. 다음/이전 페이지 요소를 위해 CSS 또는 XPath 선택기를 수동으로 설정해주세요.',
+                currentConfiguration: '현재 설정:',
+                pageNavigationButtons: '페이지 탐색 요소:'
+            },
+            'es': {
+                xPathSelectorDetected: 'Selector basado en XPath detectado:',
+                cssSelectorDetected: 'Selector basado en CSS detectado:',
+                nextPageButton: 'Botón de página siguiente.',
+                prevPageButton: 'Botón de página anterior.',
+                manualSelectorRequired: 'Este sitio web no utiliza elementos comunes. Por favor, configure manualmente selectores CSS o XPath para los elementos de página siguiente/anterior.',
+                currentConfiguration: 'Configuración actual:',
+                pageNavigationButtons: 'Elementos de navegación de página:'
+            }
+        };
+        return labels[userLang] || labels.en;
     }
 
     loadPageButtons() {
@@ -40,7 +93,7 @@ class PageButtonManager {
     }
 
     getButtonsByCommonCases() {
-        let buttonsByUserSetting = this.getButtonsByDomain();
+        let buttonsByUserSetting = this.getButtonsByPage();
         if (buttonsByUserSetting !== null) {
             return buttonsByUserSetting;
         }
@@ -69,6 +122,7 @@ class PageButtonManager {
             "[aria-label$='next page']",
             ".pagination-nav__item--next>a",
             "a.pageright",
+            "#pnnext",
             ".pager_on+a.pager",
             ".pager__next>a",
             ".page-numbers.current+a",
@@ -163,6 +217,7 @@ class PageButtonManager {
             "[aria-label$='previous page']",
             ".pagination-nav__item--next>a",
             "a.pageleft",
+            "#pnprev",
             "//*[contains(@class, 'pager_on')]//*[@class='pager']/preceding-sibling::*[1]/a", // 原 .pager_on~a.pager
             ".pager__prev>a",
             "//*[contains(@class, 'page-numbers')]//*[@class='current']/preceding-sibling::*[1]/a", // 原 .page-numbers.current~a
@@ -230,6 +285,7 @@ class PageButtonManager {
             "//a[contains(@class, 'nav') and text()='Anterior']", // 西班牙文
             "//li[contains(@class, 'current')]/preceding-sibling::li[1]/a",
         ];
+        const labels = this.getConsoleLabels();
         let prevButton;
         let prevSelector;
         for (let selector of prevSelectorList) {
@@ -237,7 +293,7 @@ class PageButtonManager {
                 let result = document.evaluate(selector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
                 if (result.snapshotLength >= 1) {
                     prevButton = result.snapshotItem(0);
-                    console.log(`${GM_info.script.name}: prev XPathSelector:`,selector);
+                    console.log(`${GM_info.script.name}: ${labels.XPathSelectorFound} ${labels.prevElement}`,selector);
                     prevSelector = selector;
                     break;
                 }
@@ -245,7 +301,7 @@ class PageButtonManager {
                 let elements = document.querySelectorAll(selector);
                 if (elements.length >= 1) {
                     prevButton = elements[0];
-                    console.log(`${GM_info.script.name}: prev CSSSelector:`,selector);
+                    console.log(`${GM_info.script.name}: ${labels.CSSSelectorFound} ${labels.prevElement}`,selector);
                     prevSelector = selector;
                     break;
                 }
@@ -259,7 +315,7 @@ class PageButtonManager {
                 let result = document.evaluate(selector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
                 if (result.snapshotLength >= 1) {
                     nextButton = result.snapshotItem(result.snapshotLength - 1);
-                    console.log(`${GM_info.script.name}: next XPathSelector:`,selector);
+                    console.log(`${GM_info.script.name}: ${labels.XPathSelectorFound} ${labels.nextElement}`,selector);
                     nextSelcetor = selector;
                     break;
                 }
@@ -267,46 +323,64 @@ class PageButtonManager {
                 let elements = document.querySelectorAll(selector);
                 if (elements.length >= 1) {
                     nextButton = elements[elements.length - 1];
-                    console.log(`${GM_info.script.name}: next XPathSelector:`,selector);
+                    console.log(`${GM_info.script.name}: ${labels.CSSSelectorFound} ${labels.nextElement}:`,selector);
                     nextSelcetor = selector;
                     break;
                 }
             }
         }
-        console.log(`${GM_info.script.name}: prevButton,nextButton`,[prevButton,nextButton]);
+        console.log(`${GM_info.script.name}: ${labels.buttons}`,[prevButton,nextButton]);
         if(prevButton == null && nextButton == null){
-            console.error(`${GM_info.script.name} : 該網站不使用常見元素，請手動設定CSS或XPath選取器以設定上下頁元素`)
+            console.error(`${GM_info.script.name} : ${labels.needManualSetting}`)
         }
         return {"prevSelector":prevSelector,"nextSelcetor":nextSelcetor,"prev":prevButton,"next":nextButton};
     }
 
-    getButtonsByDomain() {
-        let pageButtons = {"prev":null,"next":null};
-        if(this.pageButtonsMap[this.domain]===undefined){
+    getButtonsByPage() {
+        let pageButtons = {"prev": null, "next": null};
+        let currentUrl = window.location.href;
+        let matchedPattern = null;
+        let maxPatternLength = 0;
+
+        for (const pattern in this.pageButtonsMap) {
+            const regex = new RegExp(pattern);
+            if (regex.test(currentUrl)) {
+                // 將最長的正規表達式視為最嚴格的
+                if (pattern.length > maxPatternLength) {
+                    maxPatternLength = pattern.length;
+                    matchedPattern = pattern;
+                }
+            }
+        }
+
+        if (!matchedPattern || this.pageButtonsMap[matchedPattern] === undefined) {
             return null;
         }
-        const prevSelector = this.pageButtonsMap[this.domain].prevButton;
-        const nextSelector = this.pageButtonsMap[this.domain].nextButton;
+
+        const prevSelector = this.pageButtonsMap[matchedPattern].prevButton;
+        const nextSelector = this.pageButtonsMap[matchedPattern].nextButton;
+
         if (prevSelector.startsWith('//')) {
             let xPathResult = document.evaluate(prevSelector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-            if (xPathResult.snapshotLength >= 0) {
+            if (xPathResult.snapshotLength > 0) {
                 pageButtons.prev = xPathResult.snapshotItem(0);
             }
         } else {
             let elements = document.querySelectorAll(prevSelector);
-            if (elements.length >= 0) {
+            if (elements.length > 0) {
                 pageButtons.prev = elements[0];
             }
         }
 
+        // Handle next button selector (XPath or CSS)
         if (nextSelector.startsWith('//')) {
             let xPathResult = document.evaluate(nextSelector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-            if (xPathResult.snapshotLength >= 0) {
+            if (xPathResult.snapshotLength > 0) {
                 pageButtons.next = xPathResult.snapshotItem(xPathResult.snapshotLength - 1);
             }
         } else {
             let elements = document.querySelectorAll(nextSelector);
-            if (elements.length >= 0) {
+            if (elements.length > 0) {
                 pageButtons.next = elements[elements.length - 1];
             }
         }
@@ -314,17 +388,25 @@ class PageButtonManager {
         return pageButtons;
     }
 
-    getSelectorByDomain(domain){
-        return this.pageButtonsMap[domain];
+    getSelectorsByPattern() {
+        let currentUrl = window.location.href;
+        let matchingSelectors = [];
+
+        for (const pattern in this.pageButtonsMap) {
+            const regex = new RegExp(pattern);
+            if (regex.test(currentUrl)) {
+                matchingSelectors.push({
+                    pattern: pattern,
+                    selectors: this.pageButtonsMap[pattern]
+                });
+            }
+        }
+        return matchingSelectors;
     }
 
-    setButtonsForDomain(buttons) {
-        this.pageButtonsMap[this.domain] = buttons;
+    setButtonsForDomain(buttons,pattern) {
+        this.pageButtonsMap[pattern] = buttons;
         this.savePageButtons();
-    }
-
-    getAllDomains() {
-        return Object.keys(this.pageButtonsMap);
     }
 }
 
@@ -353,7 +435,7 @@ class NavigationPaginationWithInput {
         await GM_setValue('modifierKey', this.modifierKey);
         await GM_setValue('nextPageKey', this.nextPageKey);
         await GM_setValue('prevPageKey', this.prevPageKey);
-        console.group(`${GM_info.script.name} Setting: `);
+        console.group(`${GM_info.script.name}  `);
         console.log("togglePaginationMode",this.togglePaginationMode);
         console.log("modifierKey",this.modifierKey);
         console.log("nextPageKey",this.nextPageKey);
@@ -421,92 +503,122 @@ class MenuManager {
         const labels = {
             'zh-TW': {
                 viewAndModify: '修改上下頁的按鈕元素選取器',
-                showAllDomains: '顯示所有網域',
+                showAllPatternsOfDomain: '顯示本網域所有頁面的選擇器',
                 togglePageMode: '切換翻頁模式',
                 customizeModifierKey: '自訂啟動快捷鍵',
                 customizeNextPageKey: '自訂下一頁快捷鍵',
                 customizePrevPageKey: '自訂上一頁快捷鍵',
-                enterDomain: '輸入網域：',
-                currentButtons: '當前按鈕：',
+                enterUrlPattern: '輸入頁面對應的正規表達式(預設為網頁全域皆使用同一元素)',
                 enterNextButton: '輸入下一頁按鈕選擇器：',
                 enterPrevButton: '輸入上一頁按鈕選擇器：',
-                savedDomains: '已儲存的網域：',
-                enterDomainToView: '輸入要檢視的網域：',
+                noSelectors: '本網域尚未設定特例選擇器。',
+                pattern: '正規表示式：',
+                buttonUpdate: '以下頁面的按鈕選擇器已更新：',
+                page: '頁面',
+                nextButton: '下一頁選擇器：',
+                prevButton: '上一頁選擇器：',
+                thisDomain: '目前網域：',
                 enterModifierKey: '輸入啟動快捷鍵 (Control, Alt, Shift, CapsLock)：',
                 enterNextPageKey: '輸入下一頁快捷鍵：',
                 enterPrevPageKey: '輸入上一頁快捷鍵：',
+                switchToKeyTrigger: '切換為按鍵翻頁模式',
+                switchToScrollTrigger: '切換為滾輪翻頁模式',
                 invalidInput: '無效的輸入，請重試。'
             },
             'en': {
                 viewAndModify: 'Modify Page Up/Down Button Selectors',
-                showAllDomains: 'Show All Domains',
+                showAllPatternsOfDomain: 'Show Selectors for All Pages in This Domain',
                 togglePageMode: 'Toggle Page Mode',
                 customizeModifierKey: 'Customize Modifier Key',
                 customizeNextPageKey: 'Customize Next Page Key',
                 customizePrevPageKey: 'Customize Previous Page Key',
-                enterDomain: 'Enter the domain:',
-                currentButtons: 'Current buttons:',
+                enterUrlPattern: 'Enter the regular expression for the page (defaults to using the same element across the entire website)',
                 enterNextButton: 'Enter the next page button selector:',
                 enterPrevButton: 'Enter the previous page button selector:',
-                savedDomains: 'Saved domains:',
-                enterDomainToView: 'Enter the domain to view:',
+                noSelectors: 'No custom selectors set for this domain.',
+                pattern: 'Regular Expression:',
+                buttonUpdate: 'Button selectors updated for the following page:',
+                page: 'Page',
+                nextButton: 'Next Page Selector:',
+                prevButton: 'Previous Page Selector:',
+                thisDomain: 'Current Domain:',
                 enterModifierKey: 'Enter modifier key (Control, Alt, Shift, CapsLock):',
                 enterNextPageKey: 'Enter next page key:',
                 enterPrevPageKey: 'Enter previous page key:',
+                switchToKeyTrigger: 'Switch to Key-Based Page Navigation',
+                switchToScrollTrigger: 'Switch to Scroll-Based Page Navigation',
                 invalidInput: 'Invalid input, please try again.'
             },
             'ja': {
                 viewAndModify: 'ページの上下ボタン要素セレクターの変更',
-                showAllDomains: 'すべてのドメインを表示',
+                showAllPatternsOfDomain: 'このドメインのすべてのページのセレクターを表示',
                 togglePageMode: 'ページモードを切り替える',
                 customizeModifierKey: '修飾キーをカスタマイズ',
                 customizeNextPageKey: '次のページキーをカスタマイズ',
                 customizePrevPageKey: '前のページキーをカスタマイズ',
-                enterDomain: 'ドメインを入力してください：',
-                currentButtons: '現在のボタン：',
+                enterUrlPattern: 'ページに対応する正規表現を入力してください（デフォルトではウェブサイト全体で同じ要素を使用します）',
                 enterNextButton: '次のページボタンのセレクタを入力してください：',
                 enterPrevButton: '前のページボタンのセレクタを入力してください：',
-                savedDomains: '保存されたドメイン：',
-                enterDomainToView: '表示するドメインを入力してください：',
+                noSelectors: 'このドメインにはカスタムセレクターが設定されていません。',
+                pattern: '正規表現：',
+                buttonUpdate: '以下のページのボタンセレクターが更新されました：',
+                page: 'ページ',
+                nextButton: '次のページセレクター：',
+                prevButton: '前のページセレクター：',
+                thisDomain: '現在のドメイン：',
                 enterModifierKey: '修飾キーを入力してください（Control、Alt、Shift、CapsLock）：',
                 enterNextPageKey: '次のページキーを入力してください：',
                 enterPrevPageKey: '前のページキーを入力してください：',
+                switchToKeyTrigger: 'キー操作によるページ移動に切り替え',
+                switchToScrollTrigger: 'スクロールによるページ移動に切り替え',
                 invalidInput: '無効な入力です。もう一度お試しください。'
             },
             'ko': {
                 viewAndModify: '페이지 위/아래 버튼 선택기 수정',
-                showAllDomains: '모든 도메인 보기',
+                showAllPatternsOfDomain: '이 도메인의 모든 페이지 선택기 보기',
                 togglePageMode: '페이지 모드 전환',
                 customizeModifierKey: '수정 키 사용자화',
                 customizeNextPageKey: '다음 페이지 키 사용자화',
                 customizePrevPageKey: '이전 페이지 키 사용자화',
-                enterDomain: '도메인을 입력하세요:',
-                currentButtons: '현재 버튼:',
+                enterUrlPattern: '페이지에 해당하는 정규 표현식을 입력하세요 (기본값은 웹사이트 전체에서 동일한 요소 사용)',
                 enterNextButton: '다음 페이지 버튼 선택기 입력:',
                 enterPrevButton: '이전 페이지 버튼 선택기 입력:',
-                savedDomains: '저장된 도메인:',
-                enterDomainToView: '보기할 도메인을 입력하세요:',
+                noSelectors: '이 도메인에 사용자 지정 선택기가 설정되지 않았습니다.',
+                pattern: '정규 표현식:',
+                buttonUpdate: '다음 페이지의 버튼 선택기가 업데이트되었습니다:',
+                page: '페이지',
+                nextButton: '다음 페이지 선택기:',
+                prevButton: '이전 페이지 선택기:',
+                thisDomain: '현재 도메인:',
                 enterModifierKey: '수정 키를 입력하세요 (Control, Alt, Shift, CapsLock):',
                 enterNextPageKey: '다음 페이지 키 입력:',
                 enterPrevPageKey: '이전 페이지 키 입력:',
+                switchToKeyTrigger: '키 기반 페이지 탐색으로 전환',
+                switchToScrollTrigger: '스크롤 기반 페이지 탐색으로 전환',
                 invalidInput: '잘못된 입력입니다. 다시 시도하세요.'
             },
             'es': {
                 viewAndModify: 'Modificar Selectores de Botones de Página Arriba/Abajo',
-                showAllDomains: 'Mostrar Todos los Dominios',
+                showAllPatternsOfDomain: 'Mostrar Selectores de Todas las Páginas de Este Dominio',
                 togglePageMode: 'Alternar Modo de Página',
                 customizeModifierKey: 'Personalizar Tecla Modificadora',
                 customizeNextPageKey: 'Personalizar Tecla de Siguiente Página',
                 customizePrevPageKey: 'Personalizar Tecla de Página Anterior',
-                enterDomain: 'Ingrese el dominio:',
-                currentButtons: 'Botones actuales:',
+                enterUrlPattern: 'Ingrese la expresión regular para la página (por defecto se usa el mismo elemento en todo el sitio web)',
                 enterNextButton: 'Ingrese el selector del botón de siguiente página:',
                 enterPrevButton: 'Ingrese el selector del botón de página anterior:',
-                savedDomains: 'Dominios guardados:',
-                enterDomainToView: 'Ingrese el dominio a visualizar:',
+                noSelectors: 'No se han establecido selectores personalizados para este dominio.',
+                pattern: 'Expresión Regular:',
+                buttonUpdate: 'Selectores de botones actualizados para la siguiente página:',
+                page: 'Página',
+                nextButton: 'Selector de Página Siguiente:',
+                prevButton: 'Selector de Página Anterior:',
+                thisDomain: 'Dominio Actual:',
                 enterModifierKey: 'Ingrese tecla modificadora (Control, Alt, Shift, CapsLock):',
                 enterNextPageKey: 'Ingrese tecla de siguiente página:',
                 enterPrevPageKey: 'Ingrese tecla de página anterior:',
+                switchToKeyTrigger: 'Cambiar a Navegación de Página por Teclas',
+                switchToScrollTrigger: 'Cambiar a Navegación de Página por Desplazamiento',
                 invalidInput: 'Entrada inválida, por favor intente de nuevo.'
             }
         };
@@ -516,7 +628,7 @@ class MenuManager {
     initMenu() {
         const labels = this.getMenuLabels();
         GM_registerMenuCommand(labels.viewAndModify, this.viewAndModifyButtons.bind(this));
-        GM_registerMenuCommand(labels.showAllDomains, this.showAllDomains.bind(this));
+        GM_registerMenuCommand(labels.showAllPatternsOfDomain, this.showAllPatternsOfDomain.bind(this));
         GM_registerMenuCommand(labels.togglePageMode, this.inputModeSwitch.bind(this));
         GM_registerMenuCommand(labels.customizeModifierKey, this.customizeModifierKey.bind(this));
         GM_registerMenuCommand(labels.customizeNextPageKey, this.customizeNextPageKey.bind(this));
@@ -525,56 +637,79 @@ class MenuManager {
 
     async viewAndModifyButtons() {
         const labels = this.getMenuLabels();
-        //const domain = prompt(labels.enterDomain, window.location.hostname);
-        const domain = window.location.hostname;
-        if (domain !== null) {
-            const currentButtons = this.buttonManager.getSelectorByDomain(domain);
-            let newPrevButton;
-            let newNextButton;
-            if(currentButtons !== undefined){
-                alert(`${labels.currentButtons}\nNext: ${currentButtons.nextButton}\nPrev: ${currentButtons.prevButton}`);
-                newNextButton = prompt(labels.enterNextButton, currentButtons.nextButton);
-                newPrevButton = prompt(labels.enterPrevButton, currentButtons.prevButton);
-            }else{
-                const aotoSelcetor = this.buttonManager.getButtonsByCommonCases()
-                newNextButton = prompt(labels.enterNextButton, aotoSelcetor.nextSelcetor);
-                newPrevButton = prompt(labels.enterPrevButton, aotoSelcetor.prevSelector);
-            }
-            if (newNextButton && newPrevButton) {
-                this.buttonManager.setButtonsForDomain({ nextButton: newNextButton, prevButton: newPrevButton });
-                alert(`Updated buttons for ${domain}`);
-            }
+        const currentUrl = window.location.href;
+        const selectorsArray = this.buttonManager.getSelectorsByPattern();
 
+        let selectedPattern = null;
+        let selectedSelectors = null;
+        let maxPatternLength = 0;
+
+        //根據getButtonsByPage()的邏輯，最長的模式視為最嚴謹的模式
+        for (const item of selectorsArray) {
+            if (item.pattern.length > maxPatternLength) {
+                maxPatternLength = item.pattern.length;
+                selectedPattern = item.pattern;
+                selectedSelectors = item.selectors;
+            }
+        }
+
+        let newPrevButton;
+        let newNextButton;
+        let pattern;
+
+        if (selectedSelectors) {
+            alert(`${labels.pattern}  ${selectedPattern}\n${labels.nextButton}  ${selectedSelectors.nextButton}\n${labels.prevButton}  ${selectedSelectors.prevButton}`);
+            newNextButton = prompt(labels.enterNextButton, selectedSelectors.nextButton);
+            newPrevButton = prompt(labels.enterPrevButton, selectedSelectors.prevButton);
+            pattern = prompt(labels.enterUrlPattern, selectedPattern);
+        } else {
+            const autoSelector = this.buttonManager.getButtonsByCommonCases();
+            alert(`${labels.invalidInput}\nNo selectors found for ${currentUrl}`);
+            newNextButton = prompt(labels.enterNextButton, autoSelector.nextSelcetor);
+            newPrevButton = prompt(labels.enterPrevButton, autoSelector.prevSelector);
+            pattern = prompt(labels.enterUrlPattern, window.location.hostname);
+        }
+
+        if (newNextButton && newPrevButton && pattern) {
+            this.buttonManager.setButtonsForDomain({ nextButton: newNextButton, prevButton: newPrevButton }, pattern);
+            alert(`${labels.buttonUpdate} ${pattern}`);
         }
     }
 
-    async showAllDomains() {
+    async showAllPatternsOfDomain() {
         const labels = this.getMenuLabels();
-        const allDomains = this.buttonManager.getAllDomains();
-        const domain = prompt(`${labels.savedDomains}\n${allDomains.join('\n')}\n\n${labels.enterDomainToView}`,window.location.hostname);
-        if (domain) {
-            const buttons = this.buttonManager.getSelectorByDomain(domain);
-            if(buttons){
-                alert(`本網域元素選擇器為 ${domain}:\nNext: ${buttons.nextButton}\nPrev: ${buttons.prevButton}`);
-            }else{
-                alert(`本網域沒有使用者設定的元素選擇器`);
-            }
+        const hostname = window.location.hostname;
+        const selectorsArray = this.buttonManager.getSelectorsByPattern();
+
+        const domainSelectors = selectorsArray.filter(item => new RegExp(hostname).test(item.pattern));
+
+        if (domainSelectors.length > 0) {
+            let message = `${labels.thisDomain} ${hostname}\n\n`;
+            domainSelectors.forEach((item, index) => {
+                message += `${labels.page} ${index + 1}: ${item.pattern}\n`;
+                message += `  ${labels.nextButton}  ${item.selectors.nextButton}\n`;
+                message += `  ${labels.prevButton}  ${item.selectors.prevButton}\n\n`;
+            });
+            alert(message);
+        } else {
+            alert(`${labels.invalidInput} ${hostname} ${labels.noSelectors}`);
         }
     }
 
     async inputModeSwitch() {
+        const labels = this.getMenuLabels();
         if (this.navigation.togglePaginationMode === 'scroll') {
             this.navigation.togglePaginationMode = 'key';
             self.removeEventListener("scroll", this.navigation.scrollHandler);
             self.addEventListener("keydown", this.navigation.keydownHandler);
-            console.log(`${GM_info.script.name}: 切換為按鍵翻頁模式`);
+            console.log(`${GM_info.script.name}: ${labels.switchToKeyTrigger}`);
         } else {
             this.navigation.togglePaginationMode = 'scroll';
             self.addEventListener("scroll", this.navigation.scrollHandler);
             self.removeEventListener("keydown", this.navigation.keydownHandler);
-            console.log(`${GM_info.script.name}: 切換為滾輪翻頁模式`);
+            console.log(`${GM_info.script.name}: ${labels.switchToScrollTrigger}`);
         }
-            await this.navigation.saveSettings();
+        await this.navigation.saveSettings();
     }
 
     async customizeModifierKey() {
