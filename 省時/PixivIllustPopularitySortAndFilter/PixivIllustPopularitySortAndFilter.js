@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.8.0
+// @version      1.8.1
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -128,7 +128,7 @@ class artScraper {
         } else if (url.match(/^https:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*\/.*$/)) {
             return new tagsStrategy();
         } else {
-            console.error('Unsupported page type');
+            throw `${GM_info.script.name} Unsupported page type`;
         }
     }
 
@@ -186,9 +186,14 @@ class artScraper {
 
             // 最後一頁的下一頁按鈕為隱藏
             let allPageNav = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
-            if (allPageNav[allPageNav.length-1].hasAttribute("hidden")) {
-                console.log(`${GM_info.script.name}已經處理至最後一頁`);
-                break;
+            let retry = 0;
+            while(allPageNav[allPageNav.length-1].hasAttribute("hidden") && retry<1000) {
+                await this.delay(1);
+                retry+=1;
+            }
+            if(retry>=1000){
+              console.log(`${GM_info.script.name} 已經來到最後一頁，停止排序`);
+              break;
             }
             let takeALook = Math.floor(Math.random() * 10) + 30;
             let waitTime = Math.floor(Math.random() * 3000) + 2000;
@@ -312,11 +317,12 @@ class artScraper {
         let pageButtonsShape='a:has(polyline[points="1,2 5,6 9,2"])';
         const pageButtons = document.querySelectorAll(pageButtonsShape);
         let nextPageButton = pageButtons[pageButtons.length - 1];
+        console.log(nextPageButton);
         nextPageButton.click();
     }
 
     async toPervPage() {
-        let pageButtonsClass='a.sc-d98f2c-0.sc-xhhh7v-2.cCkJiq.sc-xhhh7v-1-filterProps-Styled-Component.kKBslM';
+        let pageButtonsClass='a:has(polyline[points="1,2 5,6 9,2"])';
         const pageButtons = document.querySelectorAll(pageButtonsClass);
         let nextPageButton = pageButtons[0];
         nextPageButton.click();
@@ -705,7 +711,7 @@ class customMenu {
     }
 
     rowsOfArtsWallMenu() {
-        const rows = parseInt(prompt(`${this.getFeatrueMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
+        const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
         if (rows && Number.isInteger(rows) && rows > 0) {
              GM_setValue("rowsOfArtsWall", rows);
         } else {
