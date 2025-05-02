@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.8.1
+// @version      1.8.2
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -19,8 +19,6 @@
 // @grant        GM_getValue
 // @grant        GM.info
 // @license MPL2.0
-// @downloadURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.user.js
-// @updateURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.meta.js
 // ==/UserScript==
 /* TODO
 *提示文字多語言翻譯
@@ -134,8 +132,7 @@ class artScraper {
 
     async eatAllArts() {
         const startTime = performance.now();
-
-        await this.executeAndcountUpSec('readingPages', () => this.readingPages(this.strategy.getThumbnailClass(), this.strategy.getArtsClass()));
+        await this.executeAndcountUpSec('readingPages', () => this.readingPages(this.strategy.getThumbnailClass(),this.strategy.getArtsClass()));
         await this.executeAndcountUpSec('sortArts', this.sortArts.bind(this));
         let renderArtWallAtClass = this.strategy.getRenderArtWallClass();
         await this.executeAndcountUpSec('renderArtWall', () => this.renderArtWall(renderArtWallAtClass));
@@ -175,12 +172,17 @@ class artScraper {
         if(document.getElementById("RerenderButton")){
             this.toNextPage();
         }
-        for (let i = 0; i <= this.targetPages; i++) {
+        const startPage = document.querySelector("nav button span").textContent-1;
+        for (let i = startPage; i <= this.targetPages + startPage; i++) {
             const iterationStartTime = performance.now();
             //console.log("理應處理至",i,"目前處理至",document.querySelector("nav button span").textContent)
-            //當頁面的載入速度慢於腳本處理速度，會導致圖片被重複抓取
-            if(document.querySelector("nav button span").textContent<=i){
+            //當頁面的載入速度慢於腳本處理速度，會導致圖片被重複抓取或是沒有抓取就進入下一頁
+            let page=document.querySelector("nav button span").textContent;
+            if(page && page<=i){
               i--;
+            }else if(!page){
+              console.log(`${GM_info.script.name} 觸發page0錯誤，停止排序`);
+              break;
             }
             await this.getArtsInPage(thumbnailClass, artsClass);
 
@@ -199,10 +201,10 @@ class artScraper {
             let waitTime = Math.floor(Math.random() * 3000) + 2000;
 
             if(i > 150 && i % takeALook * 10 == 0){
-                console.log(`${GM_info.script.name}請等待API冷卻時間`);
+                console.log(`${GM_info.script.name} 請等待API冷卻時間`);
                 await this.delay(waitTime * 10);
             }else if(i > 40 && i % takeALook == 0){
-                console.log(`${GM_info.script.name}請等待API冷卻時間`);
+                console.log(`${GM_info.script.name} 請等待API冷卻時間`);
                 await this.delay(waitTime);
             }
 
@@ -211,14 +213,14 @@ class artScraper {
                     try{
                         await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
                     }catch (e){
-                        console.log(`${GM_info.script.name}請等待API冷卻時間`);
+                        console.log(`${GM_info.script.name} 請等待API冷卻時間`);
                         await this.delay(waitTime);
                     }
                 }
             }
 
 
-            if (i < this.targetPages - 1) {
+            if (i < this.targetPages + startPage - 1) {
                 this.toNextPage();
             }
 
@@ -230,7 +232,7 @@ class artScraper {
             try{
                 await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
             }catch (e){
-                console.log(`${GM_info.script.name}請等待API冷卻時間`);
+                console.log(`${GM_info.script.name} 請等待API冷卻時間`);
                 await this.delay(Math.floor(Math.random() * 1000));
             }
         }
@@ -317,7 +319,7 @@ class artScraper {
         let pageButtonsShape='a:has(polyline[points="1,2 5,6 9,2"])';
         const pageButtons = document.querySelectorAll(pageButtonsShape);
         let nextPageButton = pageButtons[pageButtons.length - 1];
-        console.log(nextPageButton);
+        //console.log(nextPageButton);
         nextPageButton.click();
     }
 
@@ -760,8 +762,8 @@ class customMenu {
     }
 
     registerMenuCommand(instance) {
-        GM_registerMenuCommand(instance.getFeatrueMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
-        GM_registerMenuCommand(instance.getFeatrueMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
     }
 }
 
