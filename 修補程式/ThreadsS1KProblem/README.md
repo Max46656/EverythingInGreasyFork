@@ -1,6 +1,9 @@
 # ThreadsS1KProblem
 
-Delete ".0" in Threads interact stat when it's over 1K, which should be an integer instead of a float.
+~~Delete ".0" in Threads interact stat when it's over 1K, which should be an integer instead of a float.~~  
+Since the official Threads has fixed this bug,  
+the purpose of this script is reduced to changing the .0萬 in the CJK counting method to an integer when setting the Threads language to CJK,  
+which is an error when converting from x0k to x萬.  
 
 ## Installation
 
