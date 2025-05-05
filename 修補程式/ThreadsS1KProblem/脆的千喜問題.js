@@ -6,8 +6,8 @@
 // @namespace    https://github.com/Max46656
 // @version      1.2.1
 // @author       Max
-// @description:ja Threads のインタラクション統計データで、1K を超える場合に表示される「.0」を削除し、整數にする必要があります。
-// @description:en Delete ".0" in Threads interact stat when it's over 1K, which should be an integer instead of a float.
+// @description:ja 言語をCJKに設定した際の.0萬を整數に変更。これはx0kからx萬への変換時のエラーです。
+// @description:en Change .0萬 to an integer when the language is set to CJK. This is an error during the conversion from x0k to x萬.
 // @match        https://www.threads.com/*
 // @match        https://www.threads.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=threads.net
