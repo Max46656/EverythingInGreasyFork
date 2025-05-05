@@ -5,7 +5,7 @@
 # 目前包含
 
 ## 省時
-- [熊貓Eagle支援](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/Exhentai%20Eagle%20Supper)
+- [熊貓Eagle支援](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/ExhentaiEagleSupport)
 - [最愛「新作品」更新](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/FavoritesNewArtUpdateOfKemono)
 - [Pixiv作品熱門程度排序與篩選器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/PixivIllustPopularitySortAndFilter)
 
