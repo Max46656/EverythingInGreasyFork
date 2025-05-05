@@ -2,7 +2,7 @@
 // @name         脆的千喜問題
 // @name:ja      ThreadsS1K問題
 // @name:en     ThreadsS1KProblem
-// @description  刪除Threads的互動統計數據中超過1K時會出現的".0"，其應是整數而非浮點數。
+// @description  將語言設為CJK時的.0萬更改為整數，其為x0k轉換至x萬時的錯誤。
 // @namespace    https://github.com/Max46656
 // @version      1.2.1
 // @author       Max
