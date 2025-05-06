@@ -1,5 +1,4 @@
-english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/YouTubeShortCleanShare/README.zh-Hant.md)
-
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/CleanYouTubeShortURLSharer/README.zh-Hant.md)
 # YouTube Short Clean Share Button
 
 Do you find YouTube's share URLs unnecessarily long or bloated with tracking parameters like `si=`? This user script replaces the default share button with a custom one that generates a clean, short `youtu.be` URL and copies it to your clipboard instantly — no `si=` parameter, no clutter.
