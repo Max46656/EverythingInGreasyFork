@@ -16,6 +16,7 @@
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
