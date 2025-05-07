@@ -21,22 +21,28 @@
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
 // @grant        GM.info
-// @version      1.0.0
+// @version      1.0.1
 // ==/UserScript==
 
 
 class YouTubeShortUrlCopier {
     constructor() {
+        const existingCopier = document.querySelector('#yscsb-timestamp-checkbox-wrapper');
+        if(existingCopier){
+            return;
+        }
         this.shareButtonSelector = '#actions yt-button-view-model button-view-model button';
-        this.notificationDuration = 1000;
+        this.notificationDuration = 1200;
         this.pollInterval = 100;
         this.maxAttempts = 30;
         this.attempts = 0;
+        this.timestampEnabled = false;
         this.init();
     }
 
     init() {
         this.i18n = new LocalizationManager();
+        this.injectStyles();
         this.waitForShareButton();
     }
 
@@ -56,34 +62,125 @@ class YouTubeShortUrlCopier {
     }
 
     replaceShareButton(originalButton) {
-        const newButton = this.createCustomButton(originalButton);
-        originalButton.parentNode.replaceChild(newButton, originalButton);
+        const wrapper = this.createSegmentedShareButtons(originalButton);
+        originalButton.parentNode.replaceChild(wrapper, originalButton);
     }
 
-    createCustomButton(originalButton) {
+    createSegmentedShareButtons(originalButton) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'ytSegmentedLikeDislikeButtonViewModelSegmentedButtonsWrapper';
+
+        const shareButton = this.createCustomShareButton(originalButton, true);
+        const timestampButton = this.createTimestampCheckboxButton();
+
+        wrapper.appendChild(shareButton);
+        wrapper.appendChild(timestampButton);
+
+        return wrapper;
+    }
+
+    createCustomShareButton(originalButton, isSegmentedStart = false) {
         const button = document.createElement('button');
-        button.innerHTML = originalButton.innerHTML;
-        button.className = originalButton.className;
-        button.style.cssText = originalButton.style.cssText;
+        button.className = 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--enable-backdrop-filter-experiment';
+        if (isSegmentedStart) {
+            button.classList.add('yt-spec-button-shape-next--segmented-start');
+        }
+
+        const iconContainer = document.createElement('div');
+        iconContainer.className = 'yt-spec-button-shape-next__icon';
+        iconContainer.innerHTML = `
+            <span class="yt-icon-shape style-scope yt-icon yt-spec-icon-shape">
+                <div style="width: 100%; height: 100%; display: block; fill: currentcolor;">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                        <path d="M15 5.63 20.66 12 15 18.37V14h-1c-3.96 0-7.14 1-9.75 3.09 1.84-4.07 5.11-6.4 9.89-7.1l.86-.13V5.63M14 3v6C6.22 10.13 3.11 15.33 2 21c2.78-3.97 6.44-6 12-6v6l8-9-8-9z"></path>
+                    </svg>
+                </div>
+            </span>
+        `;
+
+        const textDiv = document.createElement('div');
+        //textDiv.className = 'yt-spec-button-shape-next__button-text-content';
+        textDiv.textContent = this.i18n.get('share');
+
+        const feedback = document.createElement('div');
+        feedback.className = 'yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response';
+        feedback.innerHTML = `<div class="yt-spec-touch-feedback-shape__stroke"></div><div class="yt-spec-touch-feedback-shape__fill"></div>`;
+
+        button.appendChild(iconContainer);
+        button.appendChild(textDiv);
+        button.appendChild(feedback);
 
         button.addEventListener('click', () => this.handleButtonClick());
         return button;
+    }
+
+    createTimestampCheckboxButton() {
+        const existing = document.querySelector('#yscsb-timestamp-checkbox-wrapper');
+        if (existing) return existing;
+
+        const wrapper = document.createElement('label');
+        wrapper.id = 'yscsb-timestamp-checkbox-wrapper';
+        wrapper.className = 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--segmented-end yt-spec-button-shape-next--enable-backdrop-filter-experiment';
+        wrapper.style.display = 'inline-flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.cursor = 'pointer';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'yscsb-timestamp-checkbox';
+        checkbox.style.display = 'none';
+
+        checkbox.addEventListener('change', () => {
+            this.timestampEnabled = checkbox.checked;
+            wrapper.classList.toggle('selected', this.timestampEnabled);
+        });
+
+        const iconContainer = document.createElement('div');
+        iconContainer.className = 'yt-spec-button-shape-next__icon';
+        iconContainer.innerHTML = `
+            <svg viewBox="0 0 24 24" width="24" height="24">
+                <path d="M12 1.5C6.2 1.5 1.5 6.2 1.5 12S6.2 22.5 12 22.5 22.5 17.8 22.5 12 17.8 1.5 12 1.5zm0 19c-4.7 0-8.5-3.8-8.5-8.5S7.3 3.5 12 3.5 20.5 7.3 20.5 12 16.7 20.5 12 20.5zm.75-13v4.25H17v1.5h-5.25V7.5h1.5z"/>
+            </svg>
+        `;
+
+        const textDiv = document.createElement('div');
+        //textDiv.className = 'yt-spec-button-shape-next__button-text-content';
+        textDiv.textContent = this.i18n.get('timestamp');
+
+        const feedback = document.createElement('div');
+        feedback.className = 'yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response';
+        feedback.innerHTML = `<div class="yt-spec-touch-feedback-shape__stroke"></div><div class="yt-spec-touch-feedback-shape__fill"></div>`;
+
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(iconContainer);
+        wrapper.appendChild(textDiv);
+        wrapper.appendChild(feedback);
+
+        return wrapper;
     }
 
     handleButtonClick() {
         const shortUrl = this.getShortUrl();
         if (shortUrl) {
             this.copyToClipboard(shortUrl);
-            this.showNotification(this.i18n.get('copied', {name: GM_info.script.name,url: shortUrl}));
+            this.showNotification(this.i18n.get('copied', { name: GM_info.script.name, url: shortUrl }));
         } else {
             this.showNotification(this.i18n.get('format_error', { name: GM_info.script.name }));
         }
     }
 
     getShortUrl() {
-        const currentUrl = window.location.href;
-        const videoId = new URL(currentUrl).searchParams.get('v');
-        return videoId ? `https://youtu.be/${videoId}` : null;
+        const currentUrl = new URL(window.location.href);
+        const videoId = currentUrl.searchParams.get('v');
+        let shortUrl = videoId ? `https://youtu.be/${videoId}` : null;
+
+        if (shortUrl && this.timestampEnabled) {
+            const videoTime = document.querySelector('video').currentTime;
+            const time = Math.floor(videoTime ? videoTime : 0);
+            if (time > 0) shortUrl += `?t=${time}`;
+        }
+
+        return shortUrl;
     }
 
     copyToClipboard(text) {
@@ -98,26 +195,37 @@ class YouTubeShortUrlCopier {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
             color: 'white',
-            padding: '10px',
-            borderRadius: '5px',
-            zIndex: '1000'
+            padding: '10px 16px',
+            borderRadius: '8px',
+            zIndex: '10000',
+            fontSize: '14px',
+            whiteSpace: 'nowrap'
         });
 
         document.body.appendChild(notification);
-        setTimeout(() => {
-            if (notification.parentNode) {
-                document.body.removeChild(notification);
-            }
-        }, this.notificationDuration);
+        setTimeout(() => notification.remove(), this.notificationDuration);
+    }
+    injectStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+          #yscsb-timestamp-checkbox-wrapper.selected {
+              background-color: #c4302b;
+              color: white;
+          }
+          #yscsb-timestamp-checkbox-wrapper.selected svg path {
+              fill: white;
+          }
+      `;
+        document.head.appendChild(style);
     }
 }
+
 
 class LocalizationManager {
     constructor() {
         const lang = navigator.language.toLowerCase();
-        console.log('lang',lang)
         if (lang.startsWith('zh')) this.lang = 'zh';
         else if (lang.startsWith('ja')) this.lang = 'ja';
         else if (lang.startsWith('es')) this.lang = 'es';
@@ -135,31 +243,41 @@ class LocalizationManager {
             copied:        "{name}:short URL copied: {url}",
             format_error:  "{name}:short URL format changed, please wait for script update",
             no_title:      "{name}:could not find <title> element",
-            max_retry:     "{name}:exceeded retry limit, share button not found"
+            max_retry:     "{name}:exceeded retry limit, share button not found",
+            share:         "Share",
+            timestamp:     "Timestamp"
         },
         zh: {
             copied:        "{name}：縮網址已被複製: {url}",
             format_error:  "{name}：縮網址格式改變，請等待腳本更新",
             no_title:      "{name}：找不到 <title> 元素",
-            max_retry:     "{name}：超過最大重試次數，無法找到分享按鈕"
+            max_retry:     "{name}：超過最大重試次數，無法找到分享按鈕",
+            share:         "分享",
+            timestamp:     "時間戳"
         },
         ja: {
             copied:        "{name}:の短縮URLをコピーしました: {url}",
             format_error:  "{name}:の短縮URL形式が変更されました。スクリプトの更新をお待ちください",
             no_title:      "{name}:は <title> 要素を見つけられませんでした",
-            max_retry:     "{name}:は最大試行回數を超え、共有ボタンが見つかりません"
+            max_retry:     "{name}:は最大試行回數を超え、共有ボタンが見つかりません",
+            share:         "共有",
+            timestamp:     "タイムスタンプ"
         },
         es: {
-            copied:        "{name}:URL corta copiada por ${name}: ${url}",
-            format_error:  "{name}:El formato de URL corta de ${name} ha cambiado. Espera una actualización del script",
+            copied:        "{name}:URL corta copiada: {url}",
+            format_error:  "{name}:El formato de URL corta ha cambiado. Espera una actualización del script",
             no_title:      "{name}:no pudo encontrar el elemento <title>",
-            max_retry:     "{name}:superó el número máximo de intentos. Botón de compartir no encontrado"
+            max_retry:     "{name}:superó el número máximo de intentos. Botón de compartir no encontrado",
+            share:         "Compartir",
+            timestamp:     "Hora"
         },
         de: {
-            copied:        "{name}:Kurzlink wurde kopiert: ${url}",
+            copied:        "{name}:Kurzlink wurde kopiert: {url}",
             format_error:  "{name}:Kurzlink-Format wurde geändert. Bitte auf ein Skript-Update warten",
             no_title:      "{name}:konnte das <title>-Element nicht finden",
-            max_retry:     "{name}:hat die maximale Anzahl an Versuchen überschritten. Teilen-Schaltfläche nicht gefunden"
+            max_retry:     "{name}:hat die maximale Anzahl an Versuchen überschritten. Teilen-Schaltfläche nicht gefunden",
+            share:         "Teilen",
+            timestamp:     "Zeitstempel"
         }
     };
 }
