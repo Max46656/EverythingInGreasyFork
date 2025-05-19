@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.8.2
+// @version      1.8.3
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -176,7 +176,7 @@ class artScraper {
         for (let i = startPage; i <= this.targetPages + startPage; i++) {
             const iterationStartTime = performance.now();
             //console.log("理應處理至",i,"目前處理至",document.querySelector("nav button span").textContent)
-            //當頁面的載入速度慢於腳本處理速度，會導致圖片被重複抓取或是沒有抓取就進入下一頁
+            //當頁面的載入速度慢於腳本處理速度，會導致圖片被重複抓取
             let page=document.querySelector("nav button span").textContent;
             if(page && page<=i){
               i--;
@@ -189,11 +189,11 @@ class artScraper {
             // 最後一頁的下一頁按鈕為隱藏
             let allPageNav = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
             let retry = 0;
-            while(allPageNav[allPageNav.length-1].hasAttribute("hidden") && retry<1000) {
+            while(allPageNav[allPageNav.length-1].hasAttribute("hidden") && retry<100) {
                 await this.delay(1);
                 retry+=1;
             }
-            if(retry>=1000){
+            if(retry>=100){
               console.log(`${GM_info.script.name} 已經來到最後一頁，停止排序`);
               break;
             }
@@ -243,7 +243,7 @@ class artScraper {
         const maxRetries = 2;
         //出於某種黑魔法不斷上下拖動有助於圖片元素的確實載入
         while (retryCount < maxRetries) {
-            let pageStandard = await this.getElementListBySelector(artsClass);
+            let pageStandard = this.getElementListBySelector(artsClass);
             pageStandard = pageStandard.length - 1;
             let thumbnailCount = 0;
 
@@ -267,9 +267,8 @@ class artScraper {
             //console.log(`找到${arts.length}張圖片，開始抓取圖片`);
 
             const artsArray = Array.from(arts);
-            const firstThreeArts = artsArray.slice(0, 3);
             const allArtsSet = new Set(this.allArtsWithoutLike);
-            const areFirstThreePresent = firstThreeArts.every(art => allArtsSet.has(art));
+            const areFirstThreePresent = artsArray.slice(0, 3).every(art => allArtsSet.has(art));
 
             if (areFirstThreePresent && retryCount < maxRetries) {
                 //console.log(`前3張圖片已存在，重試第${retryCount + 1}次`);
@@ -709,15 +708,14 @@ class artScraper {
 class customMenu {
     constructor() {
         this.registerMenuCommand(this);
-        this.rowsOfArtsWall = this.getRowsOfArtsWall();
     }
 
     rowsOfArtsWallMenu() {
-        const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
+        const rows = parseInt(prompt(`${this.getFeatrueMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
         if (rows && Number.isInteger(rows) && rows > 0) {
              GM_setValue("rowsOfArtsWall", rows);
         } else {
-            alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
+            alert(this.getFeatrueMessageLocalization("rowsOfArtsWallMenuError"));
         }
     }
 
@@ -725,10 +723,10 @@ class customMenu {
         const currentState = GM_getValue("leftAlign", false);
         const newState = !currentState;
         GM_setValue("leftAlign", newState);
-        alert(this.getFeatureMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
+        alert(this.getFeatrueMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatrueMessageLocalization("enabled") : this.getFeatrueMessageLocalization("disabled")));
     }
 
-    getFeatureMessageLocalization(word) {
+    getFeatrueMessageLocalization(word) {
         let display = {
             "zh-TW": {
                 "rowsOfArtsWall": "行數設定",
@@ -762,8 +760,8 @@ class customMenu {
     }
 
     registerMenuCommand(instance) {
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
+        GM_registerMenuCommand(instance.getFeatrueMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
+        GM_registerMenuCommand(instance.getFeatrueMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
     }
 }
 
