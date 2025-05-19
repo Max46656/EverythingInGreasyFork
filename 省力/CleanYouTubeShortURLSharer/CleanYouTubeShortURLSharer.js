@@ -21,7 +21,9 @@
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
 // @grant        GM.info
-// @version      1.0.1
+// @version      1.0.2
+// @downloadURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.user.js
+// @updateURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.meta.js
 // ==/UserScript==
 
 
@@ -88,27 +90,33 @@ class YouTubeShortUrlCopier {
 
         const iconContainer = document.createElement('div');
         iconContainer.className = 'yt-spec-button-shape-next__icon';
-        iconContainer.innerHTML = `
-            <span class="yt-icon-shape style-scope yt-icon yt-spec-icon-shape">
-                <div style="width: 100%; height: 100%; display: block; fill: currentcolor;">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
-                        <path d="M15 5.63 20.66 12 15 18.37V14h-1c-3.96 0-7.14 1-9.75 3.09 1.84-4.07 5.11-6.4 9.89-7.1l.86-.13V5.63M14 3v6C6.22 10.13 3.11 15.33 2 21c2.78-3.97 6.44-6 12-6v6l8-9-8-9z"></path>
-                    </svg>
-                </div>
-            </span>
-        `;
+        const span = document.createElement('span');
+        span.className = 'yt-icon-shape style-scope yt-icon yt-spec-icon-shape';
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svg.setAttribute('height', '24');
+        svg.setAttribute('width', '24');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('focusable', 'false');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.style.pointerEvents = 'none';
+        svg.style.display = 'inherit';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M15 5.63 20.66 12 15 18.37V14h-1c-3.96 0-7.14 1-9.75 3.09 1.84-4.07 5.11-6.4 9.89-7.1l.86-.13V5.63M14 3v6C6.22 10.13 3.11 15.33 2 21c2.78-3.97 6.44-6 12-6v6l8-9-8-9z');
+
+        svg.appendChild(path);
+        span.appendChild(svg);
+        iconContainer.appendChild(span);
 
         const textDiv = document.createElement('div');
-        //textDiv.className = 'yt-spec-button-shape-next__button-text-content';
         textDiv.textContent = this.i18n.get('share');
-
-        const feedback = document.createElement('div');
-        feedback.className = 'yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response';
-        feedback.innerHTML = `<div class="yt-spec-touch-feedback-shape__stroke"></div><div class="yt-spec-touch-feedback-shape__fill"></div>`;
 
         button.appendChild(iconContainer);
         button.appendChild(textDiv);
-        button.appendChild(feedback);
 
         button.addEventListener('click', () => this.handleButtonClick());
         return button;
@@ -137,24 +145,24 @@ class YouTubeShortUrlCopier {
 
         const iconContainer = document.createElement('div');
         iconContainer.className = 'yt-spec-button-shape-next__icon';
-        iconContainer.innerHTML = `
-            <svg viewBox="0 0 24 24" width="24" height="24">
-                <path d="M12 1.5C6.2 1.5 1.5 6.2 1.5 12S6.2 22.5 12 22.5 22.5 17.8 22.5 12 17.8 1.5 12 1.5zm0 19c-4.7 0-8.5-3.8-8.5-8.5S7.3 3.5 12 3.5 20.5 7.3 20.5 12 16.7 20.5 12 20.5zm.75-13v4.25H17v1.5h-5.25V7.5h1.5z"/>
-            </svg>
-        `;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M12 1.5C6.2 1.5 1.5 6.2 1.5 12S6.2 22.5 12 22.5 22.5 17.8 22.5 12 17.8 1.5 12 1.5zm0 19c-4.7 0-8.5-3.8-8.5-8.5S7.3 3.5 12 3.5 20.5 7.3 20.5 12 16.7 20.5 12 20.5zm.75-13v4.25H17v1.5h-5.25V7.5h1.5z');
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('width', '24');
+        svg.setAttribute('height', '24');
+
+        svg.appendChild(path);
+        iconContainer.appendChild(svg);
 
         const textDiv = document.createElement('div');
-        //textDiv.className = 'yt-spec-button-shape-next__button-text-content';
         textDiv.textContent = this.i18n.get('timestamp');
-
-        const feedback = document.createElement('div');
-        feedback.className = 'yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response';
-        feedback.innerHTML = `<div class="yt-spec-touch-feedback-shape__stroke"></div><div class="yt-spec-touch-feedback-shape__fill"></div>`;
 
         wrapper.appendChild(checkbox);
         wrapper.appendChild(iconContainer);
         wrapper.appendChild(textDiv);
-        wrapper.appendChild(feedback);
 
         return wrapper;
     }
