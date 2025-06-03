@@ -1,4 +1,4 @@
-english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/G-LangLoc/README.zh-Hant.md)
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/GoogleSearchRsltLangLoc/README.zh-Hant.md)
 # Google Search Result Language Localization
 
 Tired of manually setting the language for Google Search results? This user script allows you to define a preferred language for Google Search by automatically appending the `lr=` parameter to URLs, ensuring search results are tailored to your language preference. It also provides a menu to select from multiple languages and toggle automatic language application.
