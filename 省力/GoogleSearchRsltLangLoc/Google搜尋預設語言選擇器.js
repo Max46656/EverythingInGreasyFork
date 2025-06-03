@@ -1,33 +1,32 @@
 // ==UserScript==
-// @name               Google搜尋預設語言選擇器
-// @name:uk-UA         Селектор мови за замовчуванням для пошуку Google
-// @name:ja            Google検索デフォルト言語セレクター
-// @name:ko            Google 검색 기본 언어 선택기
-// @name:fr            Sélecteur de langue par défaut pour la recherche Google
-// @name:es            Selector de idioma predeterminado para búsqueda de Google
-// @name:de            Google-Suche Standard-Sprachwähler
-// @name:it            Selettore di lingua predefinito per la ricerca Google
-// @name:pt            Seletor de idioma padrão para pesquisa do Google
-// @name:ar            مُحدد اللغة الافتراضي للبحث في Google
-// @name:th            ตัวเลือกภาษาเริ่มต้นสำหรับการค้นหา Google
-// @name:hi            Google खोज डिफ़ॉल्ट भाषा चयनकर्ता
-// @name:nl            Google Zoeken Standaard Taalkiezer
-// @name:en            Google Search Default Language Selector
-// @namespace          http://tampermonkey.net/
-// @description        將Google搜尋的結果改為僅限於目標語言
-// @description:uk-UA  Обмежити результати пошуку Google цільовою мовою
-// @description:ja     Google検索の結果を対象言語に制限する
-// @description:ko     Google 검색 결과를 대상 언어로 제한
-// @description:fr     Restreindre les résultats de recherche Google à la langue cible
+// @name               G-搜尋結果語言在地化
+// @name:en            G-LangLoc
+// @name:ja            G-検索結果言語ローカライズ
+// @name:ko            G-검색 결과 언어 로컬라이제이션
+// @name:fr            G-Localisation des résultats de recherche
+// @name:es            G-Localización de resultados de búsqueda
+// @name:de            G-Suchergebnisse-Lokalisierung
+// @name:uk            G-Локалізація результатів пошуку
+// @name:it            G-Localizzazione dei risultati di ricerca
+// @name:pt            G-Localização dos resultados de pesquisa
+// @name:ar            G-توطين نتائج البحث
+// @name:th            G-การแปลผลการค้นหา
+// @name:hi            G-खोज परिणाम स्थानीयकरण
+// @name:nl            G-Lokalisatie van zoekresultaten
+// @description        將Google搜尋結果改為僅限於目標語言
+// @description:en     Restrict Google search results to the target language
+// @description:ja     Google検索結果をターゲット言語に限定する
+// @description:ko     Google 검색 결과를 목표 언어로 제한
+// @description:fr     Limiter les résultats de recherche Google à la langue cible
 // @description:es     Restringir los resultados de búsqueda de Google al idioma objetivo
 // @description:de     Google-Suchergebnisse auf die Zielsprache beschränken
-// @description:it     Limitare i risultati di ricerca di Google alla lingua target
-// @description:pt     Restringir os resultados de pesquisa do Google ao idioma alvo
+// @description:uk     Обмежити результати пошуку Google цільовою мовою
+// @description:it     Limita i risultati di ricerca di Google alla lingua target
+// @description:pt     Restringir os resultados de pesquisa do Google ao idioma-alvo
 // @description:ar     تقييد نتائج بحث Google باللغة المستهدفة
 // @description:th     จำกัดผลการค้นหาของ Google ไว้ที่ภาษาเป้าหมาย
 // @description:hi     Google खोज परिणामों को लक्ष्य भाषा तक सीमित करें
-// @description:nl     Beperk Google-zoekresultaten tot de doeltaal
-// @description:en     Restrict Google search results to the target language
+// @description:nl     Google-zoekresultaten beperken tot de doeltaal
 
 // @icon               https://www.google.com/favicon.ico
 // @match              https://www.google.com/webhp
@@ -35,7 +34,7 @@
 // @grant              GM_setValue
 // @grant              GM_getValue
 // @grant              GM_registerMenuCommand
-// @version            1.0
+// @version            1.0.1
 
 // @author             Max
 // @namespace          https://github.com/Max46656

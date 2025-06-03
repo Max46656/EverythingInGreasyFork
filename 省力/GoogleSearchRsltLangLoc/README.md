@@ -1,4 +1,4 @@
-english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/LanguageManager/README.zh-Hant.md)
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/G-LangLoc/README.zh-Hant.md)
 # Google Search Result Language Localization
 
 Tired of manually setting the language for Google Search results? This user script allows you to define a preferred language for Google Search by automatically appending the `lr=` parameter to URLs, ensuring search results are tailored to your language preference. It also provides a menu to select from multiple languages and toggle automatic language application.
@@ -9,12 +9,12 @@ Tired of manually setting the language for Google Search results? This user scri
 * Adds a menu command to select your preferred language from a list of supported options.
 * Automatically updates Google Search Result with your selected language if enabled.
 * Removes outdated language parameters when switching languages to updates Google Search Result.
-* Multi-language menu support (English, 繁體中文, 日本語, 한국어, Français, Español, Deutsch, and more).
+* Multi-language menu support (繁體中文, українська мова, English, 日本語, 한국어, Français, Español, Deutsch, and more).
 
 ## Installation
 
 1. Install the [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/) browser extension.
-2. Install the [Google Search Default Language Selector](https://greasyfork.org/zh-TW/scripts/XXXXXX-language-manager) user script.
+2. Install the [Google Search Result Language Localization](https://greasyfork.org/zh-TW/scripts/XXXXXX-language-manager) user script.
 3. Visit [Google Search](https://www.google.com) and use the script’s menu commands to configure your language settings!
 
 ## Usage
@@ -43,7 +43,7 @@ This script includes localized menu prompts and messages for:
 - 🇮🇳 हिन्दी
 - 🇳🇱 Nederlands
 
-You can modify or extend the language options by editing the `#languages` object in the `LanguageManager` class.
+You can modify or extend the language options by editing the `_languages` object in the `LanguageManager` class.
 
 ## License
 
