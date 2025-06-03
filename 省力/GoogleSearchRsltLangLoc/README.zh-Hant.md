@@ -1,4 +1,4 @@
-繁體中文 | [![Static Badge](https://img.shields.io/badge/lang-en-blue)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/G-LangLoc/README.md)
+繁體中文 | [![Static Badge](https://img.shields.io/badge/lang-en-blue)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/GoogleSearchRsltLangLoc/README.md)
 # Google 搜尋結果語言設定
 
 厭倦了手動設定 Google 搜尋結果的語言？這個用戶腳本讓您可以設定 Google 搜尋的預設語言，通過自動將 `lr=` 參數添加到網址中，確保搜尋結果符合您的語言偏好。它還提供了一個選單，讓您從多種語言中選擇並切換自動語言應用的開關。
@@ -15,7 +15,7 @@
 
 1. 安裝 [Tampermonkey](https://www.tampermonkey.net/) 或 [Violentmonkey](https://violentmonkey.github.io/) 瀏覽器擴充功能。
 2. 安裝 [Google 搜尋預設語言選擇器](https://greasyfork.org/zh-TW/scripts/XXXXXX-language-manager) 用戶腳本。
-3. 訪問 [Google 搜尋](https://www.google.com) 並使用腳本的選單指令來配置您的語言設定！
+3. 訪問 [Google 搜尋](https://www.google.com) 並使用腳本的選單指令來組態您的語言設定！
 
 ## 使用方法
 
@@ -27,7 +27,7 @@
 
 ## 支援語言
 
-此腳本包含以下語言的本地化選單提示和訊息：
+此腳本包含以下語言的在地化選單提示和訊息：
 - 🇹🇼 繁體中文
 - 🇺🇸 English
 - 🇯🇵 日本語
