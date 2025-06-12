@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.8.3
+// @version      1.8.5
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -35,22 +35,22 @@ class pageStrategy {
 
 class userStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'li.sc-7d21cb21-2 img'
+        return 'li.sc-bf8cea3f-2 img'
     }
     getArtsClass() {
-        return 'ul.sc-7d21cb21-1 li';
+        return 'li.sc-bf8cea3f-2';
     }
     getRenderArtWallClass() {
-        return 'div.sc-7d21cb21-0';
+        return '.sc-2b45994f-0.cUskQy';
     }
-    getOutArtWallWayClass(){
-        return '.sc-8d5ac044-4.sc-43a7160e-3.gqvfWY.kyPQdN';
+    getArtWallAlignLeftClass(){
+        return 'gqvfWY';
     }
     getButtonAtClass() {
         return 'nav.sc-a0b4b67e-0';
     }
     getAllButtonClass() {
-        return ['bkpjdx','fiSVRw','eXEGlp','lbkOeY'];
+        return ['kWBVDO','eYndhr','eVqNkv','iXglsX'];
     }
     getArtsCountClass(){
         return 'div.sc-a6755c3a-2 span';
@@ -59,17 +59,17 @@ class userStrategy extends pageStrategy{
 
 class tagsStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'li.sc-ad8346e6-2 a.sc-a57c16e6-16 img'
+        return 'li.sc-98699d11-2 img'
     }
     getArtsClass() {
-        return 'ul.sc-ad8346e6-1 li.sc-ad8346e6-2';
+        return 'li.sc-98699d11-2';
     }
     getRenderArtWallClass() {
-        return 'section.sc-3d8ed48f-0 div.sc-ad8346e6-0';
+        return 'section.sc-3d8ed48f-0 div.sc-98699d11-0';
         // return 'div.ggHNyV:has(ul.hdRpMN)';
     }
-    getOutArtWallWayClass(){
-        return 'div.sc-ad8346e6-0';
+    getArtWallAlignLeftClass(){
+        return 'gqvfWY';
     }
     getButtonAtClass() {
         return 'section.sc-3d8ed48f-0 div.sc-8d5ac044-4 div.sc-a6755c3a-0';
@@ -84,16 +84,16 @@ class tagsStrategy extends pageStrategy{
 
 class subStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'div.sc-a57c16e6-0 a.sc-a57c16e6-16 img'
+        return 'a.sc-324476b7-16 img'
     }
     getArtsClass() {
-        return 'ul.sc-7d21cb21-1 li';
+        return 'li.sc-bf8cea3f-2';
     }
     getRenderArtWallClass() {
-        return 'div.sc-7d21cb21-0';
+        return 'div.sc-a6c8b08c-0.bghEFg';
     }
-    getOutArtWallWayClass(){
-        return 'div.sc-8d5ac044-4.sc-8d5ac044-5';
+    getArtWallAlignLeftClass(){
+        return 'gqvfWY';
     }
     getButtonAtClass() {
         return 'div.sc-2e1e8eba-2:has(a[href="/novel/bookmark_new.php"])';
@@ -112,7 +112,7 @@ class artScraper {
         this.allArts = [];
         this.allArtsWithoutLike = [];
         this.targetPages = GM_getValue("targetPages", 10) || targetPages;
-        this.likesMinLimit=GM_getValue("likesMinLimit", 50) || likesMinLimit;
+        this.likesMinLimit = GM_getValue("likesMinLimit", 50) || likesMinLimit;
         this.strategy = this.setStrategy();
         this.currentArtCount=0;
         // console.log(strategy.getThumbnailClass(),strategy.getArtsClass(),strategy.getRenderArtWallClass(),strategy.getButtonAtClass(),strategy.getAllButtonClass())
@@ -136,9 +136,6 @@ class artScraper {
         await this.executeAndcountUpSec('sortArts', this.sortArts.bind(this));
         let renderArtWallAtClass = this.strategy.getRenderArtWallClass();
         await this.executeAndcountUpSec('renderArtWall', () => this.renderArtWall(renderArtWallAtClass));
-        if(GM_getValue("leftAlign", false)){
-            this.changeElementClassName(document.querySelector(this.strategy.getOutArtWallWayClass()),'sortArtWall');
-        }
         let buttonAtClass = this.strategy.getButtonAtClass();
         //this.addRestoreButton(buttonAtClass, this.strategy.getAllButtonClass());
         this.addRerenderButton(renderArtWallAtClass, buttonAtClass, this.strategy.getAllButtonClass());
@@ -177,8 +174,8 @@ class artScraper {
             const iterationStartTime = performance.now();
             //console.log("理應處理至",i,"目前處理至",document.querySelector("nav button span").textContent)
             //當頁面的載入速度慢於腳本處理速度，會導致圖片被重複抓取
-            let page=document.querySelector("nav button span").textContent;
-            if(page && page<=i){
+            let page = Number(document.querySelector("nav button span").textContent);
+            if(page && i >= page){
               i--;
             }else if(!page){
               console.log(`${GM_info.script.name} 觸發page0錯誤，停止排序`);
@@ -189,9 +186,9 @@ class artScraper {
             // 最後一頁的下一頁按鈕為隱藏
             let allPageNav = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
             let retry = 0;
-            while(allPageNav[allPageNav.length-1].hasAttribute("hidden") && retry<100) {
+            while(allPageNav[allPageNav.length-1].hasAttribute("hidden") && retry < 100) {
                 await this.delay(1);
-                retry+=1;
+                retry++;
             }
             if(retry>=100){
               console.log(`${GM_info.script.name} 已經來到最後一頁，停止排序`);
@@ -251,7 +248,7 @@ class artScraper {
                 const thumbnails = await this.getElementListBySelector(thumbnailClass);
                 thumbnailCount = thumbnails.length;
                 if (thumbnailCount < pageStandard) {
-                    console.log(`${GM_info.script.name}: 缺少${pageStandard - thumbnailCount}張圖片，請關閉開發者工具且保持視窗在本分頁以確保所有圖片都載入`);
+                    console.log(`${GM_info.script.name}: 缺少${pageStandard - thumbnailCount}張圖片，請保持本分頁為本瀏覽器視窗的唯一分頁以確保所有圖片都載入`);
                     window.scrollBy(0, window.innerHeight);
                     await this.delay(100);
                     // 滑到頁面底部
@@ -363,7 +360,16 @@ class artScraper {
 
         const table = document.createElement('table');
         table.style.cssText = 'width: 1223px; overflow-y: auto; margin: 0 auto;';
-        table.classList.add('TableArtWall');
+
+        if(GM_getValue("leftAlign", false)){
+            table.classList.add('TableArtWall');
+            if(self.location.href.includes('https://www.pixiv.net/bookmark_new_illust')){
+              this.changeElementClassName(document.querySelector(".gqvfWY"),"leftAlign");
+            }
+        }else{
+            //pixiv將置中對齊的方式從擠一個元素變成調整相簿的css class
+            table.classList.add(this.strategy.getArtWallAlignLeftClass());
+        }
 
         const fragment = document.createDocumentFragment();
         fragment.appendChild(table);
@@ -543,7 +549,6 @@ class artScraper {
         likeIcon.setAttributeNS(null, "height", "16");
         likeIcon.setAttributeNS(null, "width", "16");
         likeIcon.classList.add("dxYRhf", "fiLugu");
-
         const path1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path1.setAttributeNS(null, "d", "M21,5.5 C24.8659932,5.5 28,8.63400675 28,12.5 C28,18.2694439 24.2975093,23.1517313 17.2206059,27.1100183 C16.4622493,27.5342993 15.5379984,27.5343235 14.779626,27.110148 C7.70250208,23.1517462 4,18.2694529 4,12.5 C4,8.63400691 7.13400681,5.5 11,5.5 C12.829814,5.5 14.6210123,6.4144028 16,7.8282366 C17.3789877,6.4144028 19.170186,5.5 21,5.5 Z");
 
@@ -614,9 +619,10 @@ class artScraper {
         pageRangeInput.style.marginRight = '10px';
         pageRangeInput.classList.add('pageInput');
         pageRangeInput.addEventListener('input', (event) => {
-            this.targetPages = event.target.value;
+            this.targetPages = parseInt(event.target.value);
             startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
         });
+
         container.appendChild(pageIcon);
         container.appendChild(pageRangeInput);
         if(max>50){
@@ -644,6 +650,7 @@ class artScraper {
             return 34;
         }
         const artsCountElement = await this.getElementBySelector(this.strategy.getArtsCountClass());
+
         //console.log(artsCountElement);
         if (artsCountElement) {
             // 刪除數字中的逗號
@@ -652,7 +659,6 @@ class artScraper {
             const arts = await this.getElementListBySelector(this.strategy.getArtsClass());
             const artsPerPage = arts.length;
             const maxPage = Math.ceil(artsCount / artsPerPage);
-            //console.log("artsPerPage", artsPerPage, 'artsCount', artsCount);
             return maxPage;
         } else {
             return 34;
@@ -711,11 +717,11 @@ class customMenu {
     }
 
     rowsOfArtsWallMenu() {
-        const rows = parseInt(prompt(`${this.getFeatrueMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
+        const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
         if (rows && Number.isInteger(rows) && rows > 0) {
              GM_setValue("rowsOfArtsWall", rows);
         } else {
-            alert(this.getFeatrueMessageLocalization("rowsOfArtsWallMenuError"));
+            alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
         }
     }
 
@@ -723,10 +729,10 @@ class customMenu {
         const currentState = GM_getValue("leftAlign", false);
         const newState = !currentState;
         GM_setValue("leftAlign", newState);
-        alert(this.getFeatrueMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatrueMessageLocalization("enabled") : this.getFeatrueMessageLocalization("disabled")));
+        alert(this.getFeatureMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
     }
 
-    getFeatrueMessageLocalization(word) {
+    getFeatureMessageLocalization(word) {
         let display = {
             "zh-TW": {
                 "rowsOfArtsWall": "行數設定",
@@ -760,8 +766,8 @@ class customMenu {
     }
 
     registerMenuCommand(instance) {
-        GM_registerMenuCommand(instance.getFeatrueMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
-        GM_registerMenuCommand(instance.getFeatrueMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
     }
 }
 
