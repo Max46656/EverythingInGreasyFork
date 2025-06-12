@@ -14,7 +14,7 @@
 
 ## 安裝方式
 1. 安裝 [Violentmonkey](https://violentmonkey.github.io)（支援 Firefox、Chrome、Vivaldi 等瀏覽器）。
-2. 安裝 [click it for you](https://greasyfork.org/zh-TW/scripts/539191-click-it-for-you)（將自動載入至 ）。
+2. 安裝 [click it for you](https://greasyfork.org/zh-TW/scripts/539191-click-it-for-you)。
 3. 完成。
 
 ## 使用方法
