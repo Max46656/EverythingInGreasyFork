@@ -20,7 +20,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.0.1
+// @version      1.0.2
 // @license MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.user.js
 // @updateURL https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.meta.js
@@ -29,6 +29,8 @@
 class AutoClickManager {
 
     clickRules;
+
+    intervalIds = {}
 
     i18n = {
         'zh-TW': {
@@ -41,7 +43,6 @@ class AutoClickManager {
             selectorType: '選擇器類型：',
             selector: '選擇器：',
             nthElement: '第幾個元素（從 1 開始）：',
-            clickDelay: '點擊延遲（毫秒）：',
             addRule: '新增規則',
             save: '儲存',
             delete: '刪除',
@@ -59,7 +60,6 @@ class AutoClickManager {
             selectorType: 'Selector Type:',
             selector: 'Selector:',
             nthElement: 'Nth Element (1-based):',
-            clickDelay: 'Click Delay (ms):',
             addRule: 'Add Rule',
             save: 'Save',
             delete: 'Delete',
@@ -77,9 +77,8 @@ class AutoClickManager {
             selectorType: 'セレクタタイプ：',
             selector: 'セレクタ：',
             nthElement: '何番目の要素（1から）：',
-            clickDelay: 'クリック遅延（ミリ秒）：',
             addRule: 'ルールを追加',
-            save: '保存',
+            save: '儲存',
             delete: '削除',
             ruleNamePlaceholder: '例：マイルール',
             urlPatternPlaceholder: '例：https://example\\.com/.*',
@@ -95,7 +94,6 @@ class AutoClickManager {
             selectorType: 'Selektortyp:',
             selector: 'Selektor:',
             nthElement: 'N-tes Element (ab 1):',
-            clickDelay: 'Klickverzögerung (Millisekunden):',
             addRule: 'Regel hinzufügen',
             save: 'Speichern',
             delete: 'Löschen',
@@ -113,7 +111,6 @@ class AutoClickManager {
             selectorType: 'Tipo de Selector:',
             selector: 'Selector:',
             nthElement: 'N-ésimo Elemento (desde 1):',
-            clickDelay: 'Retraso de Clic (ms):',
             addRule: 'Agregar Regla',
             save: 'Guardar',
             delete: 'Eliminar',
@@ -129,41 +126,50 @@ class AutoClickManager {
         this.runAutoClicks();
     }
 
-    // 執行所有匹配規則的自動點擊
+    // 執行所有符合規則的自動點擊
     runAutoClicks() {
         this.clickRules.rules.forEach((rule, index) => {
             if (rule.urlPattern && rule.selector) {
-                setTimeout(() => this.autoClick(rule), rule.clickDelay || 1000);
+                const intervalId = setInterval(() => {
+                    const success = this.autoClick(rule, index);
+                    if (success) {
+                        clearInterval(this.intervalIds[index]);
+                        delete this.intervalIds[index];
+                    }
+                }, 100);
+                this.intervalIds[index] = intervalId;
             } else {
                 console.warn(`${GM_info.script.name}：規則 "${rule.ruleName}" 無效（索引 ${index}）：缺少 urlPattern 或 selector`);
             }
         });
     }
 
-    // 執行單條規則的自動點擊
-    autoClick(rule) {
+    // 執行單條規則的自動點擊，並返回是否成功
+    autoClick(rule, ruleIndex) {
         const urlRegex = new RegExp(rule.urlPattern);
         if (!urlRegex.test(window.location.href)) {
-            return;
+            return false;
         }
 
         const elements = this.getElements(rule.selectorType, rule.selector);
         if (elements.length === 0) {
             console.warn(`${GM_info.script.name}：規則 "${rule.ruleName}" 未找到匹配元素：`, rule.selector);
-            return;
+            return false;
         }
 
         if (rule.nthElement < 1 || rule.nthElement > elements.length) {
             console.warn(`${GM_info.script.name}：規則 "${rule.ruleName}" 的 nthElement 無效：${rule.nthElement}，找到 ${elements.length} 個元素`);
-            return;
+            return false;
         }
 
         const targetElement = elements[rule.nthElement - 1];
         if (targetElement) {
-            console.warn(`${GM_info.script.name}：規則 "${rule.ruleName}" 點擊元素：`, targetElement);
+            console.log(`${GM_info.script.name}：規則 "${rule.ruleName}" 成功點擊元素：`, targetElement);
             targetElement.click();
+            return true; // 點擊成功
         } else {
             console.warn(`${GM_info.script.name}：規則 "${rule.ruleName}" 未找到目標元素`);
+            return false;
         }
     }
 
@@ -212,7 +218,7 @@ class AutoClickManager {
             box-sizing: border-box;
         }
         #autoClickMenu button {
-            cursor: pointer; /* 設置滑鼠游標為指針 */
+            cursor: pointer; /* 設置滑鼠遊標為指針 */
         }
         #autoClickMenu button:hover {
             background: rgb(70, 70, 70); /* 滑鼠懸停時更改背景色 */
@@ -222,7 +228,7 @@ class AutoClickManager {
             display: block; /* 標籤顯示為塊元素 */
         }
         #autoClickMenu .ruleHeader {
-            cursor: pointer; /* 設置滑鼠游標為指針 */
+            cursor: pointer; /* 設置滑鼠遊標為指針 */
             background: rgb(50, 50, 50);
             padding: 5px;
             margin: 5px 0;
@@ -266,8 +272,6 @@ class AutoClickManager {
             <input type="text" id="selector" placeholder="${i18n.selectorPlaceholder}">
             <label>${i18n.nthElement}</label>
             <input type="number" id="nthElement" min="1" value="1">
-            <label>${i18n.clickDelay}</label>
-            <input type="number" id="clickDelay" min="0" value="1000">
             <button id="addRule" style="margin-top: 10px;">${i18n.addRule}</button>
         </div>
             `;
@@ -284,16 +288,14 @@ class AutoClickManager {
                 selectorType: document.getElementById('selectorType').value,
                 selector: document.getElementById('selector').value,
                 nthElement: parseInt(document.getElementById('nthElement').value) || 1,
-                clickDelay: parseInt(document.getElementById('clickDelay').value) || 1000
             };
             this.clickRules.rules.push(newRule);
-            this.saveRules();
+            this.saveConfigs();
             this.updateRulesList();
             document.getElementById('ruleName').value = '';
             document.getElementById('urlPattern').value = '';
             document.getElementById('selector').value = '';
             document.getElementById('nthElement').value = '1';
-            document.getElementById('clickDelay').value = '1000';
         });
 
         // 關閉選單按鈕事件
@@ -345,42 +347,61 @@ class AutoClickManager {
                     <input type="text" id="editSelector${globalIndex}" value="${rule.selector}">
                     <label>${i18n.nthElement}</label>
                     <input type="number" id="editNthElement${globalIndex}" min="1" value="${rule.nthElement}">
-                    <label>${i18n.clickDelay}</label>
-                    <input type="number" id="editClickDelay${globalIndex}" min="0" value="${rule.clickDelay}">
                     <button id="saveRule${globalIndex}">${i18n.save}</button>
                     <button id="deleteRule${globalIndex}">${i18n.delete}</button>
                 </div>
             `;
-                rulesList.appendChild(ruleDiv);
+            rulesList.appendChild(ruleDiv);
 
-                // 為規則標題添加點擊事件（縮小/展開）
-                document.getElementById(`ruleHeader${globalIndex}`).addEventListener('click', () => {
-                    const details = document.getElementById(`ruleDetails${globalIndex}`);
-                    details.style.display = details.style.display === 'none' ? 'block' : 'none';
-                });
-
-                // 為儲存按鈕添加點擊事件
-                document.getElementById(`saveRule${globalIndex}`).addEventListener('click', () => {
-                    this.clickRules.rules[globalIndex] = {
-                        ruleName: document.getElementById(`editRuleName${globalIndex}`).value || `規則 ${globalIndex + 1}`,
-                        urlPattern: document.getElementById(`editUrlPattern${globalIndex}`).value,
-                        selectorType: document.getElementById(`editSelectorType${globalIndex}`).value,
-                        selector: document.getElementById(`editSelector${globalIndex}`).value,
-                        nthElement: parseInt(document.getElementById(`editNthElement${globalIndex}`).value) || 1,
-                        clickDelay: parseInt(document.getElementById(`editClickDelay${globalIndex}`).value) || 1000
-                    };
-                    this.saveRules();
-                    this.updateRulesList();
-                });
-
-                // 為刪除按鈕添加點擊事件
-                document.getElementById(`deleteRule${globalIndex}`).addEventListener('click', () => {
-                    this.clickRules.rules.splice(globalIndex, 1);
-                    this.saveRules();
-                    this.updateRulesList();
-                });
+            // 為規則標題添加點擊事件（縮小/展開）
+            document.getElementById(`ruleHeader${globalIndex}`).addEventListener('click', () => {
+                const details = document.getElementById(`ruleDetails${globalIndex}`);
+                details.style.display = details.style.display === 'none' ? 'block' : 'none';
             });
-        }
+
+            // 為保存按鈕添加點擊事件
+            document.getElementById(`saveRule${globalIndex}`).addEventListener('click', () => {
+                // 停止該規則的自動點擊任務
+                if (this.intervalIds[globalIndex]) {
+                    clearInterval(this.intervalIds[globalIndex]);
+                    delete this.intervalIds[globalIndex];
+                }
+                this.clickRules.rules[globalIndex] = {
+                    ruleName: document.getElementById(`editRuleName${globalIndex}`).value || `規則 ${globalIndex + 1}`,
+                    urlPattern: document.getElementById(`editUrlPattern${globalIndex}`).value,
+                    selectorType: document.getElementById(`editSelectorType${globalIndex}`).value,
+                    selector: document.getElementById(`editSelector${globalIndex}`).value,
+                    nthElement: parseInt(document.getElementById(`editNthElement${globalIndex}`).value) || 1,
+                };
+                this.saveConfigs();
+                this.updateRulesList();
+            });
+
+            // 重新啟動自動點擊任務
+            if (this.clickRules.rules[globalIndex].urlPattern && this.clickRules.rules[globalIndex].selector) {
+                const intervalId = setInterval(() => {
+                    const success = this.autoClick(this.clickRules.rules[globalIndex], globalIndex);
+                    if (success) {
+                        clearInterval(this.intervalIds[globalIndex]);
+                        delete this.intervalIds[globalIndex];
+                    }
+                }, 200);
+                this.intervalIds[globalIndex] = intervalId;
+            }
+
+            // 為刪除按鈕添加點擊事件
+            document.getElementById(`deleteRule${globalIndex}`).addEventListener('click', () => {
+                // 停止該規則的自動點擊任務
+                if (this.intervalIds[globalIndex]) {
+                    clearInterval(this.intervalIds[globalIndex]);
+                    delete this.intervalIds[globalIndex];
+                }
+                this.clickRules.rules.splice(globalIndex, 1);
+                this.saveConfigs();
+                this.updateRulesList();
+            });
+        });
+    }
 
     // 獲取當前語言
     getLanguage() {
@@ -392,7 +413,7 @@ class AutoClickManager {
         return 'en'; // 預設英文
     }
 
-    // 儲存組態至本地存儲
+    // 保存配置至本地存儲
     saveRules() {
         GM_setValue('clickRules', this.clickRules);
     }
