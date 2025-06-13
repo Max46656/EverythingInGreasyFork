@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.0.4
+// @version      1.0.5
 // @downloadURL  https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.user.js
 // @updateURL    https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.meta.js
 
@@ -53,7 +53,6 @@ class RuleManager {
     }
 }
 
-// 處理網頁元素和選單 UI
 class WebElementHandler {
     ruleManager;
     clickTaskManager;
@@ -431,13 +430,13 @@ class WebElementHandler {
         }
     }
 
-// 管理自動點擊任務
 class ClickTaskManager {
     ruleManager;
     intervalIds = {};
 
     constructor(ruleManager) {
         this.ruleManager = ruleManager;
+        this.runAutoClicks();
     }
 
     // 清除所有自動點擊任務
