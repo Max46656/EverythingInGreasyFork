@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.0.5
+// @version      1.0.6
 // @downloadURL  https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.user.js
 // @updateURL    https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.meta.js
 
@@ -68,6 +68,9 @@ class WebElementHandler {
             selector: '選擇器：',
             nthElement: '第幾個元素（從 1 開始）：',
             clickDelay: '點擊延遲（毫秒）：',
+            ifLink: '若為連結：（非連結請維持預設）',
+            openLink:'開啟連結',
+            justClick:'點擊連結',
             addRule: '新增規則',
             save: '儲存',
             delete: '刪除',
@@ -88,6 +91,9 @@ class WebElementHandler {
             selector: 'Selector:',
             nthElement: 'Nth Element (1-based):',
             clickDelay: 'Click Delay (ms):',
+            ifLink: 'If it is a link:(Please keep the default setting if it is not a link)',
+            openLink: 'Open the link',
+            justClick: 'Click the link',
             addRule: 'Add Rule',
             save: 'Save',
             delete: 'Delete',
@@ -108,6 +114,9 @@ class WebElementHandler {
             selector: 'セレクタ：',
             nthElement: '何番目の要素（1から）：',
             clickDelay: 'クリック遅延（ミリ秒）：',
+            ifLink: 'リンクの場合:（リンクでない場合はデフォルト設定のままにしてください）',
+            openLink: 'リンクを開く',
+            justClick: 'リンクをクリックする',
             addRule: 'ルールを追加',
             save: '儲存',
             delete: '削除',
@@ -128,6 +137,9 @@ class WebElementHandler {
             selector: 'Selektor:',
             nthElement: 'N-tes Element (ab 1):',
             clickDelay: 'Klickverzögerung (ms):',
+            ifLink: 'Wenn es ein Link ist:(Wenn es sich nicht um einen Link handelt, belassen Sie bitte die Standardeinstellung)',
+            openLink: 'Link öffnen',
+            justClick: 'Link anklicken',
             addRule: 'Regel hinzufügen',
             save: 'Speichern',
             delete: 'Löschen',
@@ -148,6 +160,9 @@ class WebElementHandler {
             selector: 'Selector:',
             nthElement: 'N-ésimo Elemento (desde 1):',
             clickDelay: 'Retraso de Clic (ms):',
+            ifLink: 'Si es un enlace:(Mantenga la configuración predeterminada si no es un enlace)',
+            openLink: 'Abrir el enlace',
+            justClick: 'Hacer clic en el enlace',
             addRule: 'Agregar Regla',
             save: 'Guardar',
             delete: 'Eliminar',
@@ -220,28 +235,33 @@ class WebElementHandler {
                     <input type="number" id="updateNthElement${ruleIndex}" min="1" value="${rule.nthElement}">
                     <label>${i18n.clickDelay}</label>
                     <input type="number" id="updateClickDelay${ruleIndex}" min="100" value="${rule.clickDelay || 200}">
+                    <label>${i18n.ifLink}</label>
+                    <select id="ifLink">
+                        <option value="false" ${rule.ifLink === 'false' ? 'selected' : ''}>${i18n.justClick}</option>
+                        <option value="true" ${rule.ifLink === 'true' ? 'selected' : ''}>${i18n.openLink}</option>
+                    </select>
                     <button id="updateRule${ruleIndex}">${i18n.save}</button>
                     <button id="deleteRule${ruleIndex}">${i18n.delete}</button>
                 </div>
             `;
-            return ruleDiv;
-        }
+        return ruleDiv;
+    }
 
-        // 創建組態選單
-        createMenuElement() {
-            const i18n = this.i18n[this.getLanguage()];
-            const menu = document.createElement('div');
-            menu.style.position = 'fixed';
-            menu.style.top = '10px';
-            menu.style.right = '10px';
-            menu.style.background = 'rgb(36, 36, 36)';
-            menu.style.color = 'rgb(204, 204, 204)';
-            menu.style.border = '1px solid rgb(80, 80, 80)';
-            menu.style.padding = '10px';
-            menu.style.zIndex = '10000';
-            menu.style.maxWidth = '400px';
-            menu.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
-            menu.innerHTML = `
+    // 創建組態選單
+    createMenuElement() {
+        const i18n = this.i18n[this.getLanguage()];
+        const menu = document.createElement('div');
+        menu.style.position = 'fixed';
+        menu.style.top = '10px';
+        menu.style.right = '10px';
+        menu.style.background = 'rgb(36, 36, 36)';
+        menu.style.color = 'rgb(204, 204, 204)';
+        menu.style.border = '1px solid rgb(80, 80, 80)';
+        menu.style.padding = '10px';
+        menu.style.zIndex = '10000';
+        menu.style.maxWidth = '400px';
+        menu.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+        menu.innerHTML = `
                 <style>
                     #autoClickMenu {
                         overflow-y: auto;
@@ -312,123 +332,131 @@ class WebElementHandler {
                     <label>${i18n.nthElement}</label>
                     <input type="number" id="nthElement" min="1" value="1">
                     <label>${i18n.clickDelay}</label>
-                    <input type="number" id="clickDelay" min="50" value="10000">
+                    <input type="number" id="clickDelay" min="50" value="1000">
+                    <label>${i18n.ifLink}</label>
+                    <select id="ifLink">
+                        <option value="false">${i18n.justClick}</option>
+                        <option value="true">${i18n.openLink}</option>
+                    </select>
                     <button id="addRule" style="margin-top: 10px;">${i18n.addRule}</button>
                 </div>
             `;
-            document.body.appendChild(menu);
+        document.body.appendChild(menu);
 
+        this.updateRulesElement();
+
+        document.getElementById('addRule').addEventListener('click', () => {
+            const newRule = {
+                ruleName: document.getElementById('ruleName').value || `規則 ${this.ruleManager.clickRules.rules.length + 1}`,
+                urlPattern: document.getElementById('urlPattern').value,
+                selectorType: document.getElementById('selectorType').value,
+                selector: document.getElementById('selector').value,
+                nthElement: parseInt(document.getElementById('nthElement').value) || 1,
+                clickDelay: parseInt(document.getElementById('clickDelay').value) || 200,
+                ifLink:Boolean(document.getElementById('ifLink').value) || false
+            };
+            if (!this.validateRule(newRule)) return;
+            this.ruleManager.addRule(newRule);
             this.updateRulesElement();
+            this.clickTaskManager.clearAutoClicks();
+            this.clickTaskManager.runAutoClicks();
+            document.getElementById('ruleName').value = '';
+            document.getElementById('urlPattern').value = '';
+            document.getElementById('selector').value = '';
+            document.getElementById('nthElement').value = '1';
+            document.getElementById('clickDelay').value = '200';
+            document.getElementById('ifLink').value = false
+        });
 
-            document.getElementById('addRule').addEventListener('click', () => {
-                const newRule = {
-                    ruleName: document.getElementById('ruleName').value || `規則 ${this.ruleManager.clickRules.rules.length + 1}`,
-                    urlPattern: document.getElementById('urlPattern').value,
-                    selectorType: document.getElementById('selectorType').value,
-                    selector: document.getElementById('selector').value,
-                    nthElement: parseInt(document.getElementById('nthElement').value) || 1,
-                    clickDelay: parseInt(document.getElementById('clickDelay').value) || 200
+        document.getElementById('closeMenu').addEventListener('click', () => {
+            menu.remove();
+        });
+    }
+
+    // 更新規則列表（僅顯示當前網址符合的規則）
+    updateRulesElement() {
+        const rulesList = document.getElementById('rulesList');
+        const i18n = this.i18n[this.getLanguage()];
+        rulesList.innerHTML = `<h4>${i18n.matchingRules}</h4>`;
+        const currentUrl = window.location.href;
+        const matchingRules = this.ruleManager.clickRules.rules.filter(rule => {
+            try {
+                return new RegExp(rule.urlPattern).test(currentUrl);
+            } catch (e) {
+                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 的正則表達式無效：`, rule.urlPattern);
+                return false;
+            }
+        });
+
+        if (matchingRules.length === 0) {
+            rulesList.innerHTML += `<p>${i18n.noMatchingRules}</p>`;
+            return;
+        }
+
+        matchingRules.forEach((rule) => {
+            const ruleIndex = this.ruleManager.clickRules.rules.indexOf(rule);
+            const ruleDiv = this.createRuleElement(rule, ruleIndex);
+            rulesList.appendChild(ruleDiv);
+
+            document.getElementById(`ruleHeader${ruleIndex}`).addEventListener('click', () => {
+                const details = document.getElementById(`readRule${ruleIndex}`);
+                details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            });
+
+            document.getElementById(`updateRule${ruleIndex}`).addEventListener('click', () => {
+                const updatedRule = {
+                    ruleName: document.getElementById(`updateRuleName${ruleIndex}`).value || `規則 ${ruleIndex + 1}`,
+                    urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
+                    selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
+                    selector: document.getElementById(`updateSelector${ruleIndex}`).value,
+                    nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
+                    clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 200,
+                    ifLink:Boolean(document.getElementById('ifLink').value) || false
                 };
-                if (!this.validateRule(newRule)) return;
-                this.ruleManager.addRule(newRule);
+                if (!this.validateRule(updatedRule)) return;
+                this.ruleManager.updateRule(ruleIndex, updatedRule);
                 this.updateRulesElement();
                 this.clickTaskManager.clearAutoClicks();
                 this.clickTaskManager.runAutoClicks();
-                document.getElementById('ruleName').value = '';
-                document.getElementById('urlPattern').value = '';
-                document.getElementById('selector').value = '';
-                document.getElementById('nthElement').value = '1';
-                document.getElementById('clickDelay').value = '200';
             });
 
-            document.getElementById('closeMenu').addEventListener('click', () => {
-                menu.remove();
-            });
-        }
-
-        // 更新規則列表（僅顯示當前網址符合的規則）
-        updateRulesElement() {
-            const rulesList = document.getElementById('rulesList');
-            const i18n = this.i18n[this.getLanguage()];
-            rulesList.innerHTML = `<h4>${i18n.matchingRules}</h4>`;
-            const currentUrl = window.location.href;
-            const matchingRules = this.ruleManager.clickRules.rules.filter(rule => {
-                try {
-                    return new RegExp(rule.urlPattern).test(currentUrl);
-                } catch (e) {
-                    console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 的正則表達式無效：`, rule.urlPattern);
-                    return false;
-                }
-            });
-
-            if (matchingRules.length === 0) {
-                rulesList.innerHTML += `<p>${i18n.noMatchingRules}</p>`;
-                return;
-            }
-
-            matchingRules.forEach((rule) => {
-                const ruleIndex = this.ruleManager.clickRules.rules.indexOf(rule);
-                const ruleDiv = this.createRuleElement(rule, ruleIndex);
-                rulesList.appendChild(ruleDiv);
-
-                document.getElementById(`ruleHeader${ruleIndex}`).addEventListener('click', () => {
-                    const details = document.getElementById(`readRule${ruleIndex}`);
-                    details.style.display = details.style.display === 'none' ? 'block' : 'none';
-                });
-
-                document.getElementById(`updateRule${ruleIndex}`).addEventListener('click', () => {
-                    const updatedRule = {
-                        ruleName: document.getElementById(`updateRuleName${ruleIndex}`).value || `規則 ${ruleIndex + 1}`,
-                        urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
-                        selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
-                        selector: document.getElementById(`updateSelector${ruleIndex}`).value,
-                        nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
-                        clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 200
-                    };
-                    if (!this.validateRule(updatedRule)) return;
-                    this.ruleManager.updateRule(ruleIndex, updatedRule);
-                    this.updateRulesElement();
-                    this.clickTaskManager.clearAutoClicks();
-                    this.clickTaskManager.runAutoClicks();
-                });
-
-                document.getElementById(`deleteRule${ruleIndex}`).addEventListener('click', () => {
-                    this.ruleManager.deleteRule(ruleIndex);
-                    this.updateRulesElement();
-                    this.clickTaskManager.clearAutoClicks();
-                    this.clickTaskManager.runAutoClicks();
-                });
-            });
-        }
-
-        // 設置 URL 變更監聽器
-        setupUrlChangeListener() {
-            const oldPushState = history.pushState;
-            history.pushState = function pushState() {
-                const ret = oldPushState.apply(this, arguments);
-                window.dispatchEvent(new Event('pushstate'));
-                window.dispatchEvent(new Event('locationchange'));
-                return ret;
-            };
-
-            const oldReplaceState = history.replaceState;
-            history.replaceState = function replaceState() {
-                const ret = oldReplaceState.apply(this, arguments);
-                window.dispatchEvent(new Event('replacestate'));
-                window.dispatchEvent(new Event('locationchange'));
-                return ret;
-            };
-
-            window.addEventListener('popstate', () => {
-                window.dispatchEvent(new Event('locationchange'));
-            });
-
-            window.addEventListener('locationchange', () => {
+            document.getElementById(`deleteRule${ruleIndex}`).addEventListener('click', () => {
+                this.ruleManager.deleteRule(ruleIndex);
+                this.updateRulesElement();
                 this.clickTaskManager.clearAutoClicks();
                 this.clickTaskManager.runAutoClicks();
             });
-        }
+        });
     }
+
+    // 設置 URL 變更監聽器
+    setupUrlChangeListener() {
+        const oldPushState = history.pushState;
+        history.pushState = function pushState() {
+            const ret = oldPushState.apply(this, arguments);
+            window.dispatchEvent(new Event('pushstate'));
+            window.dispatchEvent(new Event('locationchange'));
+            return ret;
+        };
+
+        const oldReplaceState = history.replaceState;
+        history.replaceState = function replaceState() {
+            const ret = oldReplaceState.apply(this, arguments);
+            window.dispatchEvent(new Event('replacestate'));
+            window.dispatchEvent(new Event('locationchange'));
+            return ret;
+        };
+
+        window.addEventListener('popstate', () => {
+            window.dispatchEvent(new Event('locationchange'));
+        });
+
+        window.addEventListener('locationchange', () => {
+            this.clickTaskManager.clearAutoClicks();
+            this.clickTaskManager.runAutoClicks();
+        });
+    }
+}
 
 class ClickTaskManager {
     ruleManager;
@@ -487,9 +515,10 @@ class ClickTaskManager {
             const targetElement = elements[rule.nthElement - 1];
             if (targetElement) {
                 console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 成功點擊元素：`, targetElement);
-                targetElement.click();
-                if (targetElement.tagName === "A" && targetElement.href) {
+                if (rule.ifLink && targetElement.tagName === "A" && targetElement.href) {
                     window.location.href = targetElement.href;
+                }else{
+                    targetElement.click();
                 }
                 return true;
             } else {
