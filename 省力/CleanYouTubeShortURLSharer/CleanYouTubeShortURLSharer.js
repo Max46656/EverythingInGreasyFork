@@ -21,7 +21,7 @@
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
 // @grant        GM.info
-// @version      1.0.2
+// @version      1.0.3
 // @downloadURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.meta.js
 // ==/UserScript==
@@ -33,11 +33,10 @@ class YouTubeShortUrlCopier {
         if(existingCopier){
             return;
         }
-        this.shareButtonSelector = '#actions yt-button-view-model button-view-model button';
+        this.shareButtonOfVideoSelector = '#actions yt-button-view-model button-view-model button';
+        this.shareButtonOfShortSelector = '#actions #share-button';
         this.notificationDuration = 1200;
-        this.pollInterval = 100;
-        this.maxAttempts = 30;
-        this.attempts = 0;
+        this.pollInterval = 200;
         this.timestampEnabled = false;
         this.init();
     }
@@ -50,15 +49,11 @@ class YouTubeShortUrlCopier {
 
     waitForShareButton() {
         const interval = setInterval(() => {
-            const originalButton = document.querySelector(this.shareButtonSelector);
-            this.attempts++;
+            const originalButton = document.querySelector(this.shareButtonOfVideoSelector) || document.querySelector(this.shareButtonOfShortSelector);
 
             if (originalButton) {
                 clearInterval(interval);
                 this.replaceShareButton(originalButton);
-            } else if (this.attempts >= this.maxAttempts) {
-                clearInterval(interval);
-                console.warn(this.i18n.get('max_retry', { name: GM_info.script.name }));
             }
         }, this.pollInterval);
     }
@@ -69,9 +64,12 @@ class YouTubeShortUrlCopier {
     }
 
     createSegmentedShareButtons(originalButton) {
+        const isShorts = window.location.href.includes('shorts');
+
         const wrapper = document.createElement('div');
         wrapper.className = 'ytSegmentedLikeDislikeButtonViewModelSegmentedButtonsWrapper';
-
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = isShorts ? 'column' : 'row';
         const shareButton = this.createCustomShareButton(originalButton, true);
         const timestampButton = this.createTimestampCheckboxButton();
 
@@ -81,12 +79,11 @@ class YouTubeShortUrlCopier {
         return wrapper;
     }
 
-    createCustomShareButton(originalButton, isSegmentedStart = false) {
+    createCustomShareButton(originalButton) {
         const button = document.createElement('button');
         button.className = 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--enable-backdrop-filter-experiment';
-        if (isSegmentedStart) {
-            button.classList.add('yt-spec-button-shape-next--segmented-start');
-        }
+        button.classList.add('yt-spec-button-shape-next--segmented-start');
+        button.classList.add('yt-spec-button-shape-next--segmented-top');
 
         const iconContainer = document.createElement('div');
         iconContainer.className = 'yt-spec-button-shape-next__icon';
@@ -129,6 +126,8 @@ class YouTubeShortUrlCopier {
         const wrapper = document.createElement('label');
         wrapper.id = 'yscsb-timestamp-checkbox-wrapper';
         wrapper.className = 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--segmented-end yt-spec-button-shape-next--enable-backdrop-filter-experiment';
+        wrapper.classList.add('yt-spec-button-shape-next--segmented-end');
+        wrapper.classList.add('yt-spec-button-shape-next--segmented-bottom');
         wrapper.style.display = 'inline-flex';
         wrapper.style.alignItems = 'center';
         wrapper.style.cursor = 'pointer';
@@ -179,12 +178,20 @@ class YouTubeShortUrlCopier {
 
     getShortUrl() {
         const currentUrl = new URL(window.location.href);
-        const videoId = currentUrl.searchParams.get('v');
+        const videoId = currentUrl.searchParams.get('v')||currentUrl.pathname.match(/\/shorts\/(.*)/)[1];
         let shortUrl = videoId ? `https://youtu.be/${videoId}` : null;
 
         if (shortUrl && this.timestampEnabled) {
-            const videoTime = document.querySelector('video').currentTime;
-            const time = Math.floor(videoTime ? videoTime : 0);
+            let videoTime = document.querySelector('video').currentTime;
+            let time;
+            if(videoTime < 1){
+                let videoTime = document.querySelector("span.ytp-time-current")?.textContent || "0:00";
+                const [minutes, seconds] = videoTime.split(':').map(Number);
+                time = minutes * 60 + seconds;
+            }else{
+                time = Math.floor(videoTime ? videoTime : 0);
+            }
+            //console.log("videoTime",videoTime,typeof(videoTime))
             if (time > 0) shortUrl += `?t=${time}`;
         }
 
