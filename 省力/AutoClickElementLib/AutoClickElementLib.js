@@ -1,39 +1,39 @@
 /**
-@name         自動點選元素函式庫
-@description  根據網址(正規表達式)自動點選指定元素的函式庫，提供點選規則與點選任務的 CRUD 操作。
-@version      1.0.2
-@author       Max
-@namespace    https://github.com/Max46656
-@license      MPL2.0
+name => 自動點選元素函式庫
+description => 根據網址(正規表達式)自動點選指定元素的函式庫，提供點選規則與點選任務的 CRUD 操作。
+version => 1.0.2
+author => Max
+namespace => https://github.com/Max46656
+license => MPL2.0
 本程式具有以下依賴，須添加在你使用的腳本中
 @grant        GM_getValue
 @grant        GM_setValue
 @grant        GM_info
-**/
+*/
 
 class RuleManager {
         /**
-         * 初始化規則管理器，從儲存中載入點擊規則。
+         * 初始化規則管理器，從儲存中載入點選規則。
          */
     constructor() {
-        this.clickRules = GM_getValue('clickRules', { rules: [] });
+        this。clickRules = GM_getValue('clickRules'， { rules: [] });
     }
 
 		/**
-         * 添加新點擊規則，檢查是否重複。
+         * 添加新點選規則，檢查是否重複。
          * @param {Object} newRule - 新規則物件。
          * @param {string} newRule.ruleName - 規則名稱。
          * @param {string} newRule.urlPattern - 網址正規表達式。
          * @param {string} newRule.selector - 元素選擇器。
          * @param {string} newRule.selectorType - 選擇器類型（css 或 xpath）。
-         * @param {number} [newRule.nthElement=1] - 點擊第幾個匹配元素（從 1 開始）。
-         * @param {number} [newRule.clickDelay=1000] - 點擊間隔（毫秒）。
-         * @param {boolean} [newRule.keepClicking=false] - 是否持續點擊。
+         * @param {number} [newRule.nthElement=1] - 點選第幾個符合元素（從 1 開始）。
+         * @param {number} [newRule.clickDelay=1000] - 點選間隔（毫秒）。
+         * @param {boolean} [newRule.keepClicking=false] - 是否持續點選。
          * @param {boolean} [newRule.ifLinkOpen=false] - 若為連結是否跳轉。
          * @returns {boolean} - 添加成功返回 true，已存在返回 false。
          */
     addRule(newRule) {
-        const exists = this.clickRules.rules.some(rule =>
+        const exists = this。clickRules。rules。some(rule =>
                                                   rule.ruleName === newRule.ruleName &&
                                                   rule.urlPattern === newRule.urlPattern &&
                                                   rule.selector === newRule.selector
