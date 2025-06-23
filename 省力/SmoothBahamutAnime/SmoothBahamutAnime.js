@@ -27,16 +27,16 @@ const rules = [
         ifLinkOpen: true
     },
     {
-        ruleName: "跳過廣告",
-        urlPattern: "https://ani.gamer.com.tw/animeVideo.php\\?sn=.*",
-        selectorType: "css",
-        selector: "video-js div.enable,button[aria-label='Skip Ad'],[aria-label='關閉廣告'],button[aria-label='略過廣告']",
-        nthElement: 1,
-        clickDelay: 500,
-        keepClicking: false,
-        ifLinkOpen: true
+    ruleName: "已觀看廣告",
+    urlPattern: "https://ani.gamer.com.tw/animeVideo.php\\?sn=.*",
+    selectorType: "css",
+    selector: "video-js div.enable,button[aria-label='Skip Ad'],[aria-label='關閉廣告'],button[aria-label='略過廣告']",
+    nthElement: 1,
+    clickDelay: 500,
+    keepClicking: false,
+    ifLinkOpen: true
     }
-];
+    ];
 
 // 添加規則並檢查重複
 rules.forEach((rule, index) => {
@@ -54,7 +54,7 @@ rules.forEach((rule, index) => {
             console.error(`[${GM_info.script.name}] 規則 "${rule.ruleName}" 添加失敗: ${result.error}`);
         }
     } else {
-        console.log(`[${GM_info.script.name}] 規則 "${rule.ruleName}" 已存在，跳過添加`);
+        console.log(`[${GM_info.script.name}] 規則 "${rule.ruleName}" 已存在,跳過添加`);
     }
 });
 
@@ -94,6 +94,6 @@ window.addEventListener('locationchange', () => {
         console.log(`[${GM_info.script.name}] 重新執行任務: ${runResult.success ? '成功' : `失敗 (${runResult.error})`}`);
     }
 });
-        console.log(`[${GM_info.script.name}] 重新執行任務: ${runResult.success ? '成功' : `失敗 (${runResult.error})`}`);
-    }
+console.log(`[${GM_info.script.name}] 重新執行任務: ${runResult.success ? '成功' : `失敗 (${runResult.error})`}`);
+}
 });
