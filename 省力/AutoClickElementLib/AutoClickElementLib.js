@@ -19,7 +19,7 @@ class RuleManager {
         this.clickRules = GM_getValue('clickRules', { rules: [] });
     }
 
-		/**
+	/**
          * 添加新點選規則，檢查是否重複。
          * @param {Object} newRule - 新規則物件。
          * @param {string} newRule.ruleName - 規則名稱。
