@@ -16,7 +16,7 @@ class RuleManager {
          * 初始化規則管理器，從儲存中載入點選規則。
          */
     constructor() {
-        this。clickRules = GM_getValue('clickRules'， { rules: [] });
+        this.clickRules = GM_getValue('clickRules', { rules: [] });
     }
 
 		/**
@@ -33,7 +33,7 @@ class RuleManager {
          * @returns {boolean} - 添加成功返回 true，已存在返回 false。
          */
     addRule(newRule) {
-        const exists = this。clickRules。rules。some(rule =>
+        const exists = this.clickRules.rules.some(rule =>
                                                   rule.ruleName === newRule.ruleName &&
                                                   rule.urlPattern === newRule.urlPattern &&
                                                   rule.selector === newRule.selector
@@ -42,7 +42,7 @@ class RuleManager {
             console.log(`${GM_info.script.name}: 規則 "${newRule.ruleName}" 已存在,跳過添加`);
             return false;
         }
-        this.clickRules.rules.push(newRule);
+        this.clickRules.rules.推送(newRule);
         this.updateRules();
         console.log(`${GM_info.script.name}: 規則 "${newRule.ruleName}" 添加成功`);
         return true;
@@ -51,7 +51,7 @@ class RuleManager {
         /**
          * 更新指定索引的點擊規則。
          * @param {number} index - 規則索引。
-         * @param {Object} updatedRule - 更新後的規則物件，結構同 addRule。
+         * @param {Object} updatedRule - 更新後的規則物件，結構同 addRule.
          * @throws {Error} 若索引無效，拋出錯誤。
          */
     updateRule(index, updatedRule) {
@@ -116,7 +116,7 @@ class ClickTaskManager {
          * 為指定規則添加點擊任務，定期執行點擊。
          * @param {number} ruleIndex - 規則索引。
          * @param {string} [source='manual'] - 任務來源（用於日誌）。
-         * @returns {number} - 任務的 setInterval ID。
+         * @returns {number} - 任務的 setInterval ID.
          * @throws {Error} 若規則索引無效或規則缺少必要屬性，拋出錯誤。
          */
     addTask(ruleIndex, source = 'manual') {
@@ -191,7 +191,7 @@ class ClickTaskManager {
     }
 
         /**
-         * 防抖執行 runTasks，限制短時間內多次調用。
+         * 防抖執行 runTasks,限制短時間內多次調用。
          * @param {string} [source='manual'] - 任務來源（用於日誌）。
          * @param {number} [delay=100] - 防抖延遲時間（毫秒）。
          */
@@ -211,7 +211,7 @@ class ClickTaskManager {
          * 根據規則執行自動點擊。
          * @param {Object} rule - 點擊規則物件。
          * @param {number} ruleIndex - 規則索引。
-         * @returns {boolean} - 點擊成功返回 true，失敗返回 false。
+         * @returns {boolean} - 點擊成功返回 true,失敗返回 false.
          */
     autoClick(rule, ruleIndex) {
         try {
@@ -307,7 +307,7 @@ class ClickController {
 
         /**
          * 添加新點擊規則，包含驗證和去重。
-         * @param {Object} rule - 新規則物件，結構同 RuleManager.addRule。
+         * @param {Object} rule - 新規則物件，結構同 RuleManager.addRule.
          * @returns {Object} - 添加結果，{ success: boolean, error: string|null }。
          */
     addRule(rule) {
@@ -349,7 +349,7 @@ class ClickController {
         /**
          * 更新指定索引的點擊規則，並重新啟動任務。
          * @param {number} index - 規則索引。
-         * @param {Object} rule - 更新後的規則物件，結構同 addRule。
+         * @param {Object} rule - 更新後的規則物件，結構同 addRule.
          * @returns {Object} - 更新結果，{ success: boolean, error: string|null }。
          */
     updateRule(index, rule) {
