@@ -42,7 +42,7 @@ class RuleManager {
             console.log(`${GM_info.script.name}: 規則 "${newRule.ruleName}" 已存在,跳過添加`);
             return false;
         }
-        this.clickRules.rules.推送(newRule);
+        this.clickRules.rules.push(newRule);
         this.updateRules();
         console.log(`${GM_info.script.name}: 規則 "${newRule.ruleName}" 添加成功`);
         return true;
