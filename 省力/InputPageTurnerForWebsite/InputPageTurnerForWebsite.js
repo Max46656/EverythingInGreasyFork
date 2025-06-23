@@ -80,7 +80,7 @@ class WebElementHandler {
             invalidSelector: '無效的選擇器'
         } ,
         'en': {
-            title: 'Auto Click 配置',
+            title: 'Auto Click 組態',
             matchingRules: 'Matching Rules',
             noMatchingRules: 'No rules match the current URL.',
             addRuleSection: 'Add New Rule',
@@ -115,7 +115,7 @@ class WebElementHandler {
             keepClicking: '要素を継続的にクリック：',
             ifLinkOpen: 'リンクの場合（それ以外の場合はデフォルトを維持）：',
             addRule: 'ルールを追加',
-            save: '保存',
+            save: '儲存',
             delete: '削除',
             ruleNamePlaceholder: '例：マイルール',
             urlPatternPlaceholder: '例：https://example\\.com/.*',
@@ -423,64 +423,64 @@ class WebElementHandler {
             });
 
             document.getElementById(`updateRule${ruleIndex}`).addEventListener('click', () => {
-                            console.log("document.getElementById(`updateKeepSearching${ruleIndex}`).checked",document.getElementById(`updateKeepSearching${ruleIndex}`).checked)
-                                          console.log("Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value)",Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value))
+                console.log("document.getElementById(`updateKeepSearching${ruleIndex}`).checked",document.getElementById(`updateKeepSearching${ruleIndex}`).checked)
+                console.log("Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value)",Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value))
 
-              const updatedRule = {
-                  ruleName: document.getElementById(`updateRuleName${ruleIndex}`).value || `規則 ${ruleIndex + 1}`,
-                  urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
-                  selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
-                  selector: document.getElementById(`updateSelector${ruleIndex}`).value,
-                  nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
-                  clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 1000,
-                  keepClicking: document.getElementById(`updateKeepSearching${ruleIndex}`).checked || false,
-                  ifLinkOpen: Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value) || false
-              };
-              console.log("updatedRule2",updatedRule)
-              if (!this.validateRule(updatedRule)) return;
-            this.ruleManager.updateRule(ruleIndex, updatedRule);
-            this.updateRulesElement();
+                const updatedRule = {
+                    ruleName: document.getElementById(`updateRuleName${ruleIndex}`).value || `規則 ${ruleIndex + 1}`,
+                    urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
+                    selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
+                    selector: document.getElementById(`updateSelector${ruleIndex}`).value,
+                    nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
+                    clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 1000,
+                    keepClicking: document.getElementById(`updateKeepSearching${ruleIndex}`).checked || false,
+                    ifLinkOpen: Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value) || false
+                };
+                console.log("updatedRule2",updatedRule)
+                if (!this.validateRule(updatedRule)) return;
+                this.ruleManager.updateRule(ruleIndex, updatedRule);
+                this.updateRulesElement();
+                this.clickTaskManager.clearAutoClicks();
+                this.clickTaskManager.runAutoClicks();
+            });
+
+
+            document.getElementById(`deleteRule${ruleIndex}`).addEventListener('click', () => {
+                this.ruleManager.deleteRule(ruleIndex);
+                this.updateRulesElement();
+                this.clickTaskManager.clearAutoClicks();
+                this.clickTaskManager.runAutoClicks();
+            });
+        });
+    }
+
+    // 設置 URL 變更監聽器
+    setupUrlChangeListener() {
+        const oldPushState = history.pushState;
+        history.pushState = function pushState() {
+            const result = oldPushState.apply(this, arguments);
+            window.dispatchEvent(new Event('pushstate'));
+            window.dispatchEvent(new Event('locationchange'));
+            return result;
+        };
+
+        const oldReplaceState = history.replaceState;
+        history.replaceState = function replaceState() {
+            const result = oldReplaceState.apply(this, arguments);
+            window.dispatchEvent(new Event('replacestate'));
+            window.dispatchEvent(new Event('locationchange'));
+            return result;
+        };
+
+        window.addEventListener('popstate', () => {
+            window.dispatchEvent(new Event('locationchange'));
+        });
+
+        window.addEventListener('locationchange', () => {
             this.clickTaskManager.clearAutoClicks();
             this.clickTaskManager.runAutoClicks();
         });
-
-
-        document.getElementById(`deleteRule${ruleIndex}`).addEventListener('click', () => {
-            this.ruleManager.deleteRule(ruleIndex);
-            this.updateRulesElement();
-            this.clickTaskManager.clearAutoClicks();
-            this.clickTaskManager.runAutoClicks();
-        });
-    });
-}
-
-// 設置 URL 變更監聽器
-setupUrlChangeListener() {
-    const oldPushState = history.pushState;
-    history.pushState = function pushState() {
-        const result = oldPushState.apply(this, arguments);
-        window.dispatchEvent(new Event('pushstate'));
-        window.dispatchEvent(new Event('locationchange'));
-        return result;
-    };
-
-    const oldReplaceState = history.replaceState;
-    history.replaceState = function replaceState() {
-        const result = oldReplaceState.apply(this, arguments);
-        window.dispatchEvent(new Event('replacestate'));
-        window.dispatchEvent(new Event('locationchange'));
-        return result;
-    };
-
-    window.addEventListener('popstate', () => {
-        window.dispatchEvent(new Event('locationchange'));
-    });
-
-    window.addEventListener('locationchange', () => {
-        this.clickTaskManager.clearAutoClicks();
-        this.clickTaskManager.runAutoClicks();
-    });
-}
+    }
 }
 
 class ClickTaskManager {
