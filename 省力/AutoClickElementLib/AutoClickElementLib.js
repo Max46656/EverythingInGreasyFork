@@ -283,3 +283,5 @@ class ClickController {
         }
     }
 }
+
+window.ClickItForYou = ClickController;
