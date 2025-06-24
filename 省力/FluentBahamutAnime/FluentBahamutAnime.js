@@ -1,18 +1,18 @@
 // ==UserScript==
-// @name        流暢巴哈動畫瘋
+// @name        順暢巴哈動畫瘋
 // @description 我宣示我同意並滿足分級製度的年齡並已誠實的觀看廣告。
-// @namespace    https://github.com/Max46656
-// @version     1.1.1
+// @namespace   https://github.com/Max46656
+// @version     1.1.2
 // @author      Max
 // @match       https://ani.gamer.com.tw/animeVideo.php*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=gamer.com.tw
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @grant        GM_info
-// @license MPL2.0
+// @grant       GM_getValue
+// @grant       GM_setValue
+// @grant       GM_info
+// @license     MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/503557/%E6%B5%81%E6%9A%A2%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B.user.js
-// @updateURL https://update.greasyfork.org/scripts/503557/%E6%B5%81%E6%9A%A2%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B.meta.js
-// @require https://raw.githubusercontent.com/Max46656/EverythingInGreasyFork/refs/heads/main/%E7%9C%81%E5%8A%9B/AutoClickElementLib/AutoClickElementLib.js#v=1.0.2
+// @updateURL   https://update.greasyfork.org/scripts/503557/%E6%B5%81%E6%9A%A2%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B.meta.js
+// @require     https://update.greasyfork.org/scripts/540647/1613495/%E8%87%AA%E5%8B%95%E9%BB%9E%E9%81%B8%E5%85%83%E7%B4%A0%E5%87%BD%E5%BC%8F%E5%BA%AB.js
 // ==/UserScript==
 
 class AutoClickManager {

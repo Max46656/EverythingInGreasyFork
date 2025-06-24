@@ -1,6 +1,6 @@
 english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/SmoothBahamutAnime/README.zh-Hant.md)
 
-# Smooth Bahamut Anime
+# Fluent Bahamut Anime
 Automate steps such as age verification and skipping ads.
 
 ## Features

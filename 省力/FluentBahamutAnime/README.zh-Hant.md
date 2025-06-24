@@ -1,6 +1,6 @@
 [![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/SmoothBahamutAnime/README.md) | 中文
 
-# 流暢巴哈動畫瘋
+# 順暢巴哈動畫瘋
 將確認年齡、略過廣告等步驟自動化。
 
 ## 功能
