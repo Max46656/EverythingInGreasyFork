@@ -1,3 +1,4 @@
+english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/AutoClickElementLib/README.zh-Hant.md)
 # AutoClick Library
 
 Many scripts on GreasyFork aim to simply "click element X Y times."  
