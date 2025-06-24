@@ -1,3 +1,4 @@
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/AutoClickElementLib/README.md) | 中文
 # AutoClick 函式庫
 
 greasyfork上有很多腳本的目的其實只是「幫我點X元素Y次」。  
