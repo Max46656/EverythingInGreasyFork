@@ -42,8 +42,8 @@ Each rule is an object with the following properties:
 **Notes**:
 - `urlPattern` must be a valid regular expression, or a validation error will be triggered.
 - `selectorType` only supports `"css"` or `"xpath"`; other values will invalidate the rule.
-- If `ruleName`, `urlPattern`, and `selector` are identical, the rule is considered a duplicate and will not be added to `rules` via `clickLib.addRule()`.
-
+- When `ruleName`, `urlPattern`, and `selector` are all consistent with the old rule,  
+  it will be considered a duplicate rule and will not be allowed to be added to rules by clickLib.addRule().
 ## API Reference
 
 ### `ClickItForYou` Methods
