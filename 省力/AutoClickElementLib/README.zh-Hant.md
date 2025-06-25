@@ -20,7 +20,7 @@ greasyfork上有很多腳本的目的其實只是「幫我點X元素Y次」。
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_info
-// @require      https://raw.githubusercontent.com/Max46656/EverythingInGreasyFork/refs/heads/main/%E7%9C%81%E5%8A%9B/AutoClickElementLib/AutoClickElementLib.js
+// @require      https://update.greasyfork.org/scripts/540647/1613497/%E8%87%AA%E5%8B%95%E9%BB%9E%E9%81%B8%E5%85%83%E7%B4%A0%E5%87%BD%E5%BC%8F%E5%BA%AB.js
 ```
 3. 建立並初始化函式庫實例：`this.clickLib = new ClickItForYou();`。
 
