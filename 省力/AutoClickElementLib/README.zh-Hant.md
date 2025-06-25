@@ -42,7 +42,7 @@ greasyfork上有很多腳本的目的其實只是「幫我點X元素Y次」。
 **注意**：
 - `urlPattern` 必須是有效的正規表達式，否則會觸發驗證錯誤。
 - `selectorType` 僅支援 `"css"` 或 `"xpath"`，其他值將導致規則無效。
-- 當`ruleName`、`urlPattern`、`selector`三者一致時，將被判定為重複規則而不允許被`clickLib.addRule()`加入到`rules`中。
+- 當`ruleName`、`urlPattern`、`selector`三者皆與舊規則一致時，將被判定為重複規則而不允許被`clickLib.addRule()`加入到`rules`中。
 
 ## API 參考
 
