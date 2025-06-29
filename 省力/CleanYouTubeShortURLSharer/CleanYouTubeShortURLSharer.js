@@ -21,7 +21,7 @@
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
 // @grant        GM.info
-// @version      1.0.3
+// @version      1.0.4
 // @downloadURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.meta.js
 // ==/UserScript==
@@ -314,7 +314,8 @@ class TitleObserver {
         const observer = new MutationObserver(() => {
             if (document.title !== this.currentTitle) {
                 this.currentTitle = document.title;
-                if (window.location.href.startsWith('https://www.youtube.com/watch?v=')) {
+                if (window.location.href.startsWith('https://www.youtube.com/watch?v=')||window.location.href.startsWith('https://www.youtube.com/shorts/')) {
+                    console.log("網頁標題改變");
                     this.onNavigate();
                 }
             }
