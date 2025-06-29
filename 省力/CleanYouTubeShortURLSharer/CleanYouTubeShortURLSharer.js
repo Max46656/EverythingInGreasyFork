@@ -315,7 +315,6 @@ class TitleObserver {
             if (document.title !== this.currentTitle) {
                 this.currentTitle = document.title;
                 if (window.location.href.startsWith('https://www.youtube.com/watch?v=')||window.location.href.startsWith('https://www.youtube.com/shorts/')) {
-                    console.log("網頁標題改變");
                     this.onNavigate();
                 }
             }
