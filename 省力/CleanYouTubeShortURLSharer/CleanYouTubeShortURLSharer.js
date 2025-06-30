@@ -21,49 +21,70 @@
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
 // @grant        GM.info
-// @version      1.0.4
+// @version      1.1.0
 // @downloadURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.meta.js
 // ==/UserScript==
 
 
 class YouTubeShortUrlCopier {
-    constructor() {
-        const existingCopier = document.querySelector('#yscsb-timestamp-checkbox-wrapper');
-        if(existingCopier){
-            return;
-        }
+    constructor(){
+        this.replaceButtonInterval = null;
+        this.shareButtonClickListener = null;
         this.shareButtonOfVideoSelector = '#actions yt-button-view-model button-view-model button';
         this.shareButtonOfShortSelector = '#actions #share-button';
+        this.shareButtonOfPreviewSelector = 'tp-yt-paper-item.style-scope.ytd-menu-service-item-renderer:has(path[d="M15 5.63 20.66 12 15 18.37V14h-1c-3.96 0-7.14 1-9.75 3.09 1.84-4.07 5.11-6.4 9.89-7.1l.86-.13V5.63M14 3v6C6.22 10.13 3.11 15.33 2 21c2.78-3.97 6.44-6 12-6v6l8-9-8-9z"])';
+        this.shareUrlInputSelector = 'input#share-url';
+        this.shareWindowSelector = 'div#scrollable';
+        this.closeShareWindowSelector = 'div#scrollable button:has([icon="close"])';
         this.notificationDuration = 1200;
-        this.pollInterval = 200;
+        this.pollInterval = 100;
         this.timestampEnabled = false;
         this.init();
     }
 
-    init() {
+    init(){
         this.i18n = new LocalizationManager();
         this.injectStyles();
-        this.waitForShareButton();
+        this.toggleShareButtonHandler();
     }
 
-    waitForShareButton() {
-        const interval = setInterval(() => {
+    toggleShareButtonHandler(){
+        if (this.replaceButtonInterval){
+            clearInterval(this.replaceButtonInterval);
+            this.replaceButtonInterval = null;
+        }
+        if (this.shareButtonClickListener){
+            document.removeEventListener('click', this.shareButtonClickListener);
+            this.shareButtonClickListener = null;
+        }
+
+        if (window.location.href.startsWith('https://www.youtube.com/watch?v=') ||
+            window.location.href.startsWith('https://www.youtube.com/shorts/')){
+            this.waitForShareButton();
+        } else {
+            this.setupShareButtonClickListener();
+        }
+    }
+
+
+    waitForShareButton(){
+        this.replaceButtonInterval = setInterval(() => {
             const originalButton = document.querySelector(this.shareButtonOfVideoSelector) || document.querySelector(this.shareButtonOfShortSelector);
 
-            if (originalButton) {
-                clearInterval(interval);
+            if (originalButton){
+                clearInterval(this.replaceButtonInterval);
                 this.replaceShareButton(originalButton);
             }
         }, this.pollInterval);
     }
 
-    replaceShareButton(originalButton) {
+    replaceShareButton(originalButton){
         const wrapper = this.createSegmentedShareButtons(originalButton);
         originalButton.parentNode.replaceChild(wrapper, originalButton);
     }
 
-    createSegmentedShareButtons(originalButton) {
+    createSegmentedShareButtons(originalButton){
         const isShorts = window.location.href.includes('shorts');
 
         const wrapper = document.createElement('div');
@@ -79,7 +100,7 @@ class YouTubeShortUrlCopier {
         return wrapper;
     }
 
-    createCustomShareButton(originalButton) {
+    createCustomShareButton(originalButton){
         const button = document.createElement('button');
         button.className = 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--enable-backdrop-filter-experiment';
         button.classList.add('yt-spec-button-shape-next--segmented-start');
@@ -115,11 +136,11 @@ class YouTubeShortUrlCopier {
         button.appendChild(iconContainer);
         button.appendChild(textDiv);
 
-        button.addEventListener('click', () => this.handleButtonClick());
+        button.addEventListener('click', () => this.handleShareButtonClick());
         return button;
     }
 
-    createTimestampCheckboxButton() {
+    createTimestampCheckboxButton(){
         const existing = document.querySelector('#yscsb-timestamp-checkbox-wrapper');
         if (existing) return existing;
 
@@ -166,9 +187,9 @@ class YouTubeShortUrlCopier {
         return wrapper;
     }
 
-    handleButtonClick() {
+    handleShareButtonClick(){
         const shortUrl = this.getShortUrl();
-        if (shortUrl) {
+        if (shortUrl){
             this.copyToClipboard(shortUrl);
             this.showNotification(this.i18n.get('copied', { name: GM_info.script.name, url: shortUrl }));
         } else {
@@ -176,12 +197,12 @@ class YouTubeShortUrlCopier {
         }
     }
 
-    getShortUrl() {
+    getShortUrl(){
         const currentUrl = new URL(window.location.href);
         const videoId = currentUrl.searchParams.get('v')||currentUrl.pathname.match(/\/shorts\/(.*)/)[1];
         let shortUrl = videoId ? `https://youtu.be/${videoId}` : null;
 
-        if (shortUrl && this.timestampEnabled) {
+        if (shortUrl && this.timestampEnabled){
             let videoTime = document.querySelector('video').currentTime;
             let time;
             if(videoTime < 1){
@@ -198,11 +219,11 @@ class YouTubeShortUrlCopier {
         return shortUrl;
     }
 
-    copyToClipboard(text) {
+    copyToClipboard(text){
         GM_setClipboard(text, 'text');
     }
 
-    showNotification(message) {
+    showNotification(message){
         const notification = document.createElement('div');
         notification.textContent = message;
         Object.assign(notification.style, {
@@ -222,7 +243,8 @@ class YouTubeShortUrlCopier {
         document.body.appendChild(notification);
         setTimeout(() => notification.remove(), this.notificationDuration);
     }
-    injectStyles() {
+
+    injectStyles(){
         const style = document.createElement('style');
         style.textContent = `
           #yscsb-timestamp-checkbox-wrapper.selected {
@@ -235,11 +257,53 @@ class YouTubeShortUrlCopier {
       `;
         document.head.appendChild(style);
     }
+
+    setupShareButtonClickListener() {
+        this.shareButtonClickListener = (event) => {
+            //console.debug("事件",event.target)
+            if (event.target.closest(this.shareButtonOfPreviewSelector)) {
+                this.handleFloatingWindow();
+            }
+        };
+
+        document.addEventListener('click', this.shareButtonClickListener);
+    }
+
+    handleFloatingWindow(){
+        //等待浮動視窗
+        const popupInterval = setInterval(() => {
+            const ShareWindow = document.querySelector(this.shareWindowSelector);
+            if (ShareWindow){
+                clearInterval(popupInterval);
+
+                ShareWindow.style.display = 'none';
+
+                //等待網址載入
+                const inputInterval = setInterval(() => {
+                    const shareInput = ShareWindow.querySelector(this.shareUrlInputSelector);
+                    if (shareInput && shareInput.value){
+                        clearInterval(inputInterval);
+                        const cleanUrl = shareInput.value.split('?')[0];
+
+                        this.copyToClipboard(cleanUrl);
+                        this.showNotification(this.i18n.get('copied', { name: GM_info.script.name, url: cleanUrl }));
+
+                        const closeButton = document.querySelector(this.closeShareWindowSelector);
+                        if (closeButton){
+                            closeButton.click();
+                        } else {
+                            console.warn(`${GM_info.script.name}：關閉按鈕選擇器需要更改`);
+                        }
+                    }
+                }, this.pollInterval);
+            }
+        }, this.pollInterval);
+    }
 }
 
 
 class LocalizationManager {
-    constructor() {
+    constructor(){
         const lang = navigator.language.toLowerCase();
         if (lang.startsWith('zh')) this.lang = 'zh';
         else if (lang.startsWith('ja')) this.lang = 'ja';
@@ -248,7 +312,7 @@ class LocalizationManager {
         else this.lang = 'en';
     }
 
-    get(key, replacements = {}) {
+    get(key, replacements = {}){
         const template = this.messages[this.lang][key] || this.messages['en'][key] || key;
         return template.replace(/\{(\w+)\}/g, (_, name) => replacements[name] || '');
     }
@@ -258,7 +322,6 @@ class LocalizationManager {
             copied:        "{name}:short URL copied: {url}",
             format_error:  "{name}:short URL format changed, please wait for script update",
             no_title:      "{name}:could not find <title> element",
-            max_retry:     "{name}:exceeded retry limit, share button not found",
             share:         "Share",
             timestamp:     "Timestamp"
         },
@@ -274,7 +337,6 @@ class LocalizationManager {
             copied:        "{name}:の短縮URLをコピーしました: {url}",
             format_error:  "{name}:の短縮URL形式が変更されました。スクリプトの更新をお待ちください",
             no_title:      "{name}:は <title> 要素を見つけられませんでした",
-            max_retry:     "{name}:は最大試行回數を超え、共有ボタンが見つかりません",
             share:         "共有",
             timestamp:     "タイムスタンプ"
         },
@@ -282,7 +344,6 @@ class LocalizationManager {
             copied:        "{name}:URL corta copiada: {url}",
             format_error:  "{name}:El formato de URL corta ha cambiado. Espera una actualización del script",
             no_title:      "{name}:no pudo encontrar el elemento <title>",
-            max_retry:     "{name}:superó el número máximo de intentos. Botón de compartir no encontrado",
             share:         "Compartir",
             timestamp:     "Hora"
         },
@@ -290,7 +351,6 @@ class LocalizationManager {
             copied:        "{name}:Kurzlink wurde kopiert: {url}",
             format_error:  "{name}:Kurzlink-Format wurde geändert. Bitte auf ein Skript-Update warten",
             no_title:      "{name}:konnte das <title>-Element nicht finden",
-            max_retry:     "{name}:hat die maximale Anzahl an Versuchen überschritten. Teilen-Schaltfläche nicht gefunden",
             share:         "Teilen",
             timestamp:     "Zeitstempel"
         }
@@ -298,25 +358,23 @@ class LocalizationManager {
 }
 
 class TitleObserver {
-    constructor(onNavigate) {
+    constructor(onNavigate){
         this.currentTitle = document.title;
         this.onNavigate = onNavigate;
         this.observe();
     }
 
-    observe() {
+    observe(){
         const titleElement = document.querySelector('title');
-        if (!titleElement) {
-            console.warn('找不到 <title> 元素');
+        if (!titleElement){
+            console.warn(`${GM_info.script.name}：'找不到 <title> 元素`);
             return;
         }
 
         const observer = new MutationObserver(() => {
-            if (document.title !== this.currentTitle) {
+            if (document.title !== this.currentTitle){
                 this.currentTitle = document.title;
-                if (window.location.href.startsWith('https://www.youtube.com/watch?v=')||window.location.href.startsWith('https://www.youtube.com/shorts/')) {
-                    this.onNavigate();
-                }
+                this.onNavigate();
             }
         });
 
@@ -326,4 +384,4 @@ class TitleObserver {
 
 
 const johnTheTrackingStoper = new YouTubeShortUrlCopier();
-new TitleObserver(() => johnTheTrackingStoper.waitForShareButton());
+new TitleObserver(() => johnTheTrackingStoper.toggleShareButtonHandler());
