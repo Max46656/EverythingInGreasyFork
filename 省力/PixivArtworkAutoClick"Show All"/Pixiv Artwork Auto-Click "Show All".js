@@ -2,14 +2,14 @@
 // @name        Pixiv作品自動點選「檢視全部」
 // @name:ja     Pixiv作品「すべて見る」を自動クリック
 // @name:en     Pixiv Artwork Auto-Click "Show All"
-// @description 自動展開Pixiv作品
-// @description:en Automatically expand Pixiv artworks
-// @description:ja Pixivの作品を自動的に展開
+// @description 當Pixiv作品包含多張圖片時，自動展開，漫畫作品不受影響
+// @description:en Automatically expands Pixiv artworks with multiple images, leaving manga artworks unaffected
+// @description:ja Pixivの複數畫像の作品を自動的に展開し、漫畫作品には影響を與えない
 
 // @match       https://www.pixiv.net/artworks/*
 // @match       https://www.pixiv.net/en/artworks/*
 // @grant       none
-// @version     1.0.0
+// @version     1.0.1
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 
 // @author      Max
