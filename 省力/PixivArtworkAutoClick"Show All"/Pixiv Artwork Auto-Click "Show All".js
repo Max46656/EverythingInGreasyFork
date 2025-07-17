@@ -9,7 +9,7 @@
 // @match       https://www.pixiv.net/artworks/*
 // @match       https://www.pixiv.net/en/artworks/*
 // @grant       none
-// @version     1.0.1
+// @version     1.0.2
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 
 // @author      Max
