@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.8.6
+// @version      1.9.1
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -19,6 +19,8 @@
 // @grant        GM_getValue
 // @grant        GM.info
 // @license MPL2.0
+// @downloadURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.user.js
+// @updateURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.meta.js
 // ==/UserScript==
 /* TODO
 *提示文字多語言翻譯
@@ -41,7 +43,7 @@ class userStrategy extends pageStrategy{
         return 'li.sc-bf8cea3f-2';
     }
     getRenderArtWallClass() {
-        return '.sc-2b45994f-0.cUskQy';
+        return '.sc-bf8cea3f-0.dKbaFf';
     }
     getArtWallAlignLeftClass(){
         return 'gqvfWY';
@@ -75,7 +77,7 @@ class tagsStrategy extends pageStrategy{
         return 'section.sc-3d8ed48f-0 div.sc-8d5ac044-4 div.sc-a6755c3a-0';
     }
     getAllButtonClass() {
-        return ['cJvxEZ','dPRDcU','eXDUmY','eXsdAL','bbWWKH'];
+        return ['bpnJkX','dPRDcU','eXDUmY','eXsdAL','bbWWKH','bbWEWN','fjcIyQ'];
     }
     getArtsCountClass(){
         return 'div.sc-a6755c3a-2 div.sc-b5e6ab10-0 span';
@@ -154,7 +156,7 @@ class artScraper {
         return elements[0];
     }
 
-      async getElementListBySelector(selector) {
+    async getElementListBySelector(selector) {
         let elements = document.querySelectorAll(selector);
         while (elements.length === 0) {
             await this.delay(50);
@@ -169,70 +171,108 @@ class artScraper {
         if(document.getElementById("RerenderButton")){
             this.toNextPage();
         }
-        const startPage = document.querySelector("nav button span").textContent-1;
-        for (let i = startPage; i <= this.targetPages + startPage; i++) {
+        const initPage = Number(document.querySelector("nav button span").textContent) - 1;
+        for (let i = initPage; i <= this.targetPages + initPage; i++) {
             const iterationStartTime = performance.now();
-            //console.log("理應處理至",i,"目前處理至",document.querySelector("nav button span").textContent)
-            //當頁面的載入速度慢於腳本處理速度，會導致圖片被重複抓取
             let page = Number(document.querySelector("nav button span").textContent);
-            if(page && i >= page){
-              i--;
+            if(page && i > page){
+                i--;
             }else if(!page){
-              console.log(`${GM_info.script.name} 觸發page0錯誤，停止排序`);
-              break;
+                console.log(this.getAPIMessageLocalization("pageZeroError"));
+                break;
             }
             await this.getArtsInPage(thumbnailClass, artsClass);
 
-            // 最後一頁的下一頁按鈕為隱藏
-            let allPageNav = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
-            let retry = 0;
-            while(allPageNav[allPageNav.length-1].hasAttribute("hidden") && retry < 100) {
+            let nextPageLink = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
+            let retryCount = 0;
+            while(nextPageLink[nextPageLink.length-1].hasAttribute("hidden") && retryCount < 100) {
                 await this.delay(1);
-                retry++;
+                retryCount++;
             }
-            if(retry>=100){
-              console.log(`${GM_info.script.name} 已經來到最後一頁，停止排序`);
-              break;
-            }
-            let takeALook = Math.floor(Math.random() * 10) + 30;
-            let waitTime = Math.floor(Math.random() * 3000) + 2000;
-
-            if(i > 150 && i % takeALook * 10 == 0){
-                console.log(`${GM_info.script.name} 請等待API冷卻時間`);
-                await this.delay(waitTime * 10);
-            }else if(i > 40 && i % takeALook == 0){
-                console.log(`${GM_info.script.name} 請等待API冷卻時間`);
-                await this.delay(waitTime);
+            if(retryCount >= 100){
+                console.log(this.getAPIMessageLocalization("lastPageReached"));
+                break;
             }
 
-            if(this.allArtsWithoutLike.length>=800){
+            let checkInterval = Math.floor(Math.random() * 10) + 30;
+            let cooldown = Math.floor(Math.random() * 3000) + 2000;
+
+            /*if(i - initPage > 150 && (i - initPage) % (checkInterval * 10) == 0){
+                const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
+                console.log(cooldownMessage);
+                const sorterContainer = document.getElementById("SorterBtnContainer");
+                const messageElement = document.createElement("span");
+                messageElement.textContent = cooldownMessage;
+                sorterContainer.appendChild(messageElement);
+                await this.delay(cooldown * 10);
+                sorterContainer.removeChild(messageElement);
+            }else if(i - initPage > 40 && (i - initPage) % checkInterval == 0){
+                const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
+                console.log(cooldownMessage);
+                const sorterContainer = document.getElementById("SorterBtnContainer");
+                const messageElement = document.createElement("span");
+                messageElement.textContent = cooldownMessage;
+                sorterContainer.appendChild(messageElement);
+                await this.delay(cooldown);
+                sorterContainer.removeChild(messageElement);
+            }*/
+
+            if(this.allArtsWithoutLike.length >= 800){
                 while(this.allArtsWithoutLike.length != 0){
                     try{
                         await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
                     }catch (e){
-                        console.log(`${GM_info.script.name} 請等待API冷卻時間`);
-                        await this.delay(waitTime);
+                        const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
+                        console.log(`${GM_info.script.name} `+cooldownMessage);
+                        const sorterContainer = document.getElementById("SorterBtnContainer");
+                        const messageElement = document.createElement("span");
+                        messageElement.textContent = cooldownMessage;
+                        sorterContainer.appendChild(messageElement);
+                        await this.delay(cooldown);
+                        sorterContainer.removeChild(messageElement);
+
                     }
                 }
             }
 
-
-            if (i < this.targetPages + startPage - 1) {
+            if (i < this.targetPages + initPage - 1) {
                 this.toNextPage();
             }
 
             const iterationEndTime = performance.now();
-            //console.log("已處理圖片量",this.allArts.length+this.allArtsWithoutLike.length);
         }
 
         while(this.allArtsWithoutLike.length != 0){
             try{
                 await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
             }catch (e){
-                console.log(`${GM_info.script.name} 請等待API冷卻時間`);
-                await this.delay(Math.floor(Math.random() * 1000));
+                const randomCooldown = Math.floor(Math.random() * 1000);
+                const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: randomCooldown });
+                console.log(cooldownMessage);
+                await this.delay(randomCooldown);
             }
         }
+    }
+
+    getAPIMessageLocalization(word, params = {}) {
+        let display = {
+            "zh-TW": {
+                "pageZeroError": `${GM_info.script.name} 觸發page0錯誤，停止排序`,
+                "lastPageReached": `${GM_info.script.name} 已經來到最後一頁，停止排序`,
+                "apiCooldown": `請等待API冷卻時間 ${params.waitTime/1000 || ''}秒`
+        },
+            "en": {
+                "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
+                "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
+                "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
+        },
+            "ja": {
+                "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
+                "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
+                "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
+        }
+        };
+        return display[navigator.language]?.[word] ?? display["en"][word];
     }
 
     async getArtsInPage(thumbnailClass, artsClass) {
@@ -278,7 +318,7 @@ class artScraper {
             for (let art of arts) {
                 this.allArtsWithoutLike.push(art);
             }
-          break;
+            break;
         }
     }
 
@@ -301,7 +341,7 @@ class artScraper {
                     likeCountElement.textContent = `${likeCount}`;
                     likeCountElement.className = 'likes';
                     likeCountElement.style.cssText =
-                    'text-align: center !important; padding-bottom: 20px !important; color: #0069b1 !important; font-size: 12px !important; font-weight: bold !important; text-decoration: none !important; background-color: #cef !important; background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 12 12%22><path fill=%22%230069B1%22 d=%22M9,1 C10.6568542,1 12,2.34314575 12,4 C12,6.70659075 10.1749287,9.18504759 6.52478604,11.4353705 L6.52478518,11.4353691 C6.20304221,11.6337245 5.79695454,11.6337245 5.4752116,11.4353691 C1.82507053,9.18504652 0,6.70659017 0,4 C1.1324993e-16,2.34314575 1.34314575,1 3,1 C4.12649824,1 5.33911281,1.85202454 6,2.91822994 C6.66088719,1.85202454 7.87350176,1 9,1 Z%22/></svg>") !important; background-position: center left 6px !important; background-repeat: no-repeat !important; padding: 3px 6px 3px 18px !important; border-radius: 3px !important;';
+                        'text-align: center !important; padding-bottom: 20px !important; color: #0069b1 !important; font-size: 12px !important; font-weight: bold !important; text-decoration: none !important; background-color: #cef !important; background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 12 12%22><path fill=%22%230069B1%22 d=%22M9,1 C10.6568542,1 12,2.34314575 12,4 C12,6.70659075 10.1749287,9.18504759 6.52478604,11.4353705 L6.52478518,11.4353691 C6.20304221,11.6337245 5.79695454,11.6337245 5.4752116,11.4353691 C1.82507053,9.18504652 0,6.70659017 0,4 C1.1324993e-16,2.34314575 1.34314575,1 3,1 C4.12649824,1 5.33911281,1.85202454 6,2.91822994 C6.66088719,1.85202454 7.87350176,1 9,1 Z%22/></svg>") !important; background-position: center left 6px !important; background-repeat: no-repeat !important; padding: 3px 6px 3px 18px !important; border-radius: 3px !important;';
                     referenceElement.appendChild(likeCountElement);
                 }
                 this.allArts.push({ art, likeCount });
@@ -364,7 +404,7 @@ class artScraper {
         if(GM_getValue("leftAlign", false)){
             table.classList.add('TableArtWall');
             if(self.location.href.includes('https://www.pixiv.net/bookmark_new_illust')){
-              this.changeElementClassName(document.querySelector(".gqvfWY"),"leftAlign");
+                this.changeElementClassName(document.querySelector(".gqvfWY"),"leftAlign");
             }
         }else{
             //pixiv將置中對齊的方式從擠一個元素變成調整相簿的css class
@@ -444,11 +484,11 @@ class artScraper {
             return;
         }
 
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.alignItems = 'center';
-        buttonContainer.className = 'startButton';
-        buttonContainer.innerHTML= '<div class="hxckiU"><form class="ahao-search"><div class="hjxNtZ"><div class="bbSVxZ"></div><div class="dlaIss"><div class="lclerM"><svg viewBox="0 0 16 16" size="16" class="fiLugu"><path d="M8.25739 9.1716C7.46696 9.69512 6.51908 10 5.5 10C2.73858 10 0.5 7.76142 0.5 5C0.5 2.23858 2.73858 0 5.5 0C8.26142 0 10.5 2.23858 10.5 5C10.5 6.01908 10.1951 6.96696 9.67161 7.75739L11.7071 9.79288C12.0976 10.1834 12.0976 10.8166 11.7071 11.2071C11.3166 11.5976 10.6834 11.5976 10.2929 11.2071L8.25739 9.1716ZM8.5 5C8.5 6.65685 7.15685 8 5.5 8C3.84315 8 2.5 6.65685 2.5 5C2.5 3.34315 3.84315 2 5.5 2C7.15685 2 8.5 3.34315 8.5 5Z" transform="translate(3 3)" fill-rule="evenodd" clip-rule="evenodd"></path></svg></div></div></div></form><div class="kFcBON"></div></div>';
+        const buttonsorterContainer = document.createElement('div');
+        buttonsorterContainer.style.display = 'flex';
+        buttonsorterContainer.style.alignItems = 'center';
+        buttonsorterContainer.className = 'startButton';
+        buttonsorterContainer.innerHTML= '<div class="hxckiU"><form class="ahao-search"><div class="hjxNtZ"><div class="bbSVxZ"></div><div class="dlaIss"><div class="lclerM"><svg viewBox="0 0 16 16" size="16" class="fiLugu"><path d="M8.25739 9.1716C7.46696 9.69512 6.51908 10 5.5 10C2.73858 10 0.5 7.76142 0.5 5C0.5 2.23858 2.73858 0 5.5 0C8.26142 0 10.5 2.23858 10.5 5C10.5 6.01908 10.1951 6.96696 9.67161 7.75739L11.7071 9.79288C12.0976 10.1834 12.0976 10.8166 11.7071 11.2071C11.3166 11.5976 10.6834 11.5976 10.2929 11.2071L8.25739 9.1716ZM8.5 5C8.5 6.65685 7.15685 8 5.5 8C3.84315 8 2.5 6.65685 2.5 5C2.5 3.34315 3.84315 2 5.5 2C7.15685 2 8.5 3.34315 8.5 5Z" transform="translate(3 3)" fill-rule="evenodd" clip-rule="evenodd"></path></svg></div></div></div></form><div class="kFcBON"></div></div>';
 
         const inputField = document.createElement('input');
         inputField.type = 'text';
@@ -472,11 +512,11 @@ class artScraper {
             await this.eatAllArts();
         });
 
-        buttonContainer.appendChild(start);
-        buttonContainer.appendChild(inputField);
-        buttonContainer.appendChild(startButton);
+        buttonsorterContainer.appendChild(start);
+        buttonsorterContainer.appendChild(inputField);
+        buttonsorterContainer.appendChild(startButton);
 
-        parentElement.appendChild(buttonContainer);
+        parentElement.appendChild(buttonsorterContainer);
     } */
 
     // 拉桿樣式
@@ -485,14 +525,14 @@ class artScraper {
             return;
         }
 
-        const buttonContainer = document.createElement('nav');
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.alignItems = 'center';
-        buttonContainer.id = 'myScriptButtonContainer';
+        const buttonsorterContainer = document.createElement('nav');
+        buttonsorterContainer.style.display = 'flex';
+        buttonsorterContainer.style.alignItems = 'center';
+        buttonsorterContainer.id = 'SorterBtnContainer';
 
         const startButton = document.createElement('button');
-        this.addLikeRangeInput(buttonContainer,startButton);
-        await this.addPageRangeInput(buttonContainer,startButton);
+        this.addLikeRangeInput(buttonsorterContainer,startButton);
+        await this.addPageRangeInput(buttonsorterContainer,startButton);
 
         startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
         buttonClass.forEach(cls => startButton.classList.add(cls));
@@ -505,8 +545,8 @@ class artScraper {
         });
 
         const parentElement = await this.getElementBySelector(ParentClass);
-        buttonContainer.appendChild(startButton);
-        parentElement.appendChild(buttonContainer);
+        buttonsorterContainer.appendChild(startButton);
+        parentElement.appendChild(buttonsorterContainer);
     }
 
     async addRerenderButton(renderArtWallAtClass, ParentClass, buttonClass) {
@@ -514,14 +554,14 @@ class artScraper {
             document.getElementById("RerenderButton").textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`;
             return;
         }
-        document.querySelector("nav#myScriptButtonContainer input[id=LikeRangeInput]").style.display="none";
+        document.querySelector("nav#SorterBtnContainer input[id=LikeRangeInput]").style.display="none";
         document.getElementById("LikeIcon").style.display="none";
-        await this.delay(0);
+        await this.delay(0);//黑魔法
         document.getElementById("StartButton").textContent = 'bug? you can try again.';
 
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.alignItems = 'center';
+        const buttonsorterContainer = document.createElement('div');
+        buttonsorterContainer.style.display = 'flex';
+        buttonsorterContainer.style.alignItems = 'center';
 
         const rerenderButton = document.createElement('button');
         rerenderButton.textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`; // 顯示目前繪畫數量
@@ -533,14 +573,14 @@ class artScraper {
             rerenderButton.textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`; // 更新繪畫數量
         });
 
-        this.addLikeRangeInput(buttonContainer, rerenderButton);
+        this.addLikeRangeInput(buttonsorterContainer, rerenderButton);
 
         const parentElement = await this.getElementBySelector(ParentClass);
-        buttonContainer.appendChild(rerenderButton);
-        parentElement.appendChild(buttonContainer);
+        buttonsorterContainer.appendChild(rerenderButton);
+        parentElement.appendChild(buttonsorterContainer);
     }
 
-    addLikeRangeInput(container,Button) {
+    addLikeRangeInput(sorterContainer,Button) {
         const likesMinLimitsRange = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 7500, 10000];
 
         const likeIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -579,11 +619,11 @@ class artScraper {
                 Button.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
             });
         }
-        container.appendChild(likeIcon);
-        container.appendChild(likeRangeInput);
+        sorterContainer.appendChild(likeIcon);
+        sorterContainer.appendChild(likeRangeInput);
     }
 
-    async addPageRangeInput(container, startButton) {
+    async addPageRangeInput(sorterContainer, startButton) {
         const pageIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         pageIcon.setAttributeNS(null, "viewBox", "0 0 16 16");
         pageIcon.setAttributeNS(null, "height", "16");
@@ -623,8 +663,8 @@ class artScraper {
             startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
         });
 
-        container.appendChild(pageIcon);
-        container.appendChild(pageRangeInput);
+        sorterContainer.appendChild(pageIcon);
+        sorterContainer.appendChild(pageRangeInput);
         if(max>50){
             const pageInputBox = document.createElement('input');
             pageInputBox.type = 'number';
@@ -641,7 +681,7 @@ class artScraper {
                     startButton.textContent = `likes: ${this.likesMinLimit} for ${this.targetPages}Page Go!`;
                 }
             });
-            container.appendChild(pageInputBox);
+            sorterContainer.appendChild(pageInputBox);
         }
     }
 
@@ -719,7 +759,7 @@ class customMenu {
     rowsOfArtsWallMenu() {
         const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
         if (rows && Number.isInteger(rows) && rows > 0) {
-             GM_setValue("rowsOfArtsWall", rows);
+            GM_setValue("rowsOfArtsWall", rows);
         } else {
             alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
         }
@@ -762,7 +802,7 @@ class customMenu {
                 "disabled": "無効"
             }
         };
-        return display[navigator.language][word];
+        return display[navigator.language]?.[word] ?? display["en"][word];
     }
 
     registerMenuCommand(instance) {
