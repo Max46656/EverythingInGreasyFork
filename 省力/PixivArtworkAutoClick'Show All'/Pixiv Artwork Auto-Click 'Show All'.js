@@ -23,7 +23,7 @@
 
 class ReadingStand {
     constructor() {
-        this.notMangaTexts = ['查看全部', '檢視全部', 'すべて見る', 'Show all', '모두 보기'];
+        this.notMangaTexts = ['檢視全部', '檢視全部', 'すべて見る', 'Show all', '모두 보기'];
         this.setupUrlChangeListener();
     }
 
