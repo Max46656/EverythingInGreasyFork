@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.9.1
+// @version      1.9.2
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -67,7 +67,7 @@ class tagsStrategy extends pageStrategy{
         return 'li.sc-98699d11-2';
     }
     getRenderArtWallClass() {
-        return 'section.sc-3d8ed48f-0 div.sc-98699d11-0';
+        return 'section.sc-3d8ed48f-0 div.gqvfWY:has(ul)';
         // return 'div.ggHNyV:has(ul.hdRpMN)';
     }
     getArtWallAlignLeftClass(){
@@ -230,7 +230,6 @@ class artScraper {
                         sorterContainer.appendChild(messageElement);
                         await this.delay(cooldown);
                         sorterContainer.removeChild(messageElement);
-
                     }
                 }
             }
@@ -246,10 +245,14 @@ class artScraper {
             try{
                 await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
             }catch (e){
-                const randomCooldown = Math.floor(Math.random() * 1000);
-                const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: randomCooldown });
-                console.log(cooldownMessage);
-                await this.delay(randomCooldown);
+                const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
+                console.log(`${GM_info.script.name} `+cooldownMessage);
+                const sorterContainer = document.getElementById("SorterBtnContainer");
+                const messageElement = document.createElement("span");
+                messageElement.textContent = cooldownMessage;
+                sorterContainer.appendChild(messageElement);
+                await this.delay(cooldown);
+                sorterContainer.removeChild(messageElement);
             }
         }
     }
@@ -401,15 +404,20 @@ class artScraper {
         const table = document.createElement('table');
         table.style.cssText = 'width: 1223px; overflow-y: auto; margin: 0 auto;';
 
-        if(GM_getValue("leftAlign", false)){
+        const  alignLeftClass =this.strategy.getArtWallAlignLeftClass();
+
+        /*pixiv將置中對齊的方式從擠一個元素變成使用調整相簿位置的css class(其作用為將該元素推右固定的長度)
+         * 其三個頁面中各有不同的數量的元素使用該CSS class來排版，若要在僅影響相簿置左排版的前提下，則需要對於其順序修改元素名稱。
+         */
+        if(GM_getValue("leftAlign", true)){
             table.classList.add('TableArtWall');
-            if(self.location.href.includes('https://www.pixiv.net/bookmark_new_illust')){
-                this.changeElementClassName(document.querySelector(".gqvfWY"),"leftAlign");
+            if(self.location.href.includes('bookmark_new_illust')){
+                this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[0],"leftAlign");
+            }else if(self.location.href.includes('users')){
+                this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[3],"leftAlign");
+            }else if(self.location.href.includes('tags')){
+                this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[4],"leftAlign");
             }
-        }else{
-            //pixiv將置中對齊的方式從擠一個元素變成調整相簿的css class
-            table.classList.add(this.strategy.getArtWallAlignLeftClass());
-        }
 
         const fragment = document.createDocumentFragment();
         fragment.appendChild(table);
