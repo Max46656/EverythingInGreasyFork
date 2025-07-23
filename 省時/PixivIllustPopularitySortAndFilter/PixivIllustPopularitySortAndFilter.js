@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.9.2
+// @version      1.9.3
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -402,6 +402,7 @@ class artScraper {
         this.clearElement(parentElement);
 
         const table = document.createElement('table');
+        table.classList.add('TableArtWall');
         table.style.cssText = 'width: 1223px; overflow-y: auto; margin: 0 auto;';
 
         const  alignLeftClass =this.strategy.getArtWallAlignLeftClass();
@@ -410,7 +411,6 @@ class artScraper {
          * 其三個頁面中各有不同的數量的元素使用該CSS class來排版，若要在僅影響相簿置左排版的前提下，則需要對於其順序修改元素名稱。
          */
         if(GM_getValue("leftAlign", true)){
-            table.classList.add('TableArtWall');
             if(self.location.href.includes('bookmark_new_illust')){
                 this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[0],"leftAlign");
             }else if(self.location.href.includes('users')){
@@ -418,6 +418,7 @@ class artScraper {
             }else if(self.location.href.includes('tags')){
                 this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[4],"leftAlign");
             }
+        }
 
         const fragment = document.createDocumentFragment();
         fragment.appendChild(table);
