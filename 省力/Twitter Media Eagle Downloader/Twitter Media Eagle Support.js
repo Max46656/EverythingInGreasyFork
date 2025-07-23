@@ -23,7 +23,7 @@
 // ==/UserScript==
 // Forked from https://greasyfork.org/zh-TW/scripts/501681-twitter-x-media-downloader
 
-const filename = 'twitter_{user-name}(@{user-id})_{date-time}_{status-id}_{file-type}';
+const filename = 'twitter_{user-name}(@{user-id}) {full-text}';
 
 const TMD = (function () {
   let lang, host, history, show_sensitive, is_tweetdeck;
