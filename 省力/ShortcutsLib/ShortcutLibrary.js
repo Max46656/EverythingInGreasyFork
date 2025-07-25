@@ -1,6 +1,6 @@
 /**name => ShortcutLibrary
 description => 根據網址(正規表達式)聆聽按鍵事件點選指定元素的函式庫，提供點選規則與快捷鍵的 CRUD 操作。
-version => 1.0.0
+version => 1.0.1
 author => Max
 namespace => https://github.com/Max46656
 license => MPL2.0
@@ -298,7 +298,7 @@ class ShortcutHandler {
             if (rule.nthElement > 0) {
                 targetIndex = rule.nthElement - 1;
             } else if (rule.nthElement < 0) {
-                targetIndexDr = elements.length + rule.nthElement;
+                targetIndex = elements.length + rule.nthElement;
             } else {
                 console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 的 nthElement 無效: 0 不允許`);
                 return false;
