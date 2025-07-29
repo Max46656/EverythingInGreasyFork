@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.0.11
+// @version      1.0.12
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -139,9 +139,9 @@ class ShortcutHandler {
     handleKeydown(event) {
         //console.log(event);
         const currentUrl = window.location.href;
-        this.ruleManager.clickRules.rules.forEach((rule, index) => {
+        this.ruleManager.clickRules.rules.some((rule, index) => {
             try {
-                if (!rule.isEnabled || !new RegExp(rule.urlPattern).test(currentUrl)) return;
+                if (!rule.isEnabled || !new RegExp(rule.urlPattern).test(currentUrl)) return false;
 
                 const shortcutParts = rule.shortcut.split('+');
                 const mainKey = shortcutParts[shortcutParts.length - 1];
@@ -153,9 +153,12 @@ class ShortcutHandler {
                 if (allModifiersPressed && mainKeyPressed) {
                     event.preventDefault();
                     this.clickElement(rule, index);
+                    return true;//break;
                 }
+                return false;
             } catch (e) {
                 console.warn(`${GM_info.script.name}: 處理規則 "${rule.ruleName}" 時發生錯誤: ${e}`);
+                return false;
             }
         });
     }
@@ -191,7 +194,7 @@ class ShortcutHandler {
         try {
             const elements = this.getElements(rule.selectorType, rule.selector);
             if (elements.length === 0) {
-                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 未找到符合元素: ${rule.selector}`);
+                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 未找到匹配元素: ${rule.selector}`);
                 return false;
             }
 
@@ -309,7 +312,7 @@ class MenuManager {
                 urlPattern: 'URLパターン（正規表現）：',
                 selectorType: 'セレクタタイプ：',
                 selector: 'セレクタ：',
-                nthElement: '何番目の要素（正數は最初から、負數は最後から）：',
+                nthElement: '何番目の要素（正数は最初から、負数は最後から）：',
                 shortcutModifiers: 'ショートカット修飾キー組み合わせ：',
                 shortcutMainKey: 'ショートカットメインキー：',
                 ifLinkOpen: 'リンクの場合、開く（それ以外の場合はデフォルトを維持）：',
@@ -550,6 +553,12 @@ class MenuManager {
         menu.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
         menu.innerHTML = `
             <style>
+                h1 {
+                    font-size: 2rem;
+                }
+                h2 {
+                    font-size: 1.5rem;
+                }
                 #shortcutMenu {
                     overflow-y: auto;
                     max-height: 80vh;
@@ -601,10 +610,10 @@ class MenuManager {
             </style>
             <div id="shortcutMenu">
                 <div class="headerContainer">
-                    <h3>${i18n.titleAdd}</h3>
+                    <h1>${GM_info.script.name}</h1>
                     <button id="closeMenu" class="closeButton">✕</button>
                 </div>
-                <h4>${i18n.addRuleSection}</h4>
+                <h2>${i18n.titleAdd}</h2>
                 <div class="checkbox-container">
                     <label>${i18n.isEnabled}</label>
                     <input type="checkbox" id="isEnabled" checked>
@@ -694,6 +703,12 @@ class MenuManager {
         menu.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
         menu.innerHTML = `
             <style>
+                h1 {
+                    font-size: 2rem;
+                }
+                h2 {
+                    font-size: 1.5rem;
+                }
                 #shortcutMenu {
                     overflow-y: auto;
                     max-height: 80vh;
@@ -756,9 +771,10 @@ class MenuManager {
                     margin: 0;
                 }
             </style>
+            <h1>${GM_info.script.name}</h1>
             <div id="shortcutMenu">
                 <div class="headerContainer">
-                    <h3>${i18n.titleManage}</h3>
+                    <h2>${i18n.titleManage}</h2>
                     <button id="closeMenu" class="closeButton">✕</button>
                 </div>
                 <div id="rulesList"></div>
