@@ -2,22 +2,21 @@
 // @name         最愛「新作品」更新
 // @name:ja      お気に入りの「新しいアート」更新
 // @name:en      Favorites"NewArt"Update
-// @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.1.2
-// @description  為何要一個一個點擊進入追蹤的作者頁面才能看到最新的更新？讓這個腳本為你代勞。支援Kemono/Coomer。
+// @description  為何要一個一個點選進入追蹤的作者頁面才能看到最新的更新？讓這個腳本為你代勞。支援Kemono/Coomer。
 // @description:ja それぞれのフォローアーティストのページに一つずつクリックして最新の更新を見る必要がありますか？このスクリプトに任せてください。Kemono/Coomerに対応しています。
 // @description:en Why click into each followed artist's page one by one to see the latest updates? Let this script do it for you. Suppper Kemono/Coomer.
+
+// @match        *://kemono.cr/account/favorites/artists*
+// @match        *://*.kemono.cr/account/favorites/artists*
+// @match        *://coomer.st/account/favorites/artists*
+// @match        *://*.coomer.st/account/favorites/artists*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
+// @version      1.1.3
+
 // @author       Max
-// @match        *://kemono.su/account/favorites/artists*
-// @match        *://*.kemono.su/account/favorites/artists*
-// @match        *://coomer.su/account/favorites/artists*
-// @match        *://*.coomer.su/account/favorites/artists*
-// @match        *://kemono.su/favorites*
-// @match        *://coomer.su/favorites*
-// @match        *://*.kemono.su/favorites*
-// @match        *://*.coomer.su/favorites*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.su
+// @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
 // @license MPL2.0
+
 // @downloadURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.user.js
 // @updateURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.meta.js
 // ==/UserScript==
@@ -66,11 +65,11 @@ class ArtistUpdateCatcher {
         let cleanUrl = url.replace(/^.*(?=\/[^\/]+\/user\/[^\/]+)/, "");
         let creatorPostsApi,creatorInfoApi;
         if(isKemono){
-            creatorPostsApi ='https://kemono.su/api/v1' + cleanUrl + '?o=0';
-            creatorInfoApi = 'https://kemono.su/api/v1' + cleanUrl + '/profile?o=0';
+            creatorPostsApi ='https://kemono.cr/api/v1' + cleanUrl + '?o=0';
+            creatorInfoApi = 'https://kemono.cr/api/v1' + cleanUrl + '/profile?o=0';
         }else{
-            creatorPostsApi ='https://coomer.su/api/v1' + cleanUrl + '?o=0';
-            creatorInfoApi = 'https://coomer.su/api/v1' + cleanUrl + '/profile?o=0';
+            creatorPostsApi ='https://coomer.st/api/v1' + cleanUrl + '?o=0';
+            creatorInfoApi = 'https://coomer.st/api/v1' + cleanUrl + '/profile?o=0';
         }
         try {
             const postsResponse = await fetch(creatorPostsApi);
@@ -79,7 +78,7 @@ class ArtistUpdateCatcher {
                 return this.fetchUpdateArticles(url);
             }
             const posts = await postsResponse.json();
-
+            //console.log(posts);
             if (posts.length === 0) {
                 return articles;
             }
@@ -178,9 +177,9 @@ class ArtistUpdateCatcher {
             userProfile.innerHTML=`
                     <div>
                         <span class="fancy-image">
-                            <pictrue class="fancy-image__pictrue">
+                            <picture class="fancy-image__picture">
                                 <img class="fancy-image__image" src=${userIcon} loading="lazy" style="width: 100%; border-radius: 50%;">
-                            </pictrue>
+                            </picture>
                         </span>
                     </div>`;
             article.prepend(userProfile);
@@ -196,7 +195,7 @@ class ArtistUpdateCatcher {
 
             return new Date(timeB) - new Date(timeA);
         });
-
+        console.log(articles);
         const container = articles[0].parentElement;
         articles.forEach(article => {
             container.appendChild(article);
