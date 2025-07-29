@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.0.12
+// @version      1.1.0
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -124,7 +124,7 @@ class RuleManager {
     }
 }
 
-// 快捷鍵處理類，負責監聽鍵盤事件並執行點擊動作
+// 快捷鍵處理類，負責監聽鍵盤事件並執行點選動作
 class ShortcutHandler {
     constructor(ruleManager) {
         // 初始化：設定規則管理器並綁定鍵盤事件監聽器
@@ -139,7 +139,7 @@ class ShortcutHandler {
     handleKeydown(event) {
         //console.log(event);
         const currentUrl = window.location.href;
-        this.ruleManager.clickRules.rules.some((rule, index) => {
+        [...this.ruleManager.clickRules.rules].reverse().some((rule, index) => {
             try {
                 if (!rule.isEnabled || !new RegExp(rule.urlPattern).test(currentUrl)) return false;
 
@@ -152,8 +152,9 @@ class ShortcutHandler {
 
                 if (allModifiersPressed && mainKeyPressed) {
                     event.preventDefault();
-                    this.clickElement(rule, index);
-                    return true;//break;
+                    const originalIndex = this.ruleManager.clickRules.rules.length - 1 - index;
+                    this.clickElement(rule, originalIndex);
+                    return true;
                 }
                 return false;
             } catch (e) {
@@ -161,12 +162,13 @@ class ShortcutHandler {
                 return false;
             }
         });
+        //console.log(this.ruleManager.clickRules.rules);
     }
 
     // 根據選擇器類型獲取元素
     // 輸入參數: selectorType (string) - 選擇器類型 ('css' 或 'xpath')
     //          selector (string) - 選擇器字串
-    // 返回值: array - 匹配的元素陣列
+    // 返回值: array - 符合的元素陣列
     getElements(selectorType, selector) {
         try {
             if (selectorType === 'xpath') {
@@ -186,15 +188,15 @@ class ShortcutHandler {
         }
     }
 
-    // 執行點擊指定元素的動作
+    // 執行點選指定元素的動作
     // 輸入參數: rule (object) - 規則物件
     //          ruleIndex (number) - 規則索引
-    // 返回值: boolean - 是否成功點擊元素
+    // 返回值: boolean - 是否成功點選元素
     clickElement(rule, ruleIndex) {
         try {
             const elements = this.getElements(rule.selectorType, rule.selector);
             if (elements.length === 0) {
-                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 未找到匹配元素: ${rule.selector}`);
+                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 未找到符合元素: ${rule.selector}`);
                 return false;
             }
 
@@ -312,13 +314,13 @@ class MenuManager {
                 urlPattern: 'URLパターン（正規表現）：',
                 selectorType: 'セレクタタイプ：',
                 selector: 'セレクタ：',
-                nthElement: '何番目の要素（正数は最初から、負数は最後から）：',
+                nthElement: '何番目の要素（正數は最初から、負數は最後から）：',
                 shortcutModifiers: 'ショートカット修飾キー組み合わせ：',
                 shortcutMainKey: 'ショートカットメインキー：',
                 ifLinkOpen: 'リンクの場合、開く（それ以外の場合はデフォルトを維持）：',
                 isEnabled: 'ルールを有効にする：',
                 addRule: 'ルールを追加',
-                save: '保存',
+                save: '儲存',
                 delete: '削除',
                 ruleNamePlaceholder: '例：マイルール',
                 urlPatternPlaceholder: '例：https://example\\.com/.*',
