@@ -1,7 +1,7 @@
 /**
 name => ShortcutLibrary
 description => 根據網址(正規表達式)聆聽按鍵事件點選指定元素的函式庫，提供點選規則與快捷鍵的 CRUD 操作。
-version => 1.1.0
+version => 1.2.0
 author => Max
 namespace => https://github.com/Max46656
 license => MPL2.0
@@ -131,10 +131,11 @@ class ShortcutHandler {
     }
 
     handleKeydown(event) {
+        //console.log(event);
         const currentUrl = window.location.href;
-        this.ruleManager.clickRules.rules.forEach((rule, index) => {
+        [...this.ruleManager.clickRules.rules].reverse().some((rule, index) => {
             try {
-                if (!rule.isEnabled || !new RegExp(rule.urlPattern).test(currentUrl)) return;
+                if (!rule.isEnabled || !new RegExp(rule.urlPattern).test(currentUrl)) return false;
 
                 const shortcutParts = rule.shortcut.split('+');
                 const mainKey = shortcutParts[shortcutParts.length - 1];
@@ -145,12 +146,17 @@ class ShortcutHandler {
 
                 if (allModifiersPressed && mainKeyPressed) {
                     event.preventDefault();
-                    this.clickElement(rule, index);
+                    const originalIndex = this.ruleManager.clickRules.rules.length - 1 - index;
+                    this.clickElement(rule, originalIndex);
+                    return true;
                 }
+                return false;
             } catch (e) {
                 console.warn(`${GM_info.script.name}: 處理規則 "${rule.ruleName}" 時發生錯誤: ${e}`);
+                return false;
             }
         });
+        //console.log(this.ruleManager.clickRules.rules);
     }
 
     getElements(selectorType, selector) {
@@ -176,7 +182,7 @@ class ShortcutHandler {
         try {
             const elements = this.getElements(rule.selectorType, rule.selector);
             if (elements.length === 0) {
-                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 未找到匹配元素: ${rule.selector}`);
+                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 未找到符合元素: ${rule.selector}`);
                 return false;
             }
 
@@ -197,7 +203,7 @@ class ShortcutHandler {
 
             const targetElement = elements[targetIndex];
             if (targetElement) {
-                console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 成功點擊元素:`, targetElement);
+                console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 成功點選元素:`, targetElement);
                 if (rule.ifLinkOpen && targetElement.tagName === "A" && targetElement.href) {
                     window.location.href = targetElement.href;
                 } else {
