@@ -5,31 +5,35 @@
 // @name:en      Keyboard and Mouse Wheel Page Turner
 // @name:ko      키보드 및 마우스 휠 페이지 전환기
 // @name:es      Navegador de Páginas con Teclado y Rueda del Ratón
-// @namespace    https://github.com/Max46656
-// @version      1.2.9
 // @description  使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:zh-TW 使用滑鼠滾輪或按鍵快速切換上下頁。
 // @description:ja マウスホイールをスクロールするか、キーを押すことで、簡単にページを上下に切り替えることができます。
 // @description:en Quickly navigate between pages by scrolling the mouse wheel or pressing keys.
 // @description:ko 마우스 휠을 스크롤하거나 키를 눌러 페이지를 쉽게 전환할 수 있습니다.
-// @description:es Navega rápidamente entre páginas desplazando la rueda del ratón o presionando teclas.
+// @description:es Navega rápidamente entre páginas desplazando la rueda del ratón o presionando teclas
+
 // @author       Max
+// @namespace    https://github.com/Max46656
+
 // @match        https://*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
-// @grant    GM_registerMenuCommand
+// @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM.info
+// @version      1.2.9
 // @license MPL2.0
+// @downloadURL https://update.greasyfork.org/scripts/494851/%E6%8C%89%E9%8D%B5%E8%88%87%E6%BB%91%E9%BC%A0%E6%BB%BE%E8%BC%AA%E7%BF%BB%E9%A0%81%E5%99%A8.user.js
+// @updateURL https://update.greasyfork.org/scripts/494851/%E6%8C%89%E9%8D%B5%E8%88%87%E6%BB%91%E9%BC%A0%E6%BB%BE%E8%BC%AA%E7%BF%BB%E9%A0%81%E5%99%A8.meta.js
 // ==/UserScript==
- 
- 
+
+
 class PageButtonManager {
     constructor() {
         this.pageButtonsMap = {};
         this.loadPageButtons();
     }
- 
+
     getConsoleLabels() {
         const userLang = navigator.language || navigator.userLanguage;
         const labels = {
@@ -81,15 +85,15 @@ class PageButtonManager {
         };
         return labels[userLang] || labels.en;
     }
- 
+
     loadPageButtons() {
         this.pageButtonsMap = GM_getValue('pageButtonsMap', {});
     }
- 
+
     async savePageButtons() {
         await GM_setValue('pageButtonsMap', this.pageButtonsMap);
     }
- 
+
     getButtonsByCommonCases() {
         let buttonsByUserSetting = this.getButtonsByPage();
         if (buttonsByUserSetting !== null) {
@@ -140,6 +144,7 @@ class PageButtonManager {
             "a.page-next",
             "a.pages-next",
             "a.page.right",
+            "a[data-page='next']",
             ".paging>.active+.item",
             ".pg_area>em+a",
             "button.next:not([disabled])",
@@ -234,6 +239,7 @@ class PageButtonManager {
             "a.page-prev",
             "a.pages-prev",
             "a.page.left",
+            "a[data-page='prev']",
             "//*[contains(@class, 'paging')]//*[@class='active']/preceding-sibling::*[1]/*[contains(@class, 'item')]", // 原 .paging>.active~.item
             "//*[contains(@class, 'pg_area')]//em/preceding-sibling::*[1]/a", // 原 .pg_area>em~a
             "button.prev:not([disabled])",
@@ -305,7 +311,7 @@ class PageButtonManager {
                 }
             }
         }
- 
+
         let nextButton;
         let nextSelcetor;
         for (let selector of nextSelectorList) {
@@ -333,13 +339,13 @@ class PageButtonManager {
         }
         return {"prevSelector":prevSelector,"nextSelcetor":nextSelcetor,"prev":prevButton,"next":nextButton};
     }
- 
+
     getButtonsByPage() {
         let pageButtons = {"prev": null, "next": null};
         let currentUrl = window.location.href;
         let matchedPattern = null;
         let maxPatternLength = 0;
- 
+
         for (const pattern in this.pageButtonsMap) {
             const regex = new RegExp(pattern);
             if (regex.test(currentUrl)) {
@@ -350,14 +356,14 @@ class PageButtonManager {
                 }
             }
         }
- 
+
         if (!matchedPattern || this.pageButtonsMap[matchedPattern] === undefined) {
             return null;
         }
- 
+
         const prevSelector = this.pageButtonsMap[matchedPattern].prevButton;
         const nextSelector = this.pageButtonsMap[matchedPattern].nextButton;
- 
+
         if (prevSelector.startsWith('//')) {
             let xPathResult = document.evaluate(prevSelector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
             if (xPathResult.snapshotLength > 0) {
@@ -369,7 +375,7 @@ class PageButtonManager {
                 pageButtons.prev = elements[0];
             }
         }
- 
+
         // Handle next button selector (XPath or CSS)
         if (nextSelector.startsWith('//')) {
             let xPathResult = document.evaluate(nextSelector, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
@@ -382,14 +388,14 @@ class PageButtonManager {
                 pageButtons.next = elements[elements.length - 1];
             }
         }
- 
+
         return pageButtons;
     }
- 
+
     getSelectorsByPattern() {
         let currentUrl = window.location.href;
         let matchingSelectors = [];
- 
+
         for (const pattern in this.pageButtonsMap) {
             const regex = new RegExp(pattern);
             if (regex.test(currentUrl)) {
@@ -401,25 +407,25 @@ class PageButtonManager {
         }
         return matchingSelectors;
     }
- 
+
     setButtonsForDomain(buttons,pattern) {
         this.pageButtonsMap[pattern] = buttons;
         this.savePageButtons();
     }
 }
- 
+
 class NavigationPaginationWithInput {
     constructor(buttonManager) {
         this.buttonManager = buttonManager;
         this.init();
     }
- 
+
     async init() {
         //this.buttonManager.getButtonsByCommonCases();
         await this.loadSettings();
         this.setEventListeners();
     }
- 
+
     async loadSettings() {
         this.togglePaginationMode = await GM_getValue('togglePaginationMode', 'key');
         this.modifierKey = await GM_getValue('modifierKey', 'CapsLock');
@@ -427,7 +433,7 @@ class NavigationPaginationWithInput {
         this.prevPageKey = await GM_getValue('prevPageKey', 'Q');
         this.saveSettings();
     }
- 
+
     async saveSettings() {
         await GM_setValue('togglePaginationMode', this.togglePaginationMode);
         await GM_setValue('modifierKey', this.modifierKey);
@@ -440,28 +446,28 @@ class NavigationPaginationWithInput {
         console.log("prevPageKey",this.prevPageKey);
         console.groupEnd();
     }
- 
+
     toNextPage() {
         this.pageButtons = this.buttonManager.getButtonsByCommonCases();
         this.pageButtons.next.click();
     }
- 
+
     toPrevPage() {
         this.pageButtons = this.buttonManager.getButtonsByCommonCases();
         this.pageButtons.prev.click();
     }
- 
+
     setEventListeners() {
         this.scrollHandler = () => this.handleScroll();
         this.keydownHandler = (event) => this.handleKeydown(event);
- 
+
         if (this.togglePaginationMode !== "key") {
             self.addEventListener("scroll", this.scrollHandler);
         } else {
             self.addEventListener("keydown", this.keydownHandler);
         }
     }
- 
+
     handleScroll(scrollThreshold=3) {
         const isBottom = document.documentElement.scrollHeight - self.innerHeight - self.pageYOffset <= scrollThreshold;
         if (isBottom) {
@@ -473,14 +479,14 @@ class NavigationPaginationWithInput {
             //console.log("滾輪上一頁");
         }
     }
- 
+
     handleKeydown(event) {
         if (event.getModifierState(this.modifierKey)) {
-            if (event.key.toUpperCase() === this.nextPageKey.toUpperCase()) {
+            if (event.code.replace(/^Key/, '').replace(/^Numpad/, '').toUpperCase() === this.nextPageKey.toUpperCase()) {
                 event.preventDefault();
                 this.toNextPage();
                 //console.log("快捷鍵下一頁");
-            } else if (event.key.toUpperCase() === this.prevPageKey.toUpperCase()) {
+            } else if (event.code.replace(/^Key/, '').replace(/^Numpad/, '').toUpperCase() === this.prevPageKey.toUpperCase()) {
                 event.preventDefault();
                 this.toPrevPage();
                 //console.log("快捷鍵上一頁");
@@ -488,14 +494,14 @@ class NavigationPaginationWithInput {
         }
     }
 }
- 
+
 class MenuManager {
     constructor(buttonManager,navigation) {
         this.buttonManager = buttonManager;
         this.navigation = navigation;
         this.initMenu();
     }
- 
+
     getMenuLabels() {
         const userLang = navigator.language || navigator.userLanguage;
         const labels = {
@@ -554,7 +560,7 @@ class MenuManager {
                 customizeModifierKey: '修飾キーをカスタマイズ',
                 customizeNextPageKey: '次のページキーをカスタマイズ',
                 customizePrevPageKey: '前のページキーをカスタマイズ',
-                enterUrlPattern: 'ページに対応する正規表現を入力してください（デフォルトではウェブサイト全体で同じ要素を使用します）',
+                enterUrlPattern: 'ページに対応する正規表現を入力してください（デフォルトではウェブサイト全體で同じ要素を使用します）',
                 enterNextButton: '次のページボタンのセレクタを入力してください：',
                 enterPrevButton: '前のページボタンのセレクタを入力してください：',
                 noSelectors: 'このドメインにはカスタムセレクターが設定されていません。',
@@ -622,7 +628,7 @@ class MenuManager {
         };
         return labels[userLang] || labels.en;
     }
- 
+
     initMenu() {
         const labels = this.getMenuLabels();
         GM_registerMenuCommand(labels.viewAndModify, this.viewAndModifyButtons.bind(this));
@@ -632,16 +638,16 @@ class MenuManager {
         GM_registerMenuCommand(labels.customizeNextPageKey, this.customizeNextPageKey.bind(this));
         GM_registerMenuCommand(labels.customizePrevPageKey, this.customizePrevPageKey.bind(this));
     }
- 
+
     async viewAndModifyButtons() {
         const labels = this.getMenuLabels();
         const currentUrl = window.location.href;
         const selectorsArray = this.buttonManager.getSelectorsByPattern();
- 
+
         let selectedPattern = null;
         let selectedSelectors = null;
         let maxPatternLength = 0;
- 
+
         //根據getButtonsByPage()的邏輯，最長的模式視為最嚴謹的模式
         for (const item of selectorsArray) {
             if (item.pattern.length > maxPatternLength) {
@@ -650,11 +656,11 @@ class MenuManager {
                 selectedSelectors = item.selectors;
             }
         }
- 
+
         let newPrevButton;
         let newNextButton;
         let pattern;
- 
+
         if (selectedSelectors) {
             alert(`${labels.pattern}  ${selectedPattern}\n${labels.nextButton}  ${selectedSelectors.nextButton}\n${labels.prevButton}  ${selectedSelectors.prevButton}`);
             newNextButton = prompt(labels.enterNextButton, selectedSelectors.nextButton);
@@ -667,20 +673,20 @@ class MenuManager {
             newPrevButton = prompt(labels.enterPrevButton, autoSelector.prevSelector);
             pattern = prompt(labels.enterUrlPattern, window.location.hostname);
         }
- 
+
         if (newNextButton && newPrevButton && pattern) {
             this.buttonManager.setButtonsForDomain({ nextButton: newNextButton, prevButton: newPrevButton }, pattern);
             alert(`${labels.buttonUpdate} ${pattern}`);
         }
     }
- 
+
     async showAllPatternsOfDomain() {
         const labels = this.getMenuLabels();
         const hostname = window.location.hostname;
         const selectorsArray = this.buttonManager.getSelectorsByPattern();
- 
+
         const domainSelectors = selectorsArray.filter(item => new RegExp(hostname).test(item.pattern));
- 
+
         if (domainSelectors.length > 0) {
             let message = `${labels.thisDomain} ${hostname}\n\n`;
             domainSelectors.forEach((item, index) => {
@@ -693,7 +699,7 @@ class MenuManager {
             alert(`${labels.invalidInput} ${hostname} ${labels.noSelectors}`);
         }
     }
- 
+
     async inputModeSwitch() {
         const labels = this.getMenuLabels();
         if (this.navigation.togglePaginationMode === 'scroll') {
@@ -709,7 +715,7 @@ class MenuManager {
         }
         await this.navigation.saveSettings();
     }
- 
+
     async customizeModifierKey() {
         const labels = this.getMenuLabels();
         const newModifierKey = prompt(labels.enterModifierKey, this.navigation.modifierKey);
@@ -720,7 +726,7 @@ class MenuManager {
             alert(labels.invalidInput);
         }
     }
- 
+
     async customizeNextPageKey() {
         const labels = this.getMenuLabels();
         const newNextPageKey = prompt(labels.enterNextPageKey, this.navigation.nextPageKey);
@@ -731,7 +737,7 @@ class MenuManager {
             alert(labels.invalidInput);
         }
     }
- 
+
     async customizePrevPageKey() {
         const labels = this.getMenuLabels();
         const newPrevPageKey = prompt(labels.enterPrevPageKey, this.navigation.prevPageKey);
@@ -743,7 +749,7 @@ class MenuManager {
         }
     }
 }
- 
+
 const buttonManager = new PageButtonManager();
 const Navigation = new NavigationPaginationWithInput(buttonManager);
 new MenuManager(buttonManager,Navigation);
