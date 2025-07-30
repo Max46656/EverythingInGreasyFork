@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.1.0
+// @version      1.1.1
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -124,7 +124,7 @@ class RuleManager {
     }
 }
 
-// 快捷鍵處理類，負責監聽鍵盤事件並執行點選動作
+// 快捷鍵處理類，負責監聽鍵盤事件並執行點擊動作
 class ShortcutHandler {
     constructor(ruleManager) {
         // 初始化：設定規則管理器並綁定鍵盤事件監聽器
@@ -137,7 +137,7 @@ class ShortcutHandler {
     // 輸入參數: event (KeyboardEvent) - 鍵盤事件物件
     // 返回值: void
     handleKeydown(event) {
-        //console.log(event);
+        console.log(event);
         const currentUrl = window.location.href;
         [...this.ruleManager.clickRules.rules].reverse().some((rule, index) => {
             try {
@@ -148,7 +148,7 @@ class ShortcutHandler {
                 const modifiers = shortcutParts.slice(0, -1);
 
                 const allModifiersPressed = modifiers.every(mod => event.getModifierState(mod));
-                const mainKeyPressed = event.key.toUpperCase() === mainKey.toUpperCase();
+                const mainKeyPressed = event.code.replace(/^Key/, '').replace(/^Numpad/, '').toUpperCase() === mainKey.toUpperCase();
 
                 if (allModifiersPressed && mainKeyPressed) {
                     event.preventDefault();
@@ -314,7 +314,7 @@ class MenuManager {
                 urlPattern: 'URLパターン（正規表現）：',
                 selectorType: 'セレクタタイプ：',
                 selector: 'セレクタ：',
-                nthElement: '何番目の要素（正數は最初から、負數は最後から）：',
+                nthElement: '何番目の要素（正数は最初から、負数は最後から）：',
                 shortcutModifiers: 'ショートカット修飾キー組み合わせ：',
                 shortcutMainKey: 'ショートカットメインキー：',
                 ifLinkOpen: 'リンクの場合、開く（それ以外の場合はデフォルトを維持）：',
