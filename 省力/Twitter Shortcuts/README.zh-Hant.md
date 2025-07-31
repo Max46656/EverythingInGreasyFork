@@ -1,3 +1,4 @@
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Shortcuts/README.md) | 中文
 # Twitter快捷鍵 使用說明
 
 ## 簡介
