@@ -12,12 +12,12 @@
 
 // @match        https://twitter.com/*
 // @match        https://x.com/*
-// @require https://update.greasyfork.org/scripts/542910/1630077/%E5%BF%AB%E6%8D%B7%E9%8D%B5%E5%87%BD%E5%BC%8F%E5%BA%AB.js
+// @require      https://update.greasyfork.org/scripts/542910/1632051/%E5%BF%AB%E6%8D%B7%E9%8D%B5%E5%87%BD%E5%BC%8F%E5%BA%AB.js
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_info
-// @version      1.1.0
+// @version      1.2.0
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -183,6 +183,26 @@ class TwitterShortcuts {
                 "shortcut": "CapsLock+z",
                 "ifLinkOpen": false,
                 "isEnabled": true
+            },
+            {
+              "ruleName": "導向貼文原po頁面",
+              "urlPattern": "https://x.com/.*/status/[0-9]+.*",
+              "selectorType": "css",
+              "selector": "div[data-testid='Tweet-User-Avatar'] a",
+              "nthElement": 1,
+              "shortcut": "CapsLock+b",
+              "ifLinkOpen": false,
+              "isEnabled": true
+            },
+            {
+              "ruleName": "關閉貼文",
+              "urlPattern": "https://x.com/.*/status/[0-9]*/photo/[0-9]*",
+              "selectorType": "css",
+              "selector": "div[role='presentation'] button",
+              "nthElement": 1,
+              "shortcut": "CapsLock+q",
+              "ifLinkOpen": false,
+              "isEnabled": true
             }
         ];
         this.init();
