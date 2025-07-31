@@ -1,6 +1,6 @@
 english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Shortcuts/README.zh-Hant.md)
 
-# Twitter Shortcuts User Guide
+# Twitter Shortcuts
 
 ## Introduction
 
