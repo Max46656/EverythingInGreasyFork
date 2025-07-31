@@ -10,12 +10,13 @@
 - [Pixiv作品熱門程度排序與篩選器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/PixivIllustPopularitySortAndFilter)
 
 ## 省力
+- [YouTube 乾淨短網址分享器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/CleanYouTubeShortURLSharer)
+- [順暢巴哈動漫瘋](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/FluentBahamutAnime)
 - [自由設定快捷鍵](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Freely%20Set%20Shortcuts)
 - [按鍵與滑鼠滾輪翻頁器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/InputPageTurnerForWebsite)
-- [YouTube 乾淨短網址分享器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/CleanYouTubeShortURLSharer)
 - [ClickItForYou](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/ClickItForYou)
 - [Threads鍵盤功能導航](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/ThreadsCustomKeyboardNavigation)
-- [順暢巴哈動漫瘋](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/FluentBahamutAnime)
+- [Twitter快捷鍵](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Shortcuts)
 - [「繁簡自由切換」用語整合器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/'SwitchTChineseToSChinese'TerminologyIntegrator)
 - [自動點選元素函式庫](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/AutoClickElementLib)
 
