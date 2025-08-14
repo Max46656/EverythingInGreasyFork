@@ -11,7 +11,7 @@
 // @match        *://coomer.st/account/favorites/artists*
 // @match        *://*.coomer.st/account/favorites/artists*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
-// @version      1.1.3
+// @version      1.1.4
 
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
@@ -65,11 +65,11 @@ class ArtistUpdateCatcher {
         let cleanUrl = url.replace(/^.*(?=\/[^\/]+\/user\/[^\/]+)/, "");
         let creatorPostsApi,creatorInfoApi;
         if(isKemono){
-            creatorPostsApi ='https://kemono.cr/api/v1' + cleanUrl + '?o=0';
-            creatorInfoApi = 'https://kemono.cr/api/v1' + cleanUrl + '/profile?o=0';
+            creatorPostsApi ='https://kemono.cr/api/v1' + cleanUrl + '/posts';
+            creatorInfoApi = 'https://kemono.cr/api/v1' + cleanUrl + '/profile';
         }else{
-            creatorPostsApi ='https://coomer.st/api/v1' + cleanUrl + '?o=0';
-            creatorInfoApi = 'https://coomer.st/api/v1' + cleanUrl + '/profile?o=0';
+            creatorPostsApi ='https://coomer.st/api/v1' + cleanUrl + '/posts';
+            creatorInfoApi = 'https://coomer.st/api/v1' + cleanUrl + '/profile';
         }
         try {
             const postsResponse = await fetch(creatorPostsApi);
