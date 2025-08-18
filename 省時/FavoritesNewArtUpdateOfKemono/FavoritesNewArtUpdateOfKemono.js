@@ -11,14 +11,12 @@
 // @match        *://coomer.st/account/favorites/artists*
 // @match        *://*.coomer.st/account/favorites/artists*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
-// @version      1.1.5
+// @version      1.1.6
 
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
 // @license MPL2.0
 
-// @downloadURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.user.js
-// @updateURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.meta.js
 // ==/UserScript==
 
 class ArtistUpdateCatcher {
@@ -67,7 +65,7 @@ class ArtistUpdateCatcher {
         if(isKemono){
             creatorPostsApi ='https://kemono.cr/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://kemono.cr/api/v1' + cleanUrl + '/profile';
-          console.log(creatorPostsApi)
+          //console.log(creatorPostsApi)
         }else{
             creatorPostsApi ='https://coomer.st/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://coomer.st/api/v1' + cleanUrl + '/profile';
@@ -204,7 +202,7 @@ class ArtistUpdateCatcher {
 
             return new Date(timeB) - new Date(timeA);
         });
-        console.log(articles);
+        //console.log(articles);
         const container = articles[0].parentElement;
         articles.forEach(article => {
             container.appendChild(article);
@@ -301,4 +299,3 @@ class PageIndicatorObserver {
 new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
 
 new PageIndicatorObserver("#paginator-top", 500);
-
