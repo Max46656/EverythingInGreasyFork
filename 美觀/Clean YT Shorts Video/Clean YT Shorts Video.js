@@ -42,4 +42,4 @@ class ShortsOpacityController{
     }
 }
 
-new johnTheGlassCleaner = ShortsOpacityController()
+johnTheGlassCleaner =new ShortsOpacityController()
