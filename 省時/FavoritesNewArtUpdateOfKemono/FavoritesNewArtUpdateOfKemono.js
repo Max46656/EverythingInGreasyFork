@@ -11,7 +11,7 @@
 // @match        *://coomer.st/account/favorites/artists*
 // @match        *://*.coomer.st/account/favorites/artists*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
-// @version      1.1.4
+// @version      1.1.5
 
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
@@ -67,12 +67,17 @@ class ArtistUpdateCatcher {
         if(isKemono){
             creatorPostsApi ='https://kemono.cr/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://kemono.cr/api/v1' + cleanUrl + '/profile';
+          console.log(creatorPostsApi)
         }else{
             creatorPostsApi ='https://coomer.st/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://coomer.st/api/v1' + cleanUrl + '/profile';
         }
         try {
-            const postsResponse = await fetch(creatorPostsApi);
+            const postsResponse = await fetch(creatorPostsApi, {
+                headers: {
+                    'Accept': 'text/css'
+                }
+            });
             if (!postsResponse.ok) {
                 await this.delay(2000);
                 return this.fetchUpdateArticles(url);
@@ -91,7 +96,11 @@ class ArtistUpdateCatcher {
                 return postTime >= seventyTwoHoursLater;
             });
 
-            const infoResponse = await fetch(creatorInfoApi);
+            const infoResponse = await fetch(creatorInfoApi, {
+                headers: {
+                    'Accept': 'text/css'
+                }
+            });
             const info = await infoResponse.json();
             const userName = info.name;
 
