@@ -15,18 +15,19 @@
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_xmlhttpRequest
+// @grant        GM.getValue
+// @grant        GM.setValue
 // @require      https://greasyfork.org/scripts/2963-gif-js/code/gifjs.js?version=8596
-// @version      1.0.0
+// @version      1.1.0
 //
 // @author       Max
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 // ==/UserScript==
 
-
 class PixivEagleSaver {
     constructor() {
-        this.illust = null;
+        this.illust = this.illustApi();
         this.init();
     }
 
@@ -48,20 +49,19 @@ class PixivEagleSaver {
                 this.illust = JSON.parse(xhr.responseText).body;
             }
         }
-        //console.log(this.illust)
         return this.illust;
     }
 
     isGif() { return this.illust.illustType === 2; }
     isSet() { return this.illust.pageCount > 1; }
-    isSingle() {return (this.illust.illustType === 0 || this.illust.illustType === 1) && this.illust.pageCount === 1;}
+    isSingle() { return (this.illust.illustType === 0 || this.illust.illustType === 1) && this.illust.pageCount === 1; }
 
-    saveToEagle(urlOrBase64, name) {
+    saveToEagle(urlOrBase64, name, folderId = []) {
         return new Promise(resolve => {
             const imageData = {
                 url: urlOrBase64,
                 name: name,
-                folderId: [],
+                folderId: Array.isArray(folderId) ? folderId : [folderId],
                 tags: [],
                 website: location.href,
                 headers: { referer: "https://www.pixiv.net/" }
@@ -73,7 +73,7 @@ class PixivEagleSaver {
                 data: JSON.stringify(imageData),
                 onload: response => {
                     if (response.status >= 200 && response.status < 300) {
-                        console.log("✅ Added to Eagle:", urlOrBase64);
+                        console.log("Added to Eagle:", urlOrBase64);
                     } else {
                         console.error("Failed:", response);
                     }
@@ -85,26 +85,26 @@ class PixivEagleSaver {
         });
     }
 
-    async handleSingle() {
+    async handleSingle(folderId) {
         const url = this.illust.urls.original;
         const name = `${this.illust.userName}_${this.illust.title}`;
-        await this.saveToEagle(url, name);
+        await this.saveToEagle(url, name, folderId);
         console.log("已送到 Eagle: " + name);
     }
 
-    async handleSet() {
+    async handleSet(folderId) {
         const url = this.illust.urls.original;
         const imgUrls = Array.from({ length: this.illust.pageCount }, (_, i) =>
                                    url.replace(/_p\d\./, `_p${i}.`)
                                   );
         for (const [i, u] of imgUrls.entries()) {
             const name = `${this.illust.userName}_${this.illust.title}_${i}`;
-            await this.saveToEagle(u, name);
+            await this.saveToEagle(u, name, folderId);
         }
         console.log(`已送 ${this.illust.pageCount} 張到 Eagle`);
     }
 
-    async handleGif() {
+    async handleGif(folderId) {
         try {
             const metaXhr = new XMLHttpRequest();
             metaXhr.open("GET", `/ajax/illust/${this.illust.illustId}/ugoira_meta`, false);
@@ -154,14 +154,12 @@ class PixivEagleSaver {
 
             gifFrames.forEach(f => gif.addFrame(f.frame, f.option));
 
-            //gif.on("progress", p => console.log(`GIF 進度: ${Math.round(p * 100)}%`));
-
             gif.on("finished", async blob => {
                 const reader = new FileReader();
                 reader.onload = async () => {
                     const base64 = reader.result;
                     const name = `${this.illust.userName}_${this.illust.title}.gif`;
-                    await this.saveToEagle(base64, name);
+                    await this.saveToEagle(base64, name, folderId);
                     console.log("已送動圖到 Eagle: " + name);
                 };
                 reader.readAsDataURL(blob);
@@ -203,24 +201,60 @@ class PixivEagleSaver {
             const section = await this.waitForElement("section.gPBXUH");
             if (document.getElementById("save-to-eagle-btn")) return;
 
-            const div = document.createElement("div");
-            div.classList.add("cNcUof");
+            const container = document.createElement("div");
+            container.classList.add("cNcUof");
 
             const btn = document.createElement("button");
             btn.id = "save-to-eagle-btn";
             btn.textContent = "Save to Eagle";
-            btn.className= "charcoal-button";
-            btn.dataset.variant="Primary";
+            btn.className = "charcoal-button";
+            btn.dataset.variant = "Primary";
 
-            btn.onclick = () => {
-                if (this.isSingle()) this.handleSingle();
-                else if (this.isSet()) this.handleSet();
-                else if (this.isGif()) this.handleGif();
+            const select = document.createElement("select");
+            select.id = "eagle-folder-select";
+            select.style.marginLeft = "8px";
+
+            const lastFolderId = await GM.getValue("eagle_last_folder");
+
+            GM_xmlhttpRequest({
+                url: "http://localhost:41595/api/folder/list",
+                method: "GET",
+                onload: res => {
+                    try {
+                        const folders = JSON.parse(res.responseText).data || [];
+
+                        // 遞迴處理資料夾及子資料夾
+                        const appendFolder = (f, prefix = "") => {
+                            const option = document.createElement("option");
+                            option.value = f.id;
+                            option.textContent = prefix + f.name;
+                            if (f.id === lastFolderId) option.selected = true;
+                            select.appendChild(option);
+
+                            if (f.children && f.children.length) {
+                                f.children.forEach(child => appendFolder(child, "└── " + prefix));
+                            }
+                        };
+
+                        folders.forEach(f => appendFolder(f));
+
+                    } catch (e) { console.error("解析資料夾列表失敗:", e); }
+                },
+                onerror: err => console.error(err)
+            });
+
+            btn.onclick = async () => {
+                const folderId = select.value;
+                await GM.setValue("eagle_last_folder", folderId);
+                if (this.isSingle()) this.handleSingle(folderId);
+                else if (this.isSet()) this.handleSet(folderId);
+                else if (this.isGif()) this.handleGif(folderId);
                 else console.log("不支援此作品類型");
             };
 
-            div.appendChild(btn);
-            section.appendChild(div);
+            container.appendChild(btn);
+            container.appendChild(select);
+            section.appendChild(container);
         } catch (e) {
             console.error(e);
         }
@@ -235,7 +269,7 @@ class PixivEagleSaver {
                 callback();
             }
         });
-        observer.observe(title, { childList: true,});
+        observer.observe(title, { childList: true });
     }
 }
 
