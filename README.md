@@ -18,7 +18,7 @@
 - [Threads鍵盤功能導航](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/ThreadsCustomKeyboardNavigation)
 - [Twitter快捷鍵](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Shortcuts)
 - [「繁簡自由切換」用語整合器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/'SwitchTChineseToSChinese'TerminologyIntegrator)
-- [自動點選元素函式庫](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/AutoClickElementLib
+- [自動點選元素函式庫](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/AutoClickElementLib)
 - [Pixiv 儲存至 Eagle](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Pixiv%20Save%20to%20Eagle)
 
 ## 美觀
