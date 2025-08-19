@@ -13,8 +13,8 @@ Save Pixiv images and animations (GIFs) directly to Eagle from artwork pages.
 - Error handling for failed downloads or Eagle API issues, with console logging for debugging.
 
 ## Installation
-1. Install Violentmonkey (available for Firefox, Chrome, Vivaldi, etc.).
-2. Install [Pixiv Save to Eagle](https://greasyfork.org/scripts/XXXXXX-pixiv-save-to-eagle) (will load in the userscript manager installed above).
+1. Install [Violentmonkey](https://github.com/violentmonkey/violentmonkey) (available for Firefox, Chrome, Vivaldi, etc.).
+2. Install [Pixiv Save to Eagle](https://greasyfork.org/zh-TW/scripts/546402-pixiv-save-to-eagle) (will load in the userscript manager installed above).
 3. Ensure Eagle is running on your local machine (default API: http://localhost:41595).
 4. Done.
 
