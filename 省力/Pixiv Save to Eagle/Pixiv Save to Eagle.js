@@ -18,7 +18,7 @@
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @require      https://greasyfork.org/scripts/2963-gif-js/code/gifjs.js?version=8596
-// @version      1.1.1
+// @version      1.1.2
 //
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -89,14 +89,14 @@ class PixivIllust {
         return this.illust;
     }
 
-    isSingle(){ return (this.illust.illustType===0 || this.illust.illustType===1) && this.illust.pageCount===1; }
+    isSingle(){ return (this.illust.illustType===0 || this.illust.illustType===1) && this.illust.pageCount===1;}
     isSet(){ return this.illust.pageCount>1; }
     isGif(){ return this.illust.illustType===2; }
 
     async handleSingle(folderId){
         const illust=this.illust;
         const url=illust.urls.original;
-        const name=`${illust.userName}_${illust.title}`;
+        const name=`Pixiv @${illust.userName} ${illust.title}(${illust.illustId})`;
         await this.eagle.save(url,name,folderId);
         console.log("已送到 Eagle:",name);
     }
@@ -106,7 +106,7 @@ class PixivIllust {
         const url=illust.urls.original;
         const urls=Array.from({length:illust.pageCount},(_,i)=>url.replace(/_p\d\./,`_p${i}.`));
         for(const [i,u] of urls.entries()){
-            const name=`${illust.userName}_${illust.title}_${i}`;
+            const name=`Pixiv @${illust.userName} ${illust.title}(${illust.illustId})_p${i}`;
             await this.eagle.save(u,name,folderId);
         }
         console.log(`已送 ${illust.pageCount} 張到 Eagle`);
@@ -116,7 +116,7 @@ class PixivIllust {
         try{
             const illust=this.illust;
             const xhr=new XMLHttpRequest();
-            xhr.open("GET", `/ajax/illust/${illust.illustId}/ugoira_meta`, false);
+            xhr.open("GET", `/ajax/illust/$${illust.illustId}/ugoira_meta`, false);
             xhr.send();
             const frames=JSON.parse(xhr.responseText).body.frames;
 
@@ -144,7 +144,7 @@ class PixivIllust {
             gifFrames.forEach(f=>gif.addFrame(f.frame,f.option));
             gif.on("finished",async blob=>{
                 const reader=new FileReader();
-                reader.onload=async ()=>{ const base64=reader.result; const name=`${illust.userName}_${illust.title}.gif`; await this.eagle.save(base64,name,folderId); console.log("已送動圖到 Eagle:",name); };
+                reader.onload=async ()=>{ const base64=reader.result; const name=`Pixiv @${illust.userName} ${illust.title}(${illust.illustId}).gif`; await this.eagle.save(base64,name,folderId); console.log("已送動圖到 Eagle:",name); };
                 reader.readAsDataURL(blob);
             });
             gif.render();
