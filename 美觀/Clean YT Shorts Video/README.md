@@ -13,8 +13,8 @@ Uses a class-based approach to manage opacity settings for a clean and maintaina
 * Fool-proof design to ensure compatibility with YouTube Shorts pages.
 
 ## Installation
-1. Install [Violentmonkey](https://github.com/violentmonkey/violentmonkey) (Firefox, Chrome, Vivaldi)
-2. Install [Clean YouTube Shorts Video](https://greasyfork.org/zh-TW/scripts/546321-%E4%B9%BE%E6%B7%A8%E7%9A%84youtube-shorts%E5%BD%B1%E7%89%87) (will load in userscript manager installed above)
+1. Install [Violentmonkey](https://github.com/violentmonkey/violentmonkey) (Firefox, Chrome, Vivaldi) or [Stylus](https://github.com/openstyles/stylus) (Firefox, Chrome, Vivaldi)
+2. Install [Clean YouTube Shorts Video](https://greasyfork.org/zh-TW/scripts/546510-%E4%B9%BE%E6%B7%A8%E7%9A%84youtube-shorts%E5%BD%B1%E7%89%87) (will load in userscript manager installed above)
 3. Done
 
 ## Usage
