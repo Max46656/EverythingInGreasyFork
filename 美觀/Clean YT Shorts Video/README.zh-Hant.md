@@ -13,8 +13,8 @@
 * 防呆設計，確保與 YouTube Shorts 頁面的相容性。
 
 ## 安裝
-1. 安裝 [Violentmonkey](https://github.com/violentmonkey/violentmonkey) (Firefox, Chrome, Vivaldi)
-2. 安裝 [乾淨的YouTube Shorts影片](https://greasyfork.org/zh-TW/scripts/XXXXXX-clean-youtube-shorts-video)（將在上述用戶腳本管理器中加載）
+1. 安裝 [Violentmonkey](https://github.com/violentmonkey/violentmonkey) (Firefox, Chrome, Vivaldi) 或 [Stylus](https://github.com/openstyles/stylus) (Firefox, Chrome, Vivaldi)
+2. 安裝 [乾淨的YouTube Shorts影片](https://greasyfork.org/zh-TW/scripts/546510-%E4%B9%BE%E6%B7%A8%E7%9A%84youtube-shorts%E5%BD%B1%E7%89%87)（將在上述用戶腳本管理器中加載）
 3. 完成
 
 ## 使用方法
