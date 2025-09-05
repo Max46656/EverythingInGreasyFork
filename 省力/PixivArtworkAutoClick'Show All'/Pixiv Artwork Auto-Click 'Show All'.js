@@ -1,17 +1,16 @@
 // ==UserScript==
-// @name        Pixiv作品自動點選「檢視全部」
-// @name:ja     Pixiv作品「すべて見る」を自動クリック
-// @name:en     Pixiv Artwork Auto-Click "Show All"
-// @description 當Pixiv作品包含多張圖片時，自動展開，漫畫作品不受影響
-// @description:en Automatically expands Pixiv artworks with multiple images, leaving manga artworks unaffected
-// @description:ja Pixivの複數畫像の作品を自動的に展開し、漫畫作品には影響を與えない
+// @name        Pixiv作品與首頁中自動點選「檢視全部」
+// @name:en       Pixiv Home and Artwork Page Auto-Click "View All"
+// @name:ja        Pixivホームページおよび作品ページで「すべて表示」を自動クリック// @description 在User首頁與Tag首頁中自動展開；當作品包含多張圖片時自動展開(漫畫作品不受影響)
+// @description:en Automatically expands on User Home and Tag Home pages; automatically expands artworks with multiple images (manga artworks are not affected).
+// @description:ja ユーザーホームページおよびタグホームページで自動的に展開します。複数の画像を含む作品では自動的に展開します（マンガ作品は影響を受けません）。
 
 // @match       https://www.pixiv.net/artworks/*
 // @match       https://www.pixiv.net/en/artworks/*
 // @match       https://www.pixiv.net/users/*
 // @match       https://www.pixiv.net/en/artworks/*
 // @grant       none
-// @version     1.0.4
+// @version     1.1.0
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 
 // @author      Max
@@ -23,27 +22,33 @@
 
 class ReadingStand {
     constructor() {
-        this.notMangaTexts = ['檢視全部', '檢視全部', 'すべて見る', 'Show all', '모두 보기'];
+        this.notMangaTexts = ['查看全部', '檢視全部', 'すべて見る', 'Show all', '모두 보기'];
         this.setupUrlChangeListener();
     }
 
     expandArtwork() {
         const viewAllButton = Array.from(document.querySelectorAll('button:not(:disabled)'))
-            .find(btn =>
-                window.getComputedStyle(btn).display !== 'none' &&
-                this.notMangaTexts.some(text => btn.textContent.includes(text))
-            );
+        .find(btn =>
+              window.getComputedStyle(btn).display !== 'none' &&
+              this.notMangaTexts.some(text => btn.textContent.includes(text))
+             );
         if (viewAllButton) {
             viewAllButton.click();
         }
     }
 
     expandGallery() {
-        const artistHomePattern = /^https:\/\/www\.pixiv\.net\/(en\/users|users)\/[0-9]*$/;
-        const tagHomePattern = /^.*:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*$/;
-        const tagPagePattern = /^.*:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*\/artworks*/;
-        if (artistHomePattern.test(self.location.href) || (!tagPagePattern.test(self.location.href) && tagHomePattern.test(self.location.href))) {
-            self.location.href = self.location.href + "/artworks?p=1";
+        const patterns = [
+            /(en\/users|users)\/[0-9]*$/,
+            /(en\/tags|tags)\/[^\/]*$/,
+            /(en\/users|users)\/[0-9]*\/request\/sent$/,
+        ];
+
+        const currentUrl = self.location.href;
+        const hasExpanded = /\/artworks\?p=\d+$/.test(currentUrl);
+
+        if (!hasExpanded && patterns.some(pattern => pattern.test(currentUrl))) {
+            self.location.href = currentUrl + '/artworks?p=1';
         }
     }
 
@@ -84,4 +89,4 @@ class ReadingStand {
     }
 }
 
-const readingStand = new ReadingStand();
+const JohnThePageTurner = new ReadingStand();
