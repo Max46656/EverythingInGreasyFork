@@ -14,7 +14,7 @@
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 //
-// @version      1.3.3
+// @version      1.4.0
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -75,6 +75,7 @@ class DesktopSwitcher {
                 console.error(`無效的 match: ${error.message}`);
             }
         }
+        window.location.reload();
     }
 
     showCustomRules() {
@@ -103,6 +104,7 @@ class DesktopSwitcher {
                 console.error(`無效的 match: ${error.message}`);
             }
         }
+        window.location.reload();
     }
 
     removeCustomRule() {
@@ -137,6 +139,7 @@ class DesktopSwitcher {
             } else {
                 console.warn(`${hostname} 已在黑名單中`);
             }
+            window.location.reload();
             return;
         }
 
@@ -159,10 +162,12 @@ class DesktopSwitcher {
                 console.error(`無法${add ? "加入" : "移除"}黑名單: ${errorMessage}`);
             }
         );
+        window.location.reload();
     }
 
     removeBlacklist() {
         this.updateBlacklist(false, this.hostname, this.getDesktopUrl());
+        window.location.reload();
     }
 
     checkDesktopUrl(desktopUrl, onSuccess, onFailure) {
