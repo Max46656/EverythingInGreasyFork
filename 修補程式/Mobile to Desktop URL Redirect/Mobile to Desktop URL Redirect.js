@@ -13,7 +13,7 @@
 // @author       Max
 // @namespace    https://github.com/Max46656
 //
-// @version      1.1.6
+// @version      1.2.0
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -127,21 +127,69 @@ class DesktopSwitcher {
     }
 
     switch2Desktop() {
-        const desktopUrl = this.getDesktopUrl();
-        if (!desktopUrl || desktopUrl === this.url) return;
-
+        console.log(`嘗試解析 canonical tag: ${this.url}`);
         GM_xmlhttpRequest({
-            method: "HEAD",
-            url: desktopUrl,
+            method: "GET",
+            url: this.url,
+            timeout: 3000,
             onload: (response) => {
                 if (response.status >= 200 && response.status < 400) {
-                    const finalUrl = response.finalUrl || desktopUrl;
-                    const finalHostname = new URL(finalUrl).hostname;
-                    if (this.blacklist.includes(finalHostname)) return;
-                    window.location.replace(finalUrl);
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(response.responseText, "text/html");
+                    const canonical = doc.querySelector('link[rel="canonical"]');
+                    if (canonical && canonical.href && canonical.href !== this.url) {
+                        try {
+                            const canonicalHostname = new URL(canonical.href).hostname;
+                            if (this.blacklist.includes(canonicalHostname)) {
+                                console.warn(`阻止重新導向，黑名單域名: ${canonicalHostname}`);
+                                return;
+                            }
+                            console.log(`找到 canonical URL: ${canonical.href}`);
+                            window.location.replace(canonical.href);
+                            return;
+                        } catch (error) {
+                            console.error(`無效的 canonical URL: ${canonical.href}, 錯誤: ${error.message}`);
+                        }
+                    } else {
+                        console.warn(`未找到有效 canonical tag，嘗試模式符合`);
+                    }
+                } else {
+                    console.error(`無法載入頁面內容: ${response.status}`);
                 }
+                this.tryPatternMatch();
+            },
+            onerror: () => {
+                console.error(`網絡錯誤: ${this.url}`);
+                this.tryPatternMatch();
+            },
+            ontimeout: () => {
+                console.error(`請求超時: ${this.url}`);
+                this.tryPatternMatch();
             }
         });
+
+        function tryPatternMatch() {
+            const desktopUrl = this.getDesktopUrl();
+            if (desktopUrl && desktopUrl !== this.url) {
+                console.log(`嘗試切換到電腦版網址: ${desktopUrl}`);
+                this.checkDesktopUrl(
+                    desktopUrl,
+                    (finalUrl, finalHostname) => {
+                        if (this.blacklist.includes(finalHostname)) {
+                            console.warn(`阻止重新導向，黑名單域名: ${finalHostname}`);
+                            return;
+                        }
+                        console.log(`正在重新導向到電腦版: ${finalUrl}`);
+                        window.location.replace(finalUrl);
+                    },
+                    (errorMessage) => {
+                        console.error(`無法切換到電腦版: ${errorMessage}`);
+                    }
+                );
+            } else {
+                console.warn(`未找到有效電腦版 URL`);
+            }
+        }
     }
 }
 
