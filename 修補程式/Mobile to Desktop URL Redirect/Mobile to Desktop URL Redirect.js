@@ -12,6 +12,7 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656
+// @license      MPL2.0
 //
 // @version      1.3.2
 // @match        *://*/*
