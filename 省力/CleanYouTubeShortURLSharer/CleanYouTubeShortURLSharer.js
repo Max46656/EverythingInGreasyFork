@@ -21,7 +21,7 @@
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
 // @grant        GM.info
-// @version      1.1.0
+// @version      1.1.1
 // @downloadURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.meta.js
 // ==/UserScript==
@@ -33,7 +33,7 @@ class YouTubeShortUrlCopier {
         this.shareButtonClickListener = null;
         this.shareButtonOfVideoSelector = '#actions yt-button-view-model button-view-model button';
         this.shareButtonOfShortSelector = '#actions #share-button';
-        this.shareButtonOfPreviewSelector = 'tp-yt-paper-item.style-scope.ytd-menu-service-item-renderer:has(path[d="M15 5.63 20.66 12 15 18.37V14h-1c-3.96 0-7.14 1-9.75 3.09 1.84-4.07 5.11-6.4 9.89-7.1l.86-.13V5.63M14 3v6C6.22 10.13 3.11 15.33 2 21c2.78-3.97 6.44-6 12-6v6l8-9-8-9z"])';
+        this.shareButtonOfPreviewSelector = 'yt-list-item-view-model:has(path[d="M15 5.63 20.66 12 15 18.37V14h-1c-3.96 0-7.14 1-9.75 3.09 1.84-4.07 5.11-6.4 9.89-7.1l.86-.13V5.63M14 3v6C6.22 10.13 3.11 15.33 2 21c2.78-3.97 6.44-6 12-6v6l8-9-8-9z"])';
         this.shareUrlInputSelector = 'input#share-url';
         this.shareWindowSelector = 'div#scrollable';
         this.closeShareWindowSelector = 'div#scrollable button:has([icon="close"])';
