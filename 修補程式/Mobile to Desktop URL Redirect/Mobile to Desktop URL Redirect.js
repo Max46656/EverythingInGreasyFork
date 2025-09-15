@@ -13,7 +13,7 @@
 // @author       Max
 // @namespace    https://github.com/Max46656
 //
-// @version      1.3.0
+// @version      1.3.1
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -58,7 +58,7 @@ class DesktopSwitcher {
 
     addCustomRule() {
         if (this.customRules[this.hostname]) {
-            alert(`規則已存在，請使用「修改自訂規則」進行更新。`);
+            console.error(`規則已存在，請使用「修改自訂規則」進行更新。`);
             return;
         }
         const regexInput = prompt(`為 ${this.hostname} 輸入自訂 regex (例如 /\/mobile\//):`);
@@ -69,17 +69,24 @@ class DesktopSwitcher {
                 this.customRules[this.hostname] = { regex, replace: replaceInput };
                 GM_setValue("customRules", this.customRules);
                 console.log(`已為 ${this.hostname} 新增自訂規則: regex=${regex}, replace=${replaceInput}`);
-                alert(`已為 ${this.hostname} 新增自訂規則`);
             } catch (error) {
                 console.error(`無效的 regex: ${error.message}`);
-                alert(`無效的 regex: ${error.message}`);
             }
         }
     }
 
+    showCustomRules() {
+        let message = "";
+        for (const [host, rule] of Object.entries(this.customRules)) {
+            message += `${host}: regex=${rule.regex}, replace=${rule.replace}\n`;
+        }
+        message = message || "（空）";
+        console.log(`目前自訂規則：\n${message}`);
+    }
+
     updateCustomRule() {
         if (!this.customRules[this.hostname]) {
-            alert(`無 ${this.hostname} 的自訂規則，請先新增。`);
+            console.error(`無 ${this.hostname} 的自訂規則，請先新增。`);
             return;
         }
         const currentRule = this.customRules[this.hostname];
@@ -91,33 +98,70 @@ class DesktopSwitcher {
                 this.customRules[this.hostname] = { regex, replace: replaceInput };
                 GM_setValue("customRules", this.customRules);
                 console.log(`已更新 ${this.hostname} 的自訂規則: regex=${regex}, replace=${replaceInput}`);
-                alert(`已更新 ${this.hostname} 的自訂規則`);
             } catch (error) {
                 console.error(`無效的 regex: ${error.message}`);
-                alert(`無效的 regex: ${error.message}`);
             }
         }
     }
 
     removeCustomRule() {
         if (!this.customRules[this.hostname]) {
-            alert(`無 ${this.hostname} 的自訂規則。`);
+            console.error(`無 ${this.hostname} 的自訂規則。`);
             return;
         }
         delete this.customRules[this.hostname];
         GM_setValue("customRules", this.customRules);
         console.log(`已刪除 ${this.hostname} 的自訂規則`);
-        alert(`已刪除 ${this.hostname} 的自訂規則`);
     }
 
-    showCustomRules() {
-        let message = "";
-        for (const [host, rule] of Object.entries(this.customRules)) {
-            message += `${host}: regex=${rule.regex}, replace=${rule.replace}\n`;
+    addBlacklist() {
+        this.updateBlacklist(true, this.hostname, this.getDesktopUrl());
+    }
+
+    showBlacklist() {
+        const message = this.blacklist.length ? this.blacklist.join("\n") : "（空）";
+        console.log(`目前黑名單：\n${message}`);
+    }
+
+    updateBlacklist(add, hostname, desktopUrl) {
+        if (!desktopUrl || desktopUrl === this.url) {
+            if (add && !this.blacklist.includes(hostname)) {
+                this.blacklist.push(hostname);
+                GM_setValue("blacklist", this.blacklist);
+                console.log(`已將 ${hostname} 加入黑名單`);
+            } else if (!add) {
+                this.blacklist = this.blacklist.filter(domain => domain !== hostname);
+                GM_setValue("blacklist", this.blacklist);
+                console.log(`已將 ${hostname} 從黑名單移除`);
+            } else {
+                console.warn(`${hostname} 已在黑名單中`);
+            }
+            return;
         }
-        message = message || "（空）";
-        console.log(`目前自訂規則：\n${message}`);
-        alert(`目前自訂規則：\n${message}`);
+
+        this.checkDesktopUrl(
+            desktopUrl,
+            (finalUrl, finalHostname) => {
+                if (add && !this.blacklist.includes(finalHostname)) {
+                    this.blacklist.push(finalHostname);
+                    GM_setValue("blacklist", this.blacklist);
+                    console.log(`已將 ${finalHostname} 加入黑名單`);
+                } else if (!add) {
+                    this.blacklist = this.blacklist.filter(domain => domain !== finalHostname);
+                    GM_setValue("blacklist", this.blacklist);
+                    console.log(`已將 ${finalHostname} 從黑名單移除`);
+                } else {
+                    console.warn(`${finalHostname} 已在黑名單中`);
+                }
+            },
+            (errorMessage) => {
+                console.error(`無法${add ? "加入" : "移除"}黑名單: ${errorMessage}`);
+            }
+        );
+    }
+
+    removeBlacklist() {
+        this.updateBlacklist(false, this.hostname, this.getDesktopUrl());
     }
 
     checkDesktopUrl(desktopUrl, onSuccess, onFailure) {
@@ -150,64 +194,6 @@ class DesktopSwitcher {
                 onFailure("請求超時，無法訪問電腦版");
             }
         });
-    }
-
-    updateBlacklist(add, hostname, desktopUrl) {
-        if (!desktopUrl || desktopUrl === this.url) {
-            if (add && !this.blacklist.includes(hostname)) {
-                this.blacklist.push(hostname);
-                GM_setValue("blacklist", this.blacklist);
-                console.log(`已將 ${hostname} 加入黑名單`);
-                alert(`已將 ${hostname} 加入黑名單`);
-            } else if (!add) {
-                this.blacklist = this.blacklist.filter(domain => domain !== hostname);
-                GM_setValue("blacklist", this.blacklist);
-                console.log(`已將 ${hostname} 從黑名單移除`);
-                alert(`已將 ${hostname} 從黑名單移除`);
-            } else {
-                console.warn(`${hostname} 已在黑名單中`);
-                alert(`${hostname} 已在黑名單中`);
-            }
-            return;
-        }
-
-        this.checkDesktopUrl(
-            desktopUrl,
-            (finalUrl, finalHostname) => {
-                if (add && !this.blacklist.includes(finalHostname)) {
-                    this.blacklist.push(finalHostname);
-                    GM_setValue("blacklist", this.blacklist);
-                    console.log(`已將 ${finalHostname} 加入黑名單`);
-                    alert(`已將 ${finalHostname} 加入黑名單`);
-                } else if (!add) {
-                    this.blacklist = this.blacklist.filter(domain => domain !== finalHostname);
-                    GM_setValue("blacklist", this.blacklist);
-                    console.log(`已將 ${finalHostname} 從黑名單移除`);
-                    alert(`已將 ${finalHostname} 從黑名單移除`);
-                } else {
-                    console.warn(`${finalHostname} 已在黑名單中`);
-                    alert(`${finalHostname} 已在黑名單中`);
-                }
-            },
-            (errorMessage) => {
-                console.error(`無法${add ? "加入" : "移除"}黑名單: ${errorMessage}`);
-                alert(`無法${add ? "加入" : "移除"}黑名單: ${errorMessage}`);
-            }
-        );
-    }
-
-    addBlacklist() {
-        this.updateBlacklist(true, this.hostname, this.getDesktopUrl());
-    }
-
-    removeBlacklist() {
-        this.updateBlacklist(false, this.hostname, this.getDesktopUrl());
-    }
-
-    showBlacklist() {
-        const message = this.blacklist.length ? this.blacklist.join("\n") : "（空）";
-        console.log(`目前黑名單：\n${message}`);
-        alert(`目前黑名單：\n${message}`);
     }
 
     getDesktopUrl() {
