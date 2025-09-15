@@ -13,7 +13,7 @@
 // @author       Max
 // @namespace    https://github.com/Max46656
 //
-// @version      1.2.0
+// @version      1.3.0
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -28,102 +28,207 @@ class DesktopSwitcher {
     constructor() {
         this.url = window.location.href;
         this.hostname = window.location.hostname;
-
+        this.blacklist = Array.isArray(GM_getValue("blacklist", [])) ? GM_getValue("blacklist", []) : [];
+        this.customRules = GM_getValue("customRules", {});
         this.mobilePatterns = [
-            { regex: /:\/\/m\./, replace: "://" },// https://m.example.com => https://example.com
-            { regex: /\/m\//, replace: "/" },// https://example.com/m/page => https://example.com/page
-            { regex: /\.mobile\./, replace: "." },// https://mobile.example.com => https://example.com
-            { regex: /\/mobile\//, replace: "/" },// https://example.com/mobile/page => https://example.com/page
-            { regex: /\.wap\./, replace: "." },// https://wap.example.com => https://example.com
-            { regex: /\/wap\//, replace: "/" },// https://example.com/wap/page => https://example.com/page
+            { regex: /:\/\/m\./, replace: "://" },
+            { regex: /\/m\//, replace: "/" },
+            { regex: /\.mobile\./, replace: "." },
+            { regex: /\/mobile\//, replace: "/" },
+            { regex: /\.wap\./, replace: "." },
+            { regex: /\?view=mobile(&|$)/, replace: "?" },
+            { regex: /&view=mobile/, replace: "" },
+            { regex: /\?device=mobile(&|$)/, replace: "?" },
+            { regex: /&device=mobile/, replace: "" },
         ];
 
-        this.blacklist = GM_getValue("blacklist", []);
         this.registerMenu();
         this.switch2Desktop();
     }
 
     registerMenu() {
-        GM_registerMenuCommand("⭘ 加入黑名單：" + this.hostname, () => this.addBlacklist());
-        GM_registerMenuCommand("✕ 從黑名單移除：" + this.hostname, () => this.removeBlacklist());
+        GM_registerMenuCommand(`⭘ 加入黑名單：${this.hostname}`, () => this.addBlacklist());
+        GM_registerMenuCommand(`✕ 從黑名單移除：${this.hostname}`, () => this.removeBlacklist());
         GM_registerMenuCommand("？ 檢視黑名單", () => this.showBlacklist());
+        GM_registerMenuCommand(`⭘ 新增自訂規則：${this.hostname}`, () => this.addCustomRule());
+        GM_registerMenuCommand(`✎ 修改自訂規則：${this.hostname}`, () => this.updateCustomRule());
+        GM_registerMenuCommand(`✕ 刪除自訂規則：${this.hostname}`, () => this.removeCustomRule());
+        GM_registerMenuCommand("？ 檢視自訂規則", () => this.showCustomRules());
+    }
+
+    addCustomRule() {
+        if (this.customRules[this.hostname]) {
+            alert(`規則已存在，請使用「修改自訂規則」進行更新。`);
+            return;
+        }
+        const regexInput = prompt(`為 ${this.hostname} 輸入自訂 regex (例如 /\/mobile\//):`);
+        const replaceInput = prompt(`輸入替換字串 (例如 /):`);
+        if (regexInput && replaceInput) {
+            try {
+                const regex = new RegExp(regexInput.slice(1, -1), 'g');
+                this.customRules[this.hostname] = { regex, replace: replaceInput };
+                GM_setValue("customRules", this.customRules);
+                console.log(`已為 ${this.hostname} 新增自訂規則: regex=${regex}, replace=${replaceInput}`);
+                alert(`已為 ${this.hostname} 新增自訂規則`);
+            } catch (error) {
+                console.error(`無效的 regex: ${error.message}`);
+                alert(`無效的 regex: ${error.message}`);
+            }
+        }
+    }
+
+    updateCustomRule() {
+        if (!this.customRules[this.hostname]) {
+            alert(`無 ${this.hostname} 的自訂規則，請先新增。`);
+            return;
+        }
+        const currentRule = this.customRules[this.hostname];
+        const regexInput = prompt(`修改 regex (目前: ${currentRule.regex}):`, currentRule.regex);
+        const replaceInput = prompt(`修改替換字串 (目前: ${currentRule.replace}):`, currentRule.replace);
+        if (regexInput && replaceInput) {
+            try {
+                const regex = new RegExp(regexInput.slice(1, -1), 'g');
+                this.customRules[this.hostname] = { regex, replace: replaceInput };
+                GM_setValue("customRules", this.customRules);
+                console.log(`已更新 ${this.hostname} 的自訂規則: regex=${regex}, replace=${replaceInput}`);
+                alert(`已更新 ${this.hostname} 的自訂規則`);
+            } catch (error) {
+                console.error(`無效的 regex: ${error.message}`);
+                alert(`無效的 regex: ${error.message}`);
+            }
+        }
+    }
+
+    removeCustomRule() {
+        if (!this.customRules[this.hostname]) {
+            alert(`無 ${this.hostname} 的自訂規則。`);
+            return;
+        }
+        delete this.customRules[this.hostname];
+        GM_setValue("customRules", this.customRules);
+        console.log(`已刪除 ${this.hostname} 的自訂規則`);
+        alert(`已刪除 ${this.hostname} 的自訂規則`);
+    }
+
+    showCustomRules() {
+        let message = "";
+        for (const [host, rule] of Object.entries(this.customRules)) {
+            message += `${host}: regex=${rule.regex}, replace=${rule.replace}\n`;
+        }
+        message = message || "（空）";
+        console.log(`目前自訂規則：\n${message}`);
+        alert(`目前自訂規則：\n${message}`);
+    }
+
+    checkDesktopUrl(desktopUrl, onSuccess, onFailure) {
+        GM_xmlhttpRequest({
+            method: "HEAD",
+            url: desktopUrl,
+            timeout: 3000,
+            onload: (response) => {
+                if (response.status >= 200 && response.status < 400) {
+                    const finalUrl = response.finalUrl || desktopUrl;
+                    try {
+                        const urlObj = new URL(finalUrl);
+                        const finalHostname = urlObj.hostname;
+                        onSuccess(finalUrl, finalHostname);
+                    } catch (error) {
+                        console.error(`無效的 URL: ${finalUrl}, 錯誤: ${error.message}`);
+                        onFailure(`無效的 URL 格式: ${finalUrl}`);
+                    }
+                } else {
+                    console.error(`請求失敗，狀態碼: ${response.status}, URL: ${desktopUrl}`);
+                    onFailure(`無法訪問電腦版，狀態碼: ${response.status}`);
+                }
+            },
+            onerror: () => {
+                console.error(`網絡錯誤，URL: ${desktopUrl}`);
+                onFailure("網絡錯誤，無法完成請求");
+            },
+            ontimeout: () => {
+                console.error(`請求超時，URL: ${desktopUrl}`);
+                onFailure("請求超時，無法訪問電腦版");
+            }
+        });
+    }
+
+    updateBlacklist(add, hostname, desktopUrl) {
+        if (!desktopUrl || desktopUrl === this.url) {
+            if (add && !this.blacklist.includes(hostname)) {
+                this.blacklist.push(hostname);
+                GM_setValue("blacklist", this.blacklist);
+                console.log(`已將 ${hostname} 加入黑名單`);
+                alert(`已將 ${hostname} 加入黑名單`);
+            } else if (!add) {
+                this.blacklist = this.blacklist.filter(domain => domain !== hostname);
+                GM_setValue("blacklist", this.blacklist);
+                console.log(`已將 ${hostname} 從黑名單移除`);
+                alert(`已將 ${hostname} 從黑名單移除`);
+            } else {
+                console.warn(`${hostname} 已在黑名單中`);
+                alert(`${hostname} 已在黑名單中`);
+            }
+            return;
+        }
+
+        this.checkDesktopUrl(
+            desktopUrl,
+            (finalUrl, finalHostname) => {
+                if (add && !this.blacklist.includes(finalHostname)) {
+                    this.blacklist.push(finalHostname);
+                    GM_setValue("blacklist", this.blacklist);
+                    console.log(`已將 ${finalHostname} 加入黑名單`);
+                    alert(`已將 ${finalHostname} 加入黑名單`);
+                } else if (!add) {
+                    this.blacklist = this.blacklist.filter(domain => domain !== finalHostname);
+                    GM_setValue("blacklist", this.blacklist);
+                    console.log(`已將 ${finalHostname} 從黑名單移除`);
+                    alert(`已將 ${finalHostname} 從黑名單移除`);
+                } else {
+                    console.warn(`${finalHostname} 已在黑名單中`);
+                    alert(`${finalHostname} 已在黑名單中`);
+                }
+            },
+            (errorMessage) => {
+                console.error(`無法${add ? "加入" : "移除"}黑名單: ${errorMessage}`);
+                alert(`無法${add ? "加入" : "移除"}黑名單: ${errorMessage}`);
+            }
+        );
     }
 
     addBlacklist() {
-        const desktopUrl = this.getDesktopUrl();
-        if (!desktopUrl || desktopUrl === this.url) {
-            if (!this.blacklist.includes(this.hostname)) {
-                this.blacklist.push(this.hostname);
-                GM_setValue("blacklist", this.blacklist);
-                alert("已將 " + this.hostname + " 加入黑名單");
-            } else {
-                alert(this.hostname + " 已在黑名單中");
-            }
-        } else {
-            GM_xmlhttpRequest({
-                method: "HEAD",
-                url: desktopUrl,
-                onload: (response) => {
-                    if (response.status >= 200 && response.status < 400) {
-                        const finalUrl = response.finalUrl || desktopUrl;
-                        const finalHostname = new URL(finalUrl).hostname;
-                        if (!this.blacklist.includes(finalHostname)) {
-                            this.blacklist.push(finalHostname);
-                            GM_setValue("blacklist", this.blacklist);
-                            alert("已將 " + finalHostname + " 加入黑名單");
-                        } else {
-                            alert(finalHostname + " 已在黑名單中");
-                        }
-                    } else {
-                        alert("無法訪問電腦版，無法加入黑名單。");
-                    }
-                },
-                onerror: () => {
-                    alert("請求失敗，無法加入黑名單。");
-                }
-            });
-        }
+        this.updateBlacklist(true, this.hostname, this.getDesktopUrl());
     }
 
     removeBlacklist() {
-        const desktopUrl = this.getDesktopUrl();
-        if (!desktopUrl || desktopUrl === this.url) {
-            this.blacklist = this.blacklist.filter(domain => domain !== this.hostname);
-            GM_setValue("blacklist", this.blacklist);
-            alert("已將 " + this.hostname + " 從黑名單移除");
-        } else {
-            GM_xmlhttpRequest({
-                method: "HEAD",
-                url: desktopUrl,
-                onload: (response) => {
-                    if (response.status >= 200 && response.status < 400) {
-                        const finalUrl = response.finalUrl || desktopUrl;
-                        const finalHostname = new URL(finalUrl).hostname;
-                        this.blacklist = this.blacklist.filter(domain => domain !== finalHostname);
-                        GM_setValue("blacklist", this.blacklist);
-                        alert("已將 " + finalHostname + " 從黑名單移除");
-                    } else {
-                        alert("無法訪問電腦版，無法移除黑名單。");
-                    }
-                },
-                onerror: () => {
-                    alert("請求失敗，無法移除黑名單。");
-                }
-            });
-        }
+        this.updateBlacklist(false, this.hostname, this.getDesktopUrl());
     }
 
     showBlacklist() {
-        alert("目前黑名單：\n" + (this.blacklist.length ? this.blacklist.join("\n") : "（空）"));
+        const message = this.blacklist.length ? this.blacklist.join("\n") : "（空）";
+        console.log(`目前黑名單：\n${message}`);
+        alert(`目前黑名單：\n${message}`);
     }
 
     getDesktopUrl() {
-        for (const pattern of this.mobilePatterns) {
-            if (pattern.regex.test(this.url)) {
-                return this.url.replace(pattern.regex, pattern.replace);
+        let tempUrl = this.url;
+        const customPattern = this.customRules[this.hostname];
+        if (customPattern) {
+            console.log(`應用自訂規則於: ${this.hostname}, regex=${customPattern.regex}`);
+            try {
+                tempUrl = tempUrl.replace(customPattern.regex, customPattern.replace);
+                if (tempUrl !== this.url) return tempUrl;
+            } catch (error) {
+                console.error(`應用自訂規則失敗: ${error.message}`);
             }
         }
-        return null;
+        for (const pattern of this.mobilePatterns) {
+            if (pattern.regex.test(tempUrl)) {
+                console.log(`檢測到手機版模式: ${pattern.regex}`);
+                tempUrl = tempUrl.replace(pattern.regex, pattern.replace);
+            }
+        }
+        return tempUrl !== this.url ? tempUrl : null;
     }
 
     switch2Desktop() {
