@@ -64,15 +64,15 @@ class DesktopSwitcher {
             console.error(`規則已存在，請使用「修改自訂規則」進行更新。`);
             return;
         }
-        const regexInput = prompt(`為 ${this.hostname} 輸入自訂 regex (例如 /\/mobile\//):`);
-        const replaceInput = prompt(`輸入替換字串 (例如 /):`);
-        if (regexInput && replaceInput) {
+        const matchString = prompt(`為 ${this.hostname} 輸入自訂字串 (例如 /m.):`);
+        const replaceString = prompt(`輸入替換字串 (例如 /):`);
+        if (matchString && replaceString) {
             try {
-                this.customRules[this.hostname] = { regex: regexInput, replace: replaceInput };
+                this.customRules[this.hostname] = { match: matchString, replace: replaceString };
                 GM_setValue("customRules", this.customRules);
-                console.log(`已為 ${this.hostname} 新增自訂規則: regex=${regex}, replace=${replaceInput}`);
+                console.log(`已為 ${this.hostname} 新增自訂規則: match=${matchString}, replace=${replaceString}`);
             } catch (error) {
-                console.error(`無效的 regex: ${error.message}`);
+                console.error(`無效的 match: ${error.message}`);
             }
         }
     }
@@ -80,7 +80,7 @@ class DesktopSwitcher {
     showCustomRules() {
         let message = "";
         for (const [host, rule] of Object.entries(this.customRules)) {
-            message += `${host}: regex=${rule.regex}, replace=${rule.replace}\n`;
+            message += `${host}: match=${rule.match}, replace=${rule.replace}\n`;
         }
         message = message || "（空）";
         console.log(`目前自訂規則：\n${message}`);
@@ -92,15 +92,15 @@ class DesktopSwitcher {
             return;
         }
         const currentRule = this.customRules[this.hostname];
-        const regexInput = prompt(`修改 regex (目前: ${currentRule.regex}):`, currentRule.regex);
-        const replaceInput = prompt(`修改替換字串 (目前: ${currentRule.replace}):`, currentRule.replace);
-        if (regexInput && replaceInput) {
+        const matchString = prompt(`修改 match (目前: ${currentRule.match}):`, currentRule.match);
+        const replaceString = prompt(`修改替換字串 (目前: ${currentRule.replace}):`, currentRule.replace);
+        if (matchString && replaceString) {
             try {
-                this.customRules[this.hostname] = { regex: regexInput, replace: replaceInput };
+                this.customRules[this.hostname] = { regex: matchString, replace: replaceString };
                 GM_setValue("customRules", this.customRules);
-                console.log(`已更新 ${this.hostname} 的自訂規則: regex=${regex}, replace=${replaceInput}`);
+                console.log(`已更新 ${this.hostname} 的自訂規則: match=${matchString}, replace=${replaceString}`);
             } catch (error) {
-                console.error(`無效的 regex: ${error.message}`);
+                console.error(`無效的 match: ${error.message}`);
             }
         }
     }
@@ -233,7 +233,7 @@ class DesktopSwitcher {
                         try {
                             const canonicalHostname = new URL(canonical.href).hostname;
                             if (this.blacklist.includes(canonicalHostname)) {
-                                console.warn(`阻止重定向，黑名單域名: ${canonicalHostname}`);
+                                console.warn(`阻止重新導向，黑名單域名: ${canonicalHostname}`);
                                 return;
                             }
                             console.log(`找到 canonical URL: ${canonical.href}`);
