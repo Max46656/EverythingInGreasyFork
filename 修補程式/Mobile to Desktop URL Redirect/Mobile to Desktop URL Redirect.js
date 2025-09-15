@@ -13,7 +13,7 @@
 // @author       Max
 // @namespace    https://github.com/Max46656
 //
-// @version      1.3.1
+// @version      1.3.2
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -21,6 +21,8 @@
 // @grant        GM_setValue
 // @run-at       document-start
 // @icon         https://cdn-icons-png.flaticon.com/512/3559/3559356.png
+// @downloadURL https://update.greasyfork.org/scripts/548125/%E6%89%8B%E6%A9%9F%E7%89%88%E7%B6%B2%E5%9D%80%E9%87%8D%E6%96%B0%E5%B0%8E%E5%90%91%E5%88%B0%E9%9B%BB%E8%85%A6%E7%89%88.user.js
+// @updateURL https://update.greasyfork.org/scripts/548125/%E6%89%8B%E6%A9%9F%E7%89%88%E7%B6%B2%E5%9D%80%E9%87%8D%E6%96%B0%E5%B0%8E%E5%90%91%E5%88%B0%E9%9B%BB%E8%85%A6%E7%89%88.meta.js
 // ==/UserScript==
 // @icon from Smashicons
 
@@ -232,7 +234,7 @@ class DesktopSwitcher {
                         try {
                             const canonicalHostname = new URL(canonical.href).hostname;
                             if (this.blacklist.includes(canonicalHostname)) {
-                                console.warn(`阻止重新導向，黑名單域名: ${canonicalHostname}`);
+                                console.warn(`阻止重定向，黑名單域名: ${canonicalHostname}`);
                                 return;
                             }
                             console.log(`找到 canonical URL: ${canonical.href}`);
@@ -247,19 +249,19 @@ class DesktopSwitcher {
                 } else {
                     console.error(`無法載入頁面內容: ${response.status}`);
                 }
-                this.tryPatternMatch();
+                tryPatternMatch();
             },
             onerror: () => {
                 console.error(`網絡錯誤: ${this.url}`);
-                this.tryPatternMatch();
+                tryPatternMatch();
             },
             ontimeout: () => {
                 console.error(`請求超時: ${this.url}`);
-                this.tryPatternMatch();
+                tryPatternMatch();
             }
         });
 
-        function tryPatternMatch() {
+        const tryPatternMatch = () => {
             const desktopUrl = this.getDesktopUrl();
             if (desktopUrl && desktopUrl !== this.url) {
                 console.log(`嘗試切換到電腦版網址: ${desktopUrl}`);
@@ -280,8 +282,9 @@ class DesktopSwitcher {
             } else {
                 console.warn(`未找到有效電腦版 URL`);
             }
-        }
+        };
     }
+
 }
 
 new DesktopSwitcher();
