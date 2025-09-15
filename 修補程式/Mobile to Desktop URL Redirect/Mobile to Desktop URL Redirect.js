@@ -14,7 +14,7 @@
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 //
-// @version      1.3.2
+// @version      1.3.3
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -68,8 +68,7 @@ class DesktopSwitcher {
         const replaceInput = prompt(`輸入替換字串 (例如 /):`);
         if (regexInput && replaceInput) {
             try {
-                const regex = new RegExp(regexInput.slice(1, -1), 'g');
-                this.customRules[this.hostname] = { regex, replace: replaceInput };
+                this.customRules[this.hostname] = { regex: regexInput, replace: replaceInput };
                 GM_setValue("customRules", this.customRules);
                 console.log(`已為 ${this.hostname} 新增自訂規則: regex=${regex}, replace=${replaceInput}`);
             } catch (error) {
@@ -97,8 +96,7 @@ class DesktopSwitcher {
         const replaceInput = prompt(`修改替換字串 (目前: ${currentRule.replace}):`, currentRule.replace);
         if (regexInput && replaceInput) {
             try {
-                const regex = new RegExp(regexInput.slice(1, -1), 'g');
-                this.customRules[this.hostname] = { regex, replace: replaceInput };
+                this.customRules[this.hostname] = { regex: regexInput, replace: replaceInput };
                 GM_setValue("customRules", this.customRules);
                 console.log(`已更新 ${this.hostname} 的自訂規則: regex=${regex}, replace=${replaceInput}`);
             } catch (error) {
