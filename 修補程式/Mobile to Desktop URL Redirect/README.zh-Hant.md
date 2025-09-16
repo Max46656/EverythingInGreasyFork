@@ -43,6 +43,12 @@
    - 替換字串：`forum.gamer.com.tw/`
    - 效果：將 `https://m.gamer.com.tw/forum/B.php?bsn=73317` 重新導向到 `https://forum.gamer.com.tw/B.php?bsn=73317`。
 
+4. **注意事項**：
+   - 該程式運行的規則優先順序為下:黑名單=>自定規則=>預設手機版網址特徵。  
+     亦即，即便該網址不符合程式預定的網址特徵檢查，若使用者對該網域具有設定的網址替換規則，則程式**仍會**依據該規則進行跳轉；  
+     即便使用者對該網域具有設定的網址替換規則，若使用者將該網域設定為黑名單，則程式**不會**進行跳轉。
+
+
 ## 問題回報
 
 若遇到問題，請在 [GitHub Issues](https://github.com/Max46656/EverythingInGreasyFork/issues) 送出，包含以下資訊：
