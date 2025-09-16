@@ -42,6 +42,13 @@ This user script is designed to automatically redirect mobile webpages to their 
    - Replacement String: `forum.gamer.com.tw/`
    - Effect: Redirects `https://m.gamer.com.tw/forum/B.php?bsn=73317` to `https://forum.gamer.com.tw/B.php?bsn=73317`.
 
+4. **Notes**:
+   - The script follows this priority order for rules: Blacklist => Custom Rules => Default Mobile URL Patterns.  
+     That is, even if the URL does not match the script's predefined mobile URL patterns,  
+     if a custom replacement rule is set for the domain, the script will still redirect based on that rule.  
+     However, even if a custom replacement rule is set for the domain,  
+     if the domain is added to the blacklist, the script will not perform the redirect.  
+
 ## Issue Reporting
 
 If you encounter issues, please submit them on [GitHub Issues](https://github.com/Max46656/EverythingInGreasyFork/issues) with the following details:
