@@ -18,11 +18,13 @@
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @require      https://greasyfork.org/scripts/2963-gif-js/code/gifjs.js?version=8596
-// @version      1.1.2
+// @version      1.1.3
 //
 // @author       Max
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
+// @downloadURL https://update.greasyfork.org/scripts/546402/Pixiv%20Save%20to%20Eagle.user.js
+// @updateURL https://update.greasyfork.org/scripts/546402/Pixiv%20Save%20to%20Eagle.meta.js
 // ==/UserScript==
 
 class EagleClient {
@@ -156,6 +158,7 @@ class PixivEagleUI {
     constructor(){
         this.eagle=new EagleClient();
         this.illust=new PixivIllust(this.eagle);
+        this.buttonContainerSelector = "section.kDUrpE";
         this.init();
     }
 
@@ -179,7 +182,7 @@ class PixivEagleUI {
 
     async addButton(){
         try{
-            const section=await this.waitForElement("section.gPBXUH");
+            const section=await this.waitForElement(this.buttonContainerSelector);
             if(document.getElementById("save-to-eagle-btn")) return;
 
             const container=document.createElement("div"); container.classList.add("cNcUof");
