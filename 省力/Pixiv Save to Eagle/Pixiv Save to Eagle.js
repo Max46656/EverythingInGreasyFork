@@ -12,13 +12,14 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
+// @version      1.1.5
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_xmlhttpRequest
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @require      https://greasyfork.org/scripts/2963-gif-js/code/gifjs.js?version=8596
-// @version      1.1.4
+// @run-at       document-end
 //
 // @author       Max
 // @namespace    https://github.com/Max46656
