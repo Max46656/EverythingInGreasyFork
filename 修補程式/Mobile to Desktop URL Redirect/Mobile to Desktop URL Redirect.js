@@ -14,7 +14,7 @@
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 //
-// @version      1.4.0
+// @version      1.4.1
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -213,17 +213,21 @@ class DesktopSwitcher {
             } catch (error) {
                 console.error(`應用自訂規則失敗: ${error.message}`);
             }
-        }
-        for (const pattern of this.mobilePatterns) {
-            if (pattern.regex.test(tempUrl)) {
-                console.log(`檢測到手機版模式: ${pattern.regex}`);
-                tempUrl = tempUrl.replace(pattern.regex, pattern.replace);
+        }else{
+            for (const pattern of this.mobilePatterns) {
+                if (pattern.regex.test(tempUrl)) {
+                    console.log(`檢測到手機版模式: ${pattern.regex}`);
+                    tempUrl = tempUrl.replace(pattern.regex, pattern.replace);
+                }
             }
         }
         return tempUrl !== this.url ? tempUrl : null;
     }
 
     switch2Desktop() {
+        const desktopUrl = this.getDesktopUrl();
+        if (desktopUrl === null) return
+
         console.log(`嘗試解析 canonical tag: ${this.url}`);
         GM_xmlhttpRequest({
             method: "GET",
@@ -266,8 +270,6 @@ class DesktopSwitcher {
         });
 
         const tryPatternMatch = () => {
-            const desktopUrl = this.getDesktopUrl();
-            if (desktopUrl && desktopUrl !== this.url) {
                 console.log(`嘗試切換到電腦版網址: ${desktopUrl}`);
                 this.checkDesktopUrl(
                     desktopUrl,
@@ -283,9 +285,6 @@ class DesktopSwitcher {
                         console.error(`無法切換到電腦版: ${errorMessage}`);
                     }
                 );
-            } else {
-                console.warn(`未找到有效電腦版 URL`);
-            }
         };
     }
 
