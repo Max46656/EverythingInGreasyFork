@@ -1,6 +1,10 @@
 english | [![Static Badge](https://img.shields.io/badge/lang-zh_tw-green)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/Freely%20Set%20Shortcuts/README.zh-Hant.md)
 # Freely Set Shortcuts
 
+Do you often click a button or link while browsing a webpage that isn't on the navigation bar?  
+Or do you need to click through multiple layers of the navigation bar to reach the desired button?  
+Or do you want to avoid minimizing a full-screen video or other multimedia element to click another button?
+
 ## Overview
 This user script allows users to define shortcuts with single or double modifier keys to click specific elements on webpages matching specified URL patterns.
 
