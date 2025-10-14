@@ -52,7 +52,7 @@ class userStrategy extends pageStrategy{
         return 'nav.sc-a0b4b67e-0';
     }
     getAllButtonClass() {
-        return ['bbWFlo','eXEEzh','fjmqoY','bbWFMD','eXEElQ','eWyraG'];
+        return ['bbWFlo','eXEEzh','fjmqoY','bbWFMD','eXEElQ','eWyraG',"bbWWZo","eXDYvt","eXeMvH","eXEGxZ","fjcIyQ","bbWEWN"];
     }
     getArtsCountClass(){
         return 'div.sc-a6755c3a-2 span';
