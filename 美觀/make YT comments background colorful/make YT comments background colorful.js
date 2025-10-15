@@ -7,7 +7,7 @@
 // @author       Max
 // @namespace    https://github.com/Max46656
 
-// @version      1.0.0
+// @version      1.1.0
 // @match        https://www.youtube.com/*
 // @grant        none
 // ==/UserScript==
@@ -22,6 +22,8 @@ class HoverStyleManager {
     ];
 
     #targetSelectors = [
+        'div#title.ytd-watch-metadata',
+        '#description',
         'ytd-item-section-renderer[section-identifier="comment-item-section"]'
     ];
 
