@@ -7,9 +7,9 @@
 // @author       Max
 // @namespace    https://github.com/Max46656
 
-// @version      1.1.0
+// @version      1.2.0
 // @match        https://www.youtube.com/*
-// @grant        none
+// @grant        GM_addStyle
 // ==/UserScript==
 
 class HoverStyleManager {
@@ -23,7 +23,7 @@ class HoverStyleManager {
 
     #targetSelectors = [
         'div#title.ytd-watch-metadata',
-        '#description',
+        'div#description',
         'ytd-item-section-renderer[section-identifier="comment-item-section"]'
     ];
 
@@ -38,12 +38,24 @@ class HoverStyleManager {
                style.getPropertyValue('--yt-saturated-text-primary').trim() !== '';
     }
 
-    createHoverStyles(metadataElement) {
-        const style = getComputedStyle(metadataElement);
-        const styleSheet = document.createElement('style');
-        styleSheet.type = 'text/css';
-        document.head.appendChild(styleSheet);
+    injectDefaultStyles() {
+        const isDarkTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const defaultBgColor = isDarkTheme ? '#0f0f0f' : '#ffffff';
+        const defaultTextColor = isDarkTheme ? '#f1f1f1' : '#030303';
 
+        let cssRules = '';
+        this.#targetSelectors.forEach(selector => {
+            cssRules += `${selector}:hover {\n`;
+            cssRules += `    background-color: ${defaultBgColor};\n`;
+            cssRules += `    color: ${defaultTextColor};\n`;
+            cssRules += '}\n';
+        });
+
+        GM_addStyle(cssRules);
+    }
+
+    injectMetadataStyles(metadataElement) {
+        const style = getComputedStyle(metadataElement);
         let cssRules = '';
         this.#targetSelectors.forEach(selector => {
             cssRules += `${selector}:hover {\n`;
@@ -64,14 +76,14 @@ class HoverStyleManager {
             cssRules += '}\n';
         });
 
-        styleSheet.textContent = cssRules;
+        GM_addStyle(cssRules);
     }
 
     setupObserver() {
         this.observer = new MutationObserver((mutations, obs) => {
             const metadataElement = document.querySelector('ytd-watch-metadata');
             if (metadataElement && this.isMetadataStyleReady(metadataElement)) {
-                this.createHoverStyles(metadataElement);
+                this.injectMetadataStyles(metadataElement);
                 obs.disconnect();
             }
         });
@@ -83,9 +95,10 @@ class HoverStyleManager {
     }
 
     init() {
+        this.injectDefaultStyles();
         const initialCheck = document.querySelector('ytd-watch-metadata');
         if (initialCheck && this.isMetadataStyleReady(initialCheck)) {
-            this.createHoverStyles(initialCheck);
+            this.injectMetadataStyles(initialCheck);
         } else {
             this.setupObserver();
         }
