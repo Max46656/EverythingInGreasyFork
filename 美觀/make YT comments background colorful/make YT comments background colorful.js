@@ -2,6 +2,7 @@
 // @name         Youtube留言區上色
 // @name:en      make YT comments background colorful
 // @description  將留言區的顯示顏色改為與影片描述相同(旨在改善DeveloperMDCM/Youtube-tools-extension的自定背景功能的暫時解決方案)
+// @description:en Change the comment area's display color to the same as the video description (a temporary solution to improve the custom background function of DeveloperMDCM/Youtube-tools-extension)
 
 // @author       Max
 // @namespace    https://github.com/Max46656
