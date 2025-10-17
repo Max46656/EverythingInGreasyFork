@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.2.1
+// @version      1.2.2
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -356,8 +356,7 @@ class KemonoEagleUI {
                 btn.style.fontSize = "12px";
 
                 btn.onclick = async () => {
-                    const folderId = select.value;
-                    await GM.setValue("eagle_last_folder", folderId);
+                    let folderId = await GM.getValue("eagle_last_folder");
                     const image = this.kemono.images[index];
                     await this.kemono.handleImage(image.url, image.name, folderId);
                 };
