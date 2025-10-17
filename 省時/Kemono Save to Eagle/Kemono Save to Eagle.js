@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.1.0
+// @version      1.2.0
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -165,7 +165,11 @@ class KemonoEagleUI {
                 { value: "↖", text: "↖" },
                 { value: "↗", text: "↗" },
                 { value: "↙", text: "↙" },
-                { value: "↘", text: "↘" }
+                { value: "↘", text: "↘" },
+                { value: "↑", text: "↑" },
+                { value: "↓", text: "↓" },
+                { value: "←", text: "←" },
+                { value: "→", text: "→" }
             ];
 
             options.forEach(opt => {
@@ -324,7 +328,11 @@ class KemonoEagleUI {
                 "↖": { top: "10px", left: "10px" },
                 "↗": { top: "10px", right: "10px" },
                 "↙": { bottom: "10px", left: "10px" },
-                "↘": { bottom: "10px", right: "10px" }
+                "↘": { bottom: "10px", right: "10px" },
+                "↑": { top: "10px", left: "50%", transform: "translateX(-50%)" },
+                "↓": { bottom: "10px", left: "50%", transform: "translateX(-50%)" },
+                "←": { top: "50%", left: "10px", transform: "translateY(-50%)" },
+                "→": { top: "50%", right: "10px", transform: "translateY(-50%)" }
             };
             const position = await GM.getValue("buttonPosition", "↖")
             console.log("position",position, this.buttonPosition)
