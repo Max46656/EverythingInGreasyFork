@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.2.1
+// @version      1.2.2
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -334,24 +334,19 @@ class PixivEagleUI {
             this.pixiv.fetchIllustInfo()
             if (!this.pixiv.illust) return
 
-            const select = document.getElementById("eagle-folder-select");
-            if (!select) return;
-
             const imageSelector = 'div[role="presentation"],div.sc-e06c24aa-4'
-
             await this.waitForElement(imageSelector)
 
-
-        const positionStyles = {
-            "↖": { top: "10px", left: "10px" },
-            "↗": { top: "10px", right: "10px" },
-            "↙": { bottom: "10px", left: "10px" },
-            "↘": { bottom: "10px", right: "10px" },
-            "↑": { top: "10px", left: "50%", transform: "translateX(-50%)" },
-            "↓": { bottom: "10px", left: "50%", transform: "translateX(-50%)" },
-            "←": { top: "50%", left: "10px", transform: "translateY(-50%)" },
-            "→": { top: "50%", right: "10px", transform: "translateY(-50%)" }
-        };
+            const positionStyles = {
+                "↖": { top: "10px", left: "10px" },
+                "↗": { top: "10px", right: "10px" },
+                "↙": { bottom: "10px", left: "10px" },
+                "↘": { bottom: "10px", right: "10px" },
+                "↑": { top: "10px", left: "50%", transform: "translateX(-50%)" },
+                "↓": { bottom: "10px", left: "50%", transform: "translateX(-50%)" },
+                "←": { top: "50%", left: "10px", transform: "translateY(-50%)" },
+                "→": { top: "50%", right: "10px", transform: "translateY(-50%)" }
+            };
             console.log("position", position, this.buttonPosition)
 
             const validPosition = positionStyles[position] ? position : "↖"
