@@ -20,6 +20,7 @@
 - [「繁簡自由切換」用語整合器](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/'SwitchTChineseToSChinese'TerminologyIntegrator)
 - [自動點選元素函式庫](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/AutoClickElementLib)
 - [Pixiv 儲存至 Eagle](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Pixiv%20Save%20to%20Eagle)
+- [Kemono 儲存至 Eagle](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Kemono%20Save%20to%20Eagle)
 
 ## 美觀
 - [借一步說話](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%BE%8E%E8%A7%80/getOutMyWay)
