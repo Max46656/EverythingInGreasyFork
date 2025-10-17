@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.2.3
+// @version      1.2.4
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -125,6 +125,7 @@ class PixivIllust {
             return [{ url: this.illust.urls.original, name: baseName + '.gif', type: 'gif' }]
         } else {
             const baseUrl = this.illust.urls.original
+            console.log(this.illust.pageCount)
             return Array.from({ length: this.illust.pageCount }, (_, i) => ({
                 url: baseUrl.replace('_p0.', `_p${i}.`),
                 name: this.illust.pageCount > 1 ? baseName + `_p${i}` : baseName
@@ -249,7 +250,7 @@ class PixivEagleUI {
         console.log("buttonPosition (updated)", this.buttonPosition)
         this.registerPositionMenu()
         this.addFolderSelect()
-        await this.addButtons(this.buttonPosition)
+        this.addButtons(this.buttonPosition)
         this.observeDomChange(() => {
             this.addButtons(this.buttonPosition)
         })
@@ -334,7 +335,7 @@ class PixivEagleUI {
             this.pixiv.fetchIllustInfo()
             if (!this.pixiv.illust) return
 
-            const imageSelector = 'div[role="presentation"]'
+            const imageSelector = 'div[role="presentation"].sc-dba767bd-0'
 
             await this.waitForElement(imageSelector)
 
@@ -354,13 +355,14 @@ class PixivEagleUI {
             const styles = positionStyles[validPosition]
 
             document.querySelectorAll(imageSelector).forEach((img, index) => {
+              console.log(index)
                 if (img.parentElement.querySelector(`#save-to-eagle-btn-${index}`)) return
 
                 const container = document.createElement("div")
                 container.style.position = "absolute"
                 container.style.zIndex = "1000"
                 Object.assign(container.style, styles)
-
+                console.log("index",index)
                 const btn = document.createElement("button")
                 btn.id = `save-to-eagle-btn-${index}`
                 btn.textContent = "save to Eagle"
@@ -369,7 +371,7 @@ class PixivEagleUI {
                 btn.onclick = async () => {
                     let folderId = await GM.getValue("eagle_last_folder");
                     const images = this.pixiv.fetchIllusts()
-                    console.log(images[index])
+                    console.log("images[index]",images)
                     await this.pixiv.handleIllust(images[index], folderId)
                 }
 
