@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.2.0
+// @version      1.2.1
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -256,7 +256,7 @@ class PixivEagleUI {
         //await this.observeWorkExpand()
     }
 
-    async waitForElement(selector, timeout = 10000) {
+    async waitForElement(selector, timeout = 1000) {
         return new Promise((resolve, reject) => {
             const el = document.querySelector(selector)
             if (el) return resolve(el)
@@ -277,16 +277,16 @@ class PixivEagleUI {
         })
     }
 
- async addFolderSelect() {
+    async addFolderSelect() {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector)
-            if (document.getElementById("save-to-eagle-btn")) return
+            if (document.getElementById("save-all-to-eagle-btn")) return
 
             const container = document.createElement("div")
             container.classList.add("cNcUof")
 
             const btn = document.createElement("button")
-            btn.id = "save-to-eagle-btn"
+            btn.id = "save-all-to-eagle-btn"
             btn.textContent = "Save to Eagle"
             btn.className = "charcoal-button"
             btn.dataset.variant = "Primary"
@@ -309,7 +309,7 @@ class PixivEagleUI {
             btn.onclick = async () => {
                 const folderId = select.value
                 await GM.setValue("eagle_last_folder", folderId)
-                this.illust.fetchIllustInfo()
+                this.illust.fetchIllust()
                 if (this.illust.isSingle()) {
                     await this.illust.handleSingle(folderId)
                 } else if (this.illust.isSet()) {
@@ -390,16 +390,16 @@ class PixivEagleUI {
     registerPositionMenu() {
         GM_registerMenuCommand("選擇按鈕位置", () => {
             const select = document.createElement("select")
-        const options = [
-            { value: "↖", text: "↖" },
-            { value: "↗", text: "↗" },
-            { value: "↙", text: "↙" },
-            { value: "↘", text: "↘" },
-            { value: "↑", text: "↑" },
-            { value: "↓", text: "↓" },
-            { value: "←", text: "←" },
-            { value: "→", text: "→" }
-        ];
+            const options = [
+                { value: "↖", text: "↖" },
+                { value: "↗", text: "↗" },
+                { value: "↙", text: "↙" },
+                { value: "↘", text: "↘" },
+                { value: "↑", text: "↑" },
+                { value: "↓", text: "↓" },
+                { value: "←", text: "←" },
+                { value: "→", text: "→" }
+            ];
 
             options.forEach(opt => {
                 const option = document.createElement("option")
