@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Kemono Save to Eagle
-// @name:zh-TW   Kemono 圖片儲存至 Eagle
+// @name:zh-TW   Kemono 儲存至 Eagle
 // @name:ja      Kemonoの畫像を直接Eagleに儲存
 // @name:en      Kemono Save to Eagle
 // @name:de      Kemono-Bilder direkt in Eagle speichern
@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.2.0
+// @version      1.2.1
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
