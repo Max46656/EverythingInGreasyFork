@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.0.0
+// @version      1.1.0
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -176,39 +176,60 @@ class KemonoEagleUI {
                 select.appendChild(option);
             });
 
-            select.onchange = async () => {
-                this.buttonPosition = select.value;
-                console.log(select.value)
-                await GM.setValue("buttonPosition", this.buttonPosition);
-                console.log(GM.getValue("buttonPosition"))
-                document.querySelectorAll("[id^=save-to-eagle-btn]").forEach(btn => btn.parentElement.remove());
-                this.addButtons(this.buttonPosition);
-                alert("按鈕位置已更新為：" + options.find(opt => opt.value === this.buttonPosition).text);
-            };
-
             const container = document.createElement("div");
             container.style.position = "fixed";
             container.style.top = "50%";
             container.style.left = "50%";
             container.style.transform = "translate(-50%, -50%)";
-            container.style.color="black";
+            container.style.color = "black";
             container.style.backgroundColor = "white";
             container.style.padding = "20px";
             container.style.border = "1px solid #ccc";
             container.style.zIndex = "10000";
+            container.style.display = "flex";
+            container.style.alignItems = "center";
+            container.style.gap = "10px";
 
             const label = document.createElement("label");
             label.textContent = "選擇按鈕位置：";
             label.style.marginRight = "10px";
 
+            const confirmButton = document.createElement("button");
+            confirmButton.textContent = "⭘";
+            confirmButton.style.padding = "2px 8px";
+            confirmButton.style.backgroundColor = "#28a745";
+            confirmButton.style.color = "white";
+            confirmButton.style.border = "none";
+            confirmButton.style.borderRadius = "4px";
+            confirmButton.style.cursor = "pointer";
+            confirmButton.style.fontSize = "14px";
+            confirmButton.title = "確定選擇";
+            confirmButton.setAttribute("aria-label", "確定按鈕位置");
+            confirmButton.onclick = async () => {
+                this.buttonPosition = select.value;
+                console.log("選中位置：", select.value);
+                await GM.setValue("buttonPosition", this.buttonPosition);
+                console.log("儲存位置：", await GM.getValue("buttonPosition"));
+                document.querySelectorAll("[id^=save-to-eagle-btn]").forEach(btn => btn.parentElement.remove());
+                this.addButtons(this.buttonPosition);
+                container.remove();
+            };
+
+            select.onchange = async () => {
+                this.buttonPosition = select.value;
+                console.log(select.value);
+                await GM.setValue("buttonPosition", this.buttonPosition);
+                console.log(await GM.getValue("buttonPosition"));
+                document.querySelectorAll("[id^=save-to-eagle-btn]").forEach(btn => btn.parentElement.remove());
+                this.addButtons(this.buttonPosition);
+            };
+
             container.appendChild(label);
             container.appendChild(select);
+            container.appendChild(confirmButton);
             document.body.appendChild(container);
-
-            setTimeout(() => container.remove(), 5000);
         });
     }
-
     async addFolderSelect() {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector);
