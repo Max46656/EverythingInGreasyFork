@@ -12,9 +12,10 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.1.5
+// @version      1.2.0
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
+// @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
 // @grant        GM.getValue
 // @grant        GM.setValue
@@ -99,10 +100,10 @@ class EagleClient {
 class PixivIllust {
     constructor(eagleClient) {
         this.eagle = eagleClient
-        this.illust = this.fetchIllust()
+        this.illust = this.fetchIllustInfo()
     }
 
-    fetchIllust() {
+    fetchIllustInfo() {
         const illustId = location.href.match(/artworks\/(\d+)/)?.[1]
         if (!illustId) return null
         if (!this.illust || this.illust.illustId != illustId) {
@@ -114,6 +115,31 @@ class PixivIllust {
             }
         }
         return this.illust
+    }
+
+    fetchIllusts() {
+        this.fetchIllustInfo()
+        if (!this.illust) return []
+        const baseName = `Pixiv @${this.illust.userName} ${this.illust.title}(${this.illust.illustId})`
+        if (this.isGif()) {
+            return [{ url: this.illust.urls.original, name: baseName + '.gif', type: 'gif' }]
+        } else {
+            const baseUrl = this.illust.urls.original
+            return Array.from({ length: this.illust.pageCount }, (_, i) => ({
+                url: baseUrl.replace('_p0.', `_p${i}.`),
+                name: this.illust.pageCount > 1 ? baseName + `_p${i}` : baseName
+            }))
+        }
+    }
+
+    async handleIllust(image, folderId) {
+        const { url, name, type } = image
+        if (type === 'gif') {
+            await this.handleGif(folderId, name)
+        } else {
+            await this.eagle.save(url, name, folderId)
+            console.log("已送到 Eagle:", name)
+        }
     }
 
     isSingle() {
@@ -132,7 +158,7 @@ class PixivIllust {
         const illust = this.illust
         const url = illust.urls.original
         const name = `Pixiv @${illust.userName} ${illust.title}(${illust.illustId})`
-      await this.eagle.save(url, name, folderId)
+        await this.eagle.save(url, name, folderId)
         console.log("已送到 Eagle:", name)
     }
 
@@ -211,17 +237,23 @@ class PixivIllust {
 class PixivEagleUI {
     constructor() {
         this.eagle = new EagleClient()
-        this.illust = new PixivIllust(this.eagle)
+        this.pixiv = new PixivIllust(this.eagle)
         this.buttonContainerSelector = "section.kDUrpE"
+        this.imageSelector = "div[role='presentation'].sc-dba767bd-0"
+        this.buttonPosition = "↖"
         this.init()
     }
 
-    init() {
-        this.addButton()
-        this.observeUrlChange(() => {
-            this.addButton()
-            this.illust.illust = this.illust.fetchIllust()
+    async init() {
+        this.buttonPosition = await GM.getValue("buttonPosition", "↖")
+        console.log("buttonPosition (updated)", this.buttonPosition)
+        this.registerPositionMenu()
+        this.addFolderSelect()
+        await this.addButtons(this.buttonPosition)
+        this.observeDomChange(() => {
+            this.addButtons(this.buttonPosition)
         })
+        //await this.observeWorkExpand()
     }
 
     async waitForElement(selector, timeout = 10000) {
@@ -245,7 +277,7 @@ class PixivEagleUI {
         })
     }
 
-    async addButton() {
+ async addFolderSelect() {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector)
             if (document.getElementById("save-to-eagle-btn")) return
@@ -277,7 +309,7 @@ class PixivEagleUI {
             btn.onclick = async () => {
                 const folderId = select.value
                 await GM.setValue("eagle_last_folder", folderId)
-                this.illust.fetchIllust()
+                this.illust.fetchIllustInfo()
                 if (this.illust.isSingle()) {
                     await this.illust.handleSingle(folderId)
                 } else if (this.illust.isSet()) {
@@ -297,16 +329,141 @@ class PixivEagleUI {
         }
     }
 
-    observeUrlChange(callback) {
-        let oldHref = location.href
-        const title = document.querySelector("title")
-        const observer = new MutationObserver(() => {
-            if (oldHref !== location.href) {
-                oldHref = location.href
-                callback()
-            }
+    async addButtons(position) {
+        try {
+            this.pixiv.fetchIllustInfo()
+            if (!this.pixiv.illust) return
+
+            const select = document.getElementById("eagle-folder-select");
+            if (!select) return;
+
+            const imageSelector = 'div[role="presentation"],div.sc-e06c24aa-4'
+
+            await this.waitForElement(imageSelector)
+
+
+        const positionStyles = {
+            "↖": { top: "10px", left: "10px" },
+            "↗": { top: "10px", right: "10px" },
+            "↙": { bottom: "10px", left: "10px" },
+            "↘": { bottom: "10px", right: "10px" },
+            "↑": { top: "10px", left: "50%", transform: "translateX(-50%)" },
+            "↓": { bottom: "10px", left: "50%", transform: "translateX(-50%)" },
+            "←": { top: "50%", left: "10px", transform: "translateY(-50%)" },
+            "→": { top: "50%", right: "10px", transform: "translateY(-50%)" }
+        };
+            console.log("position", position, this.buttonPosition)
+
+            const validPosition = positionStyles[position] ? position : "↖"
+            const styles = positionStyles[validPosition]
+
+            document.querySelectorAll(imageSelector).forEach((img, index) => {
+                if (img.parentElement.querySelector(`#save-to-eagle-btn-${index}`)) return
+
+                const container = document.createElement("div")
+                container.style.position = "absolute"
+                container.style.zIndex = "1000"
+                Object.assign(container.style, styles)
+
+                const btn = document.createElement("button")
+                btn.id = `save-to-eagle-btn-${index}`
+                btn.textContent = "save to Eagle"
+                btn.classList.add("charcoal-button")
+
+                btn.onclick = async () => {
+                    const folderId = select.value
+                    await GM.setValue("eagle_last_folder", folderId)
+                    const images = this.pixiv.fetchIllusts()
+                    console.log(images[index])
+                    await this.pixiv.handleIllust(images[index], folderId)
+                }
+
+                container.appendChild(btn)
+                img.parentElement.style.position = "relative"
+                img.parentElement.appendChild(container)
+            })
+        } catch (e) {
+            console.error("無法新增按鈕:", e)
+        }
+    }
+
+    registerPositionMenu() {
+        GM_registerMenuCommand("選擇按鈕位置", () => {
+            const select = document.createElement("select")
+        const options = [
+            { value: "↖", text: "↖" },
+            { value: "↗", text: "↗" },
+            { value: "↙", text: "↙" },
+            { value: "↘", text: "↘" },
+            { value: "↑", text: "↑" },
+            { value: "↓", text: "↓" },
+            { value: "←", text: "←" },
+            { value: "→", text: "→" }
+        ];
+
+            options.forEach(opt => {
+                const option = document.createElement("option")
+                option.value = opt.value
+                option.textContent = opt.text
+                if (opt.value === this.buttonPosition) option.selected = true
+                select.appendChild(option)
+            })
+
+            const container = document.createElement("div")
+            container.style.position = "fixed"
+            container.style.top = "50%"
+            container.style.left = "50%"
+            container.style.transform = "translate(-50%, -50%)"
+            container.style.color = "black"
+            container.style.backgroundColor = "white"
+            container.style.padding = "20px"
+            container.style.border = "1px solid #ccc"
+            container.style.zIndex = "10000"
+            container.style.display = "flex"
+            container.style.alignItems = "center"
+            container.style.gap = "10px"
+
+            const label = document.createElement("label")
+            label.textContent = "選擇按鈕位置："
+            label.style.marginRight = "10px"
+
+            const confirmButton = document.createElement("button")
+            confirmButton.textContent = "⭘"
+            confirmButton.style.padding = "2px 8px"
+            confirmButton.style.backgroundColor = "#28a745"
+            confirmButton.style.color = "white"
+            confirmButton.style.border = "none"
+            confirmButton.style.borderRadius = "4px"
+            confirmButton.style.cursor = "pointer"
+            confirmButton.style.fontSize = "14px"
+            confirmButton.title = "確定選擇"
+            confirmButton.setAttribute("aria-label", "確定按鈕位置")
+            confirmButton.onclick = async () => {
+                await GM.setValue("buttonPosition", this.buttonPosition);
+                console.log("儲存位置：", await GM.getValue("buttonPosition"));
+                container.remove();
+            };
+
+            select.onchange = async () => {
+                this.buttonPosition = select.value;
+                console.log(select.value);
+                document.querySelectorAll("[id^=save-to-eagle-btn]").forEach(btn => btn.parentElement.remove());
+                this.addButtons(this.buttonPosition);
+            };
+
+
+            container.appendChild(label)
+            container.appendChild(select)
+            container.appendChild(confirmButton)
+            document.body.appendChild(container)
         })
-        observer.observe(title, { childList: true })
+    }
+
+    observeDomChange(callback) {
+        const observer = new MutationObserver(() => {
+            callback()
+        })
+        observer.observe(document.body, { childList: true, subtree: true })
     }
 }
 
