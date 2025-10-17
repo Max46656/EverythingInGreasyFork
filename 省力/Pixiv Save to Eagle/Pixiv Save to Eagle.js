@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.2.2
+// @version      1.2.3
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -334,8 +334,10 @@ class PixivEagleUI {
             this.pixiv.fetchIllustInfo()
             if (!this.pixiv.illust) return
 
-            const imageSelector = 'div[role="presentation"],div.sc-e06c24aa-4'
+            const imageSelector = 'div[role="presentation"]'
+
             await this.waitForElement(imageSelector)
+
 
             const positionStyles = {
                 "↖": { top: "10px", left: "10px" },
@@ -347,7 +349,6 @@ class PixivEagleUI {
                 "←": { top: "50%", left: "10px", transform: "translateY(-50%)" },
                 "→": { top: "50%", right: "10px", transform: "translateY(-50%)" }
             };
-            console.log("position", position, this.buttonPosition)
 
             const validPosition = positionStyles[position] ? position : "↖"
             const styles = positionStyles[validPosition]
@@ -366,8 +367,7 @@ class PixivEagleUI {
                 btn.classList.add("charcoal-button")
 
                 btn.onclick = async () => {
-                    const folderId = select.value
-                    await GM.setValue("eagle_last_folder", folderId)
+                    let folderId = await GM.getValue("eagle_last_folder");
                     const images = this.pixiv.fetchIllusts()
                     console.log(images[index])
                     await this.pixiv.handleIllust(images[index], folderId)
