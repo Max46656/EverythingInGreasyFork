@@ -5,7 +5,7 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.2.1
+// @version     2.2.2
 // @author      Max
 // @namespace   none
 // @match       https://twitter.com/*
@@ -186,7 +186,7 @@ const TMD = (function () {
             listitems.forEach(li => {
                 if (li.dataset.detected) return;
                 li.dataset.detected = 'true';
-                let status_id = li.querySelector('a[href*="/status/"]').href.split('/status/').pop().split('/').shift();
+                let status_id = li.querySelector('a[href*="/status/"]')?.href.split('/status/').pop().split('/').shift();
                 let is_exist = history.indexOf(status_id) >= 0;
                 let btn_down = document.createElement('div');
                 btn_down.innerHTML = '<div><div><svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">' + this.svg + '</svg></div></div>';
