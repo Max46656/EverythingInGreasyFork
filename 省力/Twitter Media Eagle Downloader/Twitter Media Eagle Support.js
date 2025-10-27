@@ -5,7 +5,7 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.2.2
+// @version     2.2.3
 // @author      Max
 // @namespace   none
 // @match       https://twitter.com/*
@@ -94,7 +94,7 @@ const TMD = (function () {
                 select.style.padding = "5px";
                 select.style.fontSize = "14px";
 
-                let lastFolderId = GM_getValue("eagle_last_folder");
+                let lastFolderId = GM_getValue("eagle_last_folder",select.value);
 
                 const folders = await this.getEagleFolderList();
                 folders.forEach(f => {
@@ -106,6 +106,7 @@ const TMD = (function () {
                 });
                 select.onclick = e => {
                     e.preventDefault();
+                    GM_setValue("eagle_last_folder", select.value);
                 }
                 btn_down.parentElement.appendChild(select);
             }
@@ -132,8 +133,7 @@ const TMD = (function () {
                     select.style.padding = "5px";
                     select.style.fontSize = "14px";
 
-                    let lastFolderId = GM_getValue("eagle_last_folder");
-
+                    let lastFolderId = GM_getValue("eagle_last_folder",select.value);
                     let folders = this.getEagleFolderList();
                     folders.forEach(f => {
                         const option = document.createElement("option");
@@ -142,6 +142,7 @@ const TMD = (function () {
                         if (f.id === lastFolderId) option.selected = true;
                         select.appendChild(option);
                     });
+
                     select.onclick = e => {
                         e.preventDefault();
                         GM_setValue("eagle_last_folder", select.value);
@@ -193,7 +194,10 @@ const TMD = (function () {
                 btn_down.classList.add('tmd-down', 'tmd-media');
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
                 li.appendChild(btn_down);
-                btn_down.onclick = () => this.clickDownload(btn_down, status_id, is_exist);
+                btn_down.onclick = () => {
+                    if(GM_getValue("update_select") === false) GM_setValue("eagle_last_folder", select.value);
+                    this.clickDownload(btn_down, status_id, is_exist);
+                }
             });
         },
         clickDownload: async function (btn, status_id, is_exist, index) {
