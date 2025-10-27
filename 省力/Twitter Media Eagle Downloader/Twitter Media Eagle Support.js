@@ -5,7 +5,7 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.2.5
+// @version     2.2.6
 // @author      Max
 // @namespace   none
 // @match       https://twitter.com/*
@@ -69,27 +69,6 @@ const TMD = (function () {
                 let btn_share = Array.from(btn_group.querySelectorAll(':scope>div>div, li.tweet-action-item>a, li.tweet-detail-action-item>a')).pop().parentNode;
                 let btn_down = btn_share.cloneNode(true);
                 let select = document.createElement("select");
-                btn_down.querySelector('button').removeAttribute('disabled');
-                if (is_tweetdeck) {
-                    btn_down.firstElementChild.innerHTML = '<svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">' + this.svg + '</svg>';
-                    btn_down.firstElementChild.removeAttribute('rel');
-                    btn_down.classList.replace("pull-left", "pull-right");
-                } else {
-                    btn_down.querySelector('svg').innerHTML = this.svg;
-                }
-                let is_exist = history.indexOf(status_id) >= 0;
-                this.status(btn_down, 'tmd-down');
-                this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
-                btn_group.insertBefore(btn_down, btn_share.nextSibling);
-                article.onkeydown = (e) => this.keydown(e, btn_down, status_id, is_exist);
-                btn_down.onclick = () => {
-                    if(GM_getValue("update_select") === false) GM_setValue("eagle_last_folder", select.value);
-                    this.clickDownload(btn_down, status_id, is_exist);
-                }
-                if (show_sensitive) {
-                    let btn_show = article.querySelector('div[aria-labelledby] div[role="button"][tabindex="0"]:not([data-testid]) > div[dir] > span > span');
-                    if (btn_show) btn_show.clickDownload();
-                }
                 select.id = "eagle-folder-select";
                 select.style.padding = "5px";
                 select.style.fontSize = "14px";
@@ -108,6 +87,27 @@ const TMD = (function () {
                     e.preventDefault();
                     GM_setValue("eagle_last_folder", select.value);
                 }
+                btn_down.querySelector('button').removeAttribute('disabled');
+                if (is_tweetdeck) {
+                    btn_down.firstElementChild.innerHTML = '<svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">' + this.svg + '</svg>';
+                    btn_down.firstElementChild.removeAttribute('rel');
+                    btn_down.classList.replace("pull-left", "pull-right");
+                } else {
+                    btn_down.querySelector('svg').innerHTML = this.svg;
+                }
+                let is_exist = history.indexOf(status_id) >= 0;
+                this.status(btn_down, 'tmd-down');
+                this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
+                btn_group.insertBefore(btn_down, btn_share.nextSibling);
+                article.onkeydown = (e) => this.keydown(e, btn_down, status_id, is_exist);
+                btn_down.onclick = () => {
+                    if(GM_getValue("update_select") === true) GM_setValue("eagle_last_folder", select.value);
+                    this.clickDownload(btn_down, status_id, is_exist);
+                }
+                if (show_sensitive) {
+                    let btn_show = article.querySelector('div[aria-labelledby] div[role="button"][tabindex="0"]:not([data-testid]) > div[dir] > span > span');
+                    if (btn_show) btn_show.clickDownload();
+                }
                 btn_down.parentElement.appendChild(select);
             }
             let imgs = article.querySelectorAll('a[href*="/photo/"]');
@@ -115,6 +115,24 @@ const TMD = (function () {
                 let status_id = article.querySelector('a[href*="/status/"]').href.split('/status/').pop().split('/').shift();
                 let btn_group = article.querySelector('div.r-3o4zer');
                 for(let img of imgs){
+                  let select = document.createElement("select");
+                    select.id = "eagle-folder-select";
+                    select.style.padding = "5px";
+                    select.style.fontSize = "14px";
+                    let lastFolderId = GM_getValue("eagle_last_folder",select.value);
+                    let folders = await this.getEagleFolderList();
+                    for(let folder of folders){
+                        const option = document.createElement("option");
+                        option.value = folder.id;
+                        option.textContent = folder.name;
+                        if (folder.id === lastFolderId) option.selected = true;
+                        select.appendChild(option);
+                    }
+                    select.onclick = e => {
+                        e.preventDefault();
+                        GM_setValue("eagle_last_folder", select.value);
+                    }
+
                     let index = img.href.split('/status/').pop().split('/').pop();
                     let is_exist = history.indexOf(status_id) >= 0;
                     let btn_down = document.createElement('div');
@@ -126,25 +144,6 @@ const TMD = (function () {
                         e.preventDefault();
                         if(GM_getValue("update_select") === true) GM_setValue("eagle_last_folder", select.value);
                         this.clickDownload(btn_down, status_id, is_exist, index);
-                    }
-                    let select = document.createElement("select");
-                    select.id = "eagle-folder-select";
-                    select.style.padding = "5px";
-                    select.style.fontSize = "14px";
-
-                    let lastFolderId = GM_getValue("eagle_last_folder",select.value);
-                    let folders = await this.getEagleFolderList();
-                    for(let folder of folders){
-                        const option = document.createElement("option");
-                        option.value = folder.id;
-                        option.textContent = folder.name;
-                        if (folder.id === lastFolderId) option.selected = true;
-                        select.appendChild(option);
-                    }
-
-                    select.onclick = e => {
-                        e.preventDefault();
-                        GM_setValue("eagle_last_folder", select.value);
                     }
                     btn_down.parentElement.appendChild(select);
                 }
@@ -183,11 +182,10 @@ const TMD = (function () {
             if (event.key === ";") this.clickDownload(btn, status_id, is_exist, index);
         },
         addButtonToMedia: function(listitems) {
-            console.log("listitems",listitems)
             listitems.forEach(li => {
                 if (li.dataset.detected) return;
                 li.dataset.detected = 'true';
-                let status_id = li.querySelector('a[href*="/status/"]')?.href.split('/status/').pop().split('/').shift();
+                let status_id = li.querySelector('a[href*="/status/"]')?.href.split('/status/').pop().split('/').shift() || document.querySelector('a[href*="/status/"]')?.href.split('/status/').pop().split('/').shift();
                 let is_exist = history.indexOf(status_id) >= 0;
                 let btn_down = document.createElement('div');
                 btn_down.innerHTML = '<div><div><svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">' + this.svg + '</svg></div></div>';
@@ -196,9 +194,11 @@ const TMD = (function () {
                 btn_down.style.right = '10px';
                 btn_down.classList.add('tmd-down', 'tmd-media');
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
+                let btn_nav = document.querySelector("a[href$='analytics']")?.parentElement;
+                if(btn_nav) btn_nav.appendChild(btn_down);
                 li.appendChild(btn_down);
-                btn_down.onclick = () => {
-                    if(GM_getValue("update_select") === true) GM_setValue("eagle_last_folder", select.value);
+                btn_down.onclick = e => {
+                    e.preventDefault();
                     this.clickDownload(btn_down, status_id, is_exist);
                 }
             });
@@ -476,7 +476,6 @@ const TMD = (function () {
               start: function (task) {
                   this.update();
                   let folderId = GM_getValue("eagle_last_folder");
-                  console.log("eagle_last_folder",GM_getValue("eagle_last_folder"))
                   return new Promise(resolve => {
                       const imageData = {
                           url: task.url,
