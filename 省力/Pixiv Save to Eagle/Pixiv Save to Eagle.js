@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.3.3
+// @version      1.3.4
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -239,8 +239,8 @@ class PixivEagleUI {
     constructor() {
         this.eagle = new EagleClient()
         this.pixiv = new PixivIllust(this.eagle)
-        this.buttonContainerSelector = "section.kDUrpE"
-        this.imageSelector = "div[role='presentation'].sc-dba767bd-0"
+        this.buttonContainerSelector = "section section"
+        this.imageSelector = "div[role='presentation'].sc-440d5b2c-0"
         this.buttonPosition = "↖"
         this.init()
     }
@@ -274,7 +274,7 @@ class PixivEagleUI {
 
     async addFolderSelect() {
         try {
-            const section = await this.waitForElement(this.buttonContainerSelector)
+            const btnNav = await this.waitForElement(this.buttonContainerSelector)
             if (document.getElementById("save-all-to-eagle-btn")) return
 
             const container = document.createElement("div")
@@ -322,7 +322,7 @@ class PixivEagleUI {
 
             container.appendChild(btn)
             container.appendChild(select)
-            section.appendChild(container)
+            btnNav.appendChild(container)
         } catch (e) {
             console.error(e)
         }
@@ -333,10 +333,7 @@ class PixivEagleUI {
             this.pixiv.fetchIllustInfo()
             if (!this.pixiv.illust) return
 
-            const imageSelector = 'div[role="presentation"].sc-440d5b2c-0'
-
-            await this.waitForElement(imageSelector)
-
+            await this.waitForElement(this.imageSelector)
 
             const positionStyles = {
                 "↖": { top: "10px", left: "10px" },
@@ -352,7 +349,7 @@ class PixivEagleUI {
             const validPosition = positionStyles[position] ? position : "↖"
             const styles = positionStyles[validPosition]
 
-            document.querySelectorAll(imageSelector).forEach((img, index) => {
+            document.querySelectorAll(this.imageSelector).forEach((img, index) => {
                 console.log(index)
                 if (img.parentElement.querySelector(`#save-to-eagle-btn-${index}`)) return
 
