@@ -5,7 +5,7 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.2.3
+// @version     2.2.4
 // @author      Max
 // @namespace   none
 // @match       https://twitter.com/*
@@ -113,9 +113,8 @@ const TMD = (function () {
             let imgs = article.querySelectorAll('a[href*="/photo/"]');
             if (imgs.length > 1) {
                 let status_id = article.querySelector('a[href*="/status/"]').href.split('/status/').pop().split('/').shift();
-                let btn_group = article.querySelector('div[role="group"]:last-of-type');
-                let btn_share = Array.from(btn_group.querySelectorAll(':scope>div>div')).pop().parentNode;
-                imgs.forEach(img => {
+                let btn_group = article.querySelector('div.r-3o4zer');
+                for(let img of imgs){
                     let index = img.href.split('/status/').pop().split('/').pop();
                     let is_exist = history.indexOf(status_id) >= 0;
                     let btn_down = document.createElement('div');
@@ -134,21 +133,21 @@ const TMD = (function () {
                     select.style.fontSize = "14px";
 
                     let lastFolderId = GM_getValue("eagle_last_folder",select.value);
-                    let folders = this.getEagleFolderList();
-                    folders.forEach(f => {
+                    let folders = await this.getEagleFolderList();
+                    for(let folder of folders){
                         const option = document.createElement("option");
-                        option.value = f.id;
-                        option.textContent = f.name;
-                        if (f.id === lastFolderId) option.selected = true;
+                        option.value = folder.id;
+                        option.textContent = folder.name;
+                        if (folder.id === lastFolderId) option.selected = true;
                         select.appendChild(option);
-                    });
+                    }
 
                     select.onclick = e => {
                         e.preventDefault();
                         GM_setValue("eagle_last_folder", select.value);
                     }
                     btn_down.parentElement.appendChild(select);
-                });
+                }
             }
         },
         getEagleFolderList: async function() {
@@ -184,6 +183,7 @@ const TMD = (function () {
             if (event.key === ";") this.clickDownload(btn, status_id, is_exist, index);
         },
         addButtonToMedia: function(listitems) {
+            console.log("listitems",listitems)
             listitems.forEach(li => {
                 if (li.dataset.detected) return;
                 li.dataset.detected = 'true';
@@ -195,7 +195,7 @@ const TMD = (function () {
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
                 li.appendChild(btn_down);
                 btn_down.onclick = () => {
-                    if(GM_getValue("update_select") === false) GM_setValue("eagle_last_folder", select.value);
+                    if(GM_getValue("update_select") === true) GM_setValue("eagle_last_folder", select.value);
                     this.clickDownload(btn_down, status_id, is_exist);
                 }
             });
