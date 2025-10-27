@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.9.9
+// @version      1.9.10
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -46,7 +46,7 @@ class userStrategy extends pageStrategy{
         return 'div.sc-e83d358-0';
     }
     getArtWallAlignLeftClass(){
-        return 'div.sc-ec862ae6-4';
+        return 'sc-ec862ae6-4';
     }
     getButtonAtClass() {
         return 'nav.sc-2b406014-0';
@@ -86,19 +86,19 @@ class tagsStrategy extends pageStrategy{
 
 class subStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'a.sc-324476b7-16 img'
+        return 'a.sc-8b38cd5b-16 img'
     }
     getArtsClass() {
-        return 'li.sc-bf8cea3f-2';
+        return 'li.sc-e83d358-2';
     }
     getRenderArtWallClass() {
-        return 'div.sc-a6c8b08c-0.bghEFg';
+        return 'div.sc-e83d358-0';
     }
     getArtWallAlignLeftClass(){
-        return 'gqvfWY';
+        return 'sc-ec862ae6-4';
     }
     getButtonAtClass() {
-        return 'div.sc-2e1e8eba-2:has(a[href="/novel/bookmark_new.php"])';
+        return 'div.sc-a7e653a0-2:has(a[href="/novel/bookmark_new.php"])';
     }
     getAllButtonClass() {
         return ['kdFEos','fBbBCV'];
@@ -411,7 +411,8 @@ class artScraper {
          * 其三個頁面中各有不同的數量的元素使用該CSS class來排版，若要在僅影響相簿置左排版的前提下，則需要對於其順序修改元素名稱。
          */
         if(GM_getValue("leftAlign", true)){
-            if(self.location.href.includes('bookmark_new_illust')){
+            if(self.location.href.includes('bookmark')){
+              console.log(document.getElementsByClassName(alignLeftClass))
                 this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[0],"leftAlign");
             }else if(self.location.href.includes('users')){
                 this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[3],"leftAlign");
