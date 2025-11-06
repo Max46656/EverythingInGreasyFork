@@ -5,7 +5,7 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.2.7
+// @version     2.2.8
 // @author      Max
 // @namespace   none
 // @match       https://twitter.com/*
@@ -143,9 +143,15 @@ const TMD = (function () {
                     img.parentNode.appendChild(btn_down);
                     btn_down.onclick = e => {
                         e.preventDefault();
-                        if(GM_getValue("update_select") === true) GM_setValue("eagle_last_folder", select.value);
-                        this.clickDownload(btn_down, status_id, is_exist, index);
-                    }
+                        if (GM_getValue("update_select") === true){
+                            GM_setValue("eagle_last_folder", select.value);
+                            let selects = document.getElementsByClassName("eagle-folder-select");
+                            selects.forEach( s => {
+                                for (let option of s.options) option.selected = (option.value === select.value);
+                            });
+                        }
+                        this.clickDownload(btn_down, status_id, is_exist, index + 1);
+                    };
                     btn_down.parentElement.appendChild(select);
                 }
             }
@@ -186,15 +192,8 @@ const TMD = (function () {
                 btn_down.classList.add('tmd-down', 'tmd-media');
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
 
-                li.appendChild(btn_down);
-                btn_down.onclick = e => {
-                    e.preventDefault();
-                    if (GM_getValue("update_select") === true) GM_setValue("eagle_last_folder", select.value);
-                    this.clickDownload(btn_down, status_id, is_exist, index + 1);
-                };
-
                 let select = document.createElement("select");
-                select.id = `eagle-folder-select`;
+                select.classList.add("eagle-folder-select");
                 select.style.padding = "5px";
                 select.style.fontSize = "14px";
                 select.style.marginLeft = "5px";
@@ -213,6 +212,19 @@ const TMD = (function () {
                 Array.from(select.options).forEach(option => {
                     if (option.value === lastFolderId) option.selected = true;
                 });
+
+                li.appendChild(btn_down);
+                btn_down.onclick = e => {
+                    e.preventDefault();
+                    if (GM_getValue("update_select") === true){
+                        GM_setValue("eagle_last_folder", select.value);
+                        let selects = document.getElementsByClassName("eagle-folder-select");
+                        selects.forEach( s => {
+                            for (let option of s.options) option.selected = (option.value === select.value);
+                        });
+                    }
+                    this.clickDownload(btn_down, status_id, is_exist, index + 1);
+                };
 
                 select.onclick = e => {
                     e.preventDefault();
