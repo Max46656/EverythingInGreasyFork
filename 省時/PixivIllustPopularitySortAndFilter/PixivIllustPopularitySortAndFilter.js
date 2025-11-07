@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.9.14
+// @version      1.9.15
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -55,32 +55,31 @@ class userStrategy extends pageStrategy{
         return ['charcoal-button','kpPxqZ'];
     }
     getArtsCountClass(){
-        return 'h2~div span:not([class])';
+        return 'h2+div span:not([class])';
     }
 }
 
 class tagsStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'li.sc-5b55504a-2 a.sc-8b38cd5b-16 img'
+        return 'a[data-gtm-user-id] img'
     }
     getArtsClass() {
-        return 'li.sc-5b55504a-2';
+        return 'section:not(:has(aside)) li:has(a[data-gtm-user-id])';
     }
     getRenderArtWallClass() {
-        return 'div.sc-5b55504a-0:has(ul)';
-        // return 'div.ggHNyV:has(ul.hdRpMN)';
+        return 'div~div:has(a[data-gtm-user-id]):not(:has(aside))';
     }
     getArtWallAlignLeftClass(){
-        return 'sc-ec862ae6-4';
+        return 'gqvfWY';
     }
     getButtonAtClass() {
-        return 'div.sc-35ff1eaf-0:has(span)';
+        return 'div:nth-child(3) div:first-child div:first-child:has(div span+a+button)';
     }
     getAllButtonClass() {
-        return ['heEHTY','krHca-d'];
+        return ['crbrJR','kjYafo'];
     }
     getArtsCountClass(){
-        return 'div.sc-35ff1eaf-0 span';
+        return 'h3+div span:not([class])';
     }
 }
 
