@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.9.12
+// @version      1.9.13
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -86,22 +86,22 @@ class tagsStrategy extends pageStrategy{
 
 class subStrategy extends pageStrategy{
     getThumbnailClass() {
-        return 'a.sc-8b38cd5b-16 img'
+        return 'div[radius] img'
     }
     getArtsClass() {
-        return 'li.sc-e83d358-2';
+        return 'li[offset]';
     }
     getRenderArtWallClass() {
-        return 'div.sc-e83d358-0';
+        return 'section div:not([class]) div:not([class]) div:has(li[offset])';
     }
     getArtWallAlignLeftClass(){
-        return 'sc-ec862ae6-4';
+        return 'gqvfWY';
     }
     getButtonAtClass() {
-        return 'div.sc-a7e653a0-2:has(a[href="/novel/bookmark_new.php"])';
+        return 'section div:not([class]) div div:has(a[href="/novel/bookmark_new.php"])';
     }
     getAllButtonClass() {
-        return ['eApivb'];
+        return ['kdFEos'];
     }
     getArtsCountClass(){
         return null;
