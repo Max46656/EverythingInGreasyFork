@@ -6,6 +6,7 @@
 // @name:de Kemono&Coomer Raster-Layout für Beiträge
 // @name:es Diseño en cuadrícula para publicaciones de Kemono&Coomer
 // @description          將文章中的過大圖片改為整齊的網格顯示，並提供全螢幕幻燈片檢視單一圖片
+// @description:zh-TW          將文章中的過大圖片改為整齊的網格顯示，並提供全螢幕幻燈片檢視單一圖片
 // @description:ja      投稿内の大きすぎる画像を整然としたグリッド表示に変更し、全画面スライドショーで1枚ずつ閲覧できる機能を追加します
 // @description:en      Changes oversized images in posts into a neat grid layout and provides fullscreen slideshow for viewing one image at a time
 // @description:de      Ändert überdimensionierte Bilder in Beiträgen in ein ordentliches Raster-Layout und bietet Vollbild-Diashow zum Betrachten einzelner Bilder
