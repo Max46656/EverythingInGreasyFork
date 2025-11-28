@@ -1,28 +1,26 @@
 // ==UserScript==
-// @name Kemono&Coomer grid layout for post
-// @name:zh-TW Kemono&Coomer 貼文格線佈局
-// @name:ja Kemono&Coomer 投稿グリッドレイアウト
-// @name:en Kemono&Coomer grid layout for post
-// @name:de Kemono&Coomer Raster-Layout für Beiträge
-// @name:es Diseño en cuadrícula para publicaciones de Kemono&Coomer
-// @description          將文章中的過大圖片改為整齊的網格顯示，並提供全螢幕幻燈片檢視單一圖片
-// @description:zh-TW          將文章中的過大圖片改為整齊的網格顯示，並提供全螢幕幻燈片檢視單一圖片
-// @description:ja      投稿内の大きすぎる画像を整然としたグリッド表示に変更し、全画面スライドショーで1枚ずつ閲覧できる機能を追加します
-// @description:en      Changes oversized images in posts into a neat grid layout and provides fullscreen slideshow for viewing one image at a time
-// @description:de      Ändert überdimensionierte Bilder in Beiträgen in ein ordentliches Raster-Layout und bietet Vollbild-Diashow zum Betrachten einzelner Bilder
-// @description:es      Convierte imágenes demasiado grandes en publicaciones a un diseño de cuadrícula ordenado y ofrece presentación a pantalla completa para ver una imagen a la vez
+// @name Kemono/Coomer grid layout for post
+// @name:zh-TW Kemono/Coomer 貼文網格佈局
+// @name:ja Kemono/Coomer 投稿グリッドレイアウト
+// @name:en Kemono/Coomer grid layout for post
+// @name:de Kemono/Coomer Raster-Layout für Beiträge
+// @name:es Diseño en cuadrícula para publicaciones de Kemono/Coomer
+// @description 將文章中的圖片改為網格顯示，並提供幻燈片檢視
+// @description:zh-TW 將貼文內的圖片改為網格排列，並提供全螢幕幻燈片檢視功能
+// @description:ja 投稿内の画像をグリッド表示に変更し、全画面スライドショー閲覧機能を追加します
+// @description:en Changes images in posts to a clean grid layout and adds fullscreen slideshow viewing
+// @description:de Ändert Bilder in Beiträgen in ein übersichtliches Raster-Layout und fügt Vollbild-Diashow hinzu
+// @description:es Cambia las imágenes de las publicaciones a un diseño en cuadrícula limpio y añade modo presentación a pantalla completa
 //
-// @version 1.0.5
+// @version 1.0.6
 // @match https://kemono.cr/*/user/*/post/*
 // @match https://coomer.st/*/user/*/post/*
 // @grant GM_addStyle
 // @grant GM_setValue
 // @grant GM_getValue
-// @icon  https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
 //
 // @author Max
 // @namespace https://github.com/Max46656
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license MPL2.0
 // ==/UserScript==
 
@@ -40,12 +38,12 @@ class ImageGridEnhancer {
         this.observeDOM();
         this.tidyUpPostImage();
     }
-    tidyUpPostImage() {
-        const postFiles = document.querySelector('div.post__files');
-        const btn = document.querySelector('#gridBtnBar')
-        if (!postFiles || postFiles.dataset.gridProcessed && btn) return;
+
+    async tidyUpPostImage() {
+        const postFiles = await this.waitForElement("div.post__files");
+        const imageGrid = document.querySelector("div.image__grid");
+        if (imageGrid) return;
         this.container = postFiles;
-        this.container.dataset.gridProcessed = 'true';
         const figures = postFiles.querySelectorAll('div.post__thumbnail') || postFiles.querySelectorAll('figure:has(img)');
         if (figures.length === 0) return;
 
@@ -94,31 +92,49 @@ class ImageGridEnhancer {
         this.createButtonBar();
     }
 
-    createButtonBar() {
+    async createButtonBar() {
         if (document.querySelector('#gridBtnBar')) return;
+
         const btnBar = document.createElement('div');
         btnBar.id = 'gridBtnBar';
-        btnBar.dataset.gridProcessed = 'true';
-        btnBar.style.cssText = `
-                top:12px;right:12px;display:flex;gap:10px;z-index:10;
-            `;
-        const slideshowBtn = this.createButton('Slideshow', '#000000', () => this.openSlideshow(0));
+
+        Object.assign(btnBar.style, {
+            position: 'fixed',
+            bottom: '2px',
+            right: '2px',
+            display: 'flex',
+            gap: '2px',
+            zIndex: '9999',
+            background: 'rgba(35, 35, 45, 0.9)',
+            padding: '2px 6px',
+            borderRadius: '2px',
+            //boxShadow: '0 8px 25px rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            transition: 'all 0.3s ease',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        });
+
+
+        const slideshowBtn = this.createButton('Slideshow', () => this.openSlideshow(0));
         slideshowBtn.title = '全螢幕幻燈片模式';
-        const settingsBtn = this.createButton('Settings', '#000000', () => this.openSettingsPanel());
+
+        const settingsBtn = this.createButton('Settings', () => this.openSettingsPanel());
         settingsBtn.title = '設定';
-        btnBar.append(slideshowBtn, settingsBtn);
-        const filesHeading = document.querySelector('div.post__body h2:last-of-type');
-        if (filesHeading) filesHeading.appendChild(btnBar);
+
+        btnBar.append(slideshowBtn, settingsBtn /*, refreshBtn */);
+
+        document.body.appendChild(btnBar);
+
+        // btnBar.style.pointerEvents = 'auto';
     }
 
-    createButton(text, bgColor, onClick) {
+    createButton(text, onClick) {
         const btn = document.createElement('button');
         btn.textContent = text;
         btn.onclick = onClick;
         btn.style.cssText = `
-                padding:8px 14px;border:none;border-radius:8px;font-size:13px;
-                font-weight:bold;color:white;cursor:pointer;background:#121214;
-                transition:all 0.2s;
+                padding: 5px 10px; background-color: rgb(40, 42, 46); color: rgb(232, 161, 125); border: 2px solid rgba(59, 62, 68, 0.8); border-radius: 4px; cursor: pointer; font-size: 14px; margin-left: 10px;;
             `;
             btn.onmouseover = () => btn.style.transform = 'translateY(-2px)';
             btn.onmouseout = () => btn.style.transform = '';
@@ -127,7 +143,7 @@ class ImageGridEnhancer {
 
     openSlideshow(startIndex = 0) {
     const thumbnails = Array.from(
-        document.querySelectorAll('div.post__thumbnail, figure:has(img)')
+        document.querySelectorAll('div.post__thumbnail') || document.querySelectorAll('figure:has(img)')
     );
 
     if (thumbnails.length === 0) return;
@@ -138,7 +154,6 @@ class ImageGridEnhancer {
         const img = thumb.querySelector('img');
         if (!img) return null;
         let src = img.parentElement.href || img.src;
-        // 轉成絕對路徑
         if (src && !src.startsWith('http')) {
             src = new URL(src, location.origin).href;
         }
@@ -215,6 +230,21 @@ class ImageGridEnhancer {
 
     this.fullScreenContainer.style.display = 'flex';
 }
+
+    async waitForElement(selector, parentElement = null, interval = 100) {
+        return new Promise((resolve, reject) => {
+            let intervalId;
+            const checkElement = () => {
+                const element = parentElement !== null ? parentElement.querySelector(selector) : document.querySelector(selector);
+                if (element) {
+                    clearInterval(intervalId);
+                    resolve(element);
+                }
+            };
+            checkElement();
+            intervalId = setInterval(checkElement, interval);
+        });
+    }
 
     nextImage() {
         this.currentIndex = (this.currentIndex + 1) % this.images.length;
