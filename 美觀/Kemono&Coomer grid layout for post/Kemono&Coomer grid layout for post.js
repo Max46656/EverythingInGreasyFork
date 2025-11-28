@@ -12,12 +12,14 @@
 // @description:de Ändert Bilder in Beiträgen in ein übersichtliches Raster-Layout und fügt Vollbild-Diashow hinzu
 // @description:es Cambia las imágenes de las publicaciones a un diseño en cuadrícula limpio y añade modo presentación a pantalla completa
 //
-// @version 1.0.6
+// @version 1.0.7
 // @match https://kemono.cr/*/user/*/post/*
 // @match https://coomer.st/*/user/*/post/*
 // @grant GM_addStyle
 // @grant GM_setValue
 // @grant GM_getValue
+// @grant GM_getValues
+// @grant GM_registerMenuCommand
 //
 // @author Max
 // @namespace https://github.com/Max46656
@@ -27,9 +29,9 @@
 class ImageGridEnhancer {
     constructor() {
         this.settings = {
-            gridColumns: GM_getValue('gridColumns', 3),
-            slideshowSize: GM_getValue('slideshowSize', 'large'),
-            autoSlideshow: GM_getValue('autoSlideshow', false)
+            gridColumns: GM_getValue("gridColumns", 3),
+            slideshowSize: GM_getValue("slideshowSize", "large"),
+            autoSlideshow: GM_getValue("autoSlideshow", false)
         };
         this.images = [];
         this.container = null;
@@ -37,47 +39,48 @@ class ImageGridEnhancer {
         this.currentIndex = 0;
         this.observeDOM();
         this.tidyUpPostImage();
+        GM_registerMenuCommand("圖片網格設定", () => this.openSettingsPanel(), "G");
     }
 
     async tidyUpPostImage() {
+      try{
         const postFiles = await this.waitForElement("div.post__files");
-        const imageGrid = document.querySelector("div.image__grid");
-        if (imageGrid) return;
+        const imageGrid = postFiles.querySelector("div.image__grid");
+        if (imageGrid && imageGrid.style.gridTemplateColumns === `repeat(${GM_getValue("gridColumns")}, 1fr)`) return;
         this.container = postFiles;
-        const figures = postFiles.querySelectorAll('div.post__thumbnail') || postFiles.querySelectorAll('figure:has(img)');
+        const figures = document.querySelectorAll('div.post__thumbnail') || document.querySelectorAll('figure:has(img)')
         if (figures.length === 0) return;
-
-        this.container.style.position = 'relative';
-        this.container.style.padding = '12px 12px 8px';
-        let grid = this.container.querySelector('.image__grid');
+        this.container.style.position = "relative";
+        this.container.style.padding = "12px 12px 8px";
+        let grid = imageGrid;
         if (!grid) {
-            grid = document.createElement('div');
-            grid.className = 'image__grid';
+            grid = document.createElement("div");
+            grid.classList.add("image__grid");
             this.container.appendChild(grid);
         }
-        grid.innerHTML = '';
-        grid.style.display = 'grid';
+        grid.innerHTML = "";
+        grid.style.display = "grid";
         grid.style.gridTemplateColumns = `repeat(${this.settings.gridColumns}, 1fr)`;
-        grid.style.gap = '10px';
-        grid.style.marginTop = '8px';
+        grid.style.gap = "10px";
+        grid.style.marginTop = "8px";
         figures.forEach((figure, index) => {
-            figure.style.cssText = '';
+            figure.style.cssText = "";
             Object.assign(figure.style, {
-                margin: '0',
-                overflow: 'hidden',
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-                cursor: this.settings.autoSlideshow ? 'zoom-in' : 'pointer',
-                transition: 'transform 0.2s ease, box-shadow 0.3s ease'
+                margin: "0",
+                overflow: "hidden",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                cursor: this.settings.autoSlideshow ? "zoom-in" : "pointer",
+                transition: "transform 0.2s ease, box-shadow 0.3s ease"
             });
-            const img = figure.querySelector('img');
+            const img = figure.querySelector("img");
             if (img) {
                 Object.assign(img.style, {
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block',
-                    transition: 'transform 0.35s ease'
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    transition: "transform 0.35s ease"
                 });
             }
             figure.onclick = (e) => {
@@ -89,99 +92,84 @@ class ImageGridEnhancer {
             };
             grid.appendChild(figure);
         });
-        this.createButtonBar();
+        this.createSlideshowButton();
+        }catch(e){console.error(e)}
     }
 
-    async createButtonBar() {
-        if (document.querySelector('#gridBtnBar')) return;
+    createSlideshowButton() {
+        if (document.getElementById("gridBtn")) return;
 
-        const btnBar = document.createElement('div');
-        btnBar.id = 'gridBtnBar';
+        const btn = document.createElement("button");
+        btn.id = "gridBtn";
+        btn.textContent = "幻燈片模式";
+        btn.title = "全螢幕幻燈片模式";
 
-        Object.assign(btnBar.style, {
-            position: 'fixed',
-            bottom: '2px',
-            right: '2px',
-            display: 'flex',
-            gap: '2px',
-            zIndex: '9999',
-            background: 'rgba(35, 35, 45, 0.9)',
-            padding: '2px 6px',
-            borderRadius: '2px',
-            //boxShadow: '0 8px 25px rgba(0,0,0,0.4)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            transition: 'all 0.3s ease',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        btn.onclick = () => this.openSlideshow();
+
+        Object.assign(btn.style, {
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            zIndex: "99999",
+            padding: "6px 10px",
+            backgroundColor: "#282a2e",
+            color: "#e8a17d",
+            border: "2px solid #3b3e44",
+            borderRadius: "12px",
+            cursor: "pointer",
+            fontSize: "15px",
+            fontWeight: "bold",
+            boxShadow: "0 8px 20px rgba(0,0,0,0.4)",
+            transition: "all 0.3s ease",
+            userSelect: "none",
+            backdropFilter: "blur(10px)"
         });
 
-
-        const slideshowBtn = this.createButton('Slideshow', () => this.openSlideshow(0));
-        slideshowBtn.title = '全螢幕幻燈片模式';
-
-        const settingsBtn = this.createButton('Settings', () => this.openSettingsPanel());
-        settingsBtn.title = '設定';
-
-        btnBar.append(slideshowBtn, settingsBtn /*, refreshBtn */);
-
-        document.body.appendChild(btnBar);
-
-        // btnBar.style.pointerEvents = 'auto';
+        document.body.appendChild(btn);
+                console.log("pass createSlideshowButton 3")
     }
-
-    createButton(text, onClick) {
-        const btn = document.createElement('button');
-        btn.textContent = text;
-        btn.onclick = onClick;
-        btn.style.cssText = `
-                padding: 5px 10px; background-color: rgb(40, 42, 46); color: rgb(232, 161, 125); border: 2px solid rgba(59, 62, 68, 0.8); border-radius: 4px; cursor: pointer; font-size: 14px; margin-left: 10px;;
-            `;
-            btn.onmouseover = () => btn.style.transform = 'translateY(-2px)';
-            btn.onmouseout = () => btn.style.transform = '';
-            return btn;
-        }
 
     openSlideshow(startIndex = 0) {
-    const thumbnails = Array.from(
-        document.querySelectorAll('div.post__thumbnail') || document.querySelectorAll('figure:has(img)')
-    );
+        const thumbnails = Array.from(
+            document.querySelectorAll("div.post__thumbnail") || document.querySelectorAll("figure:has(img)")
+        );
 
-    if (thumbnails.length === 0) return;
+        if (thumbnails.length === 0) return;
 
-    this.currentIndex = Math.max(0, Math.min(startIndex, thumbnails.length - 1));
+        this.currentIndex = Math.max(0, Math.min(startIndex, thumbnails.length - 1));
 
-    const imageUrls = thumbnails.map(thumb => {
-        const img = thumb.querySelector('img');
-        if (!img) return null;
-        let src = img.parentElement.href || img.src;
-        if (src && !src.startsWith('http')) {
-            src = new URL(src, location.origin).href;
+        const imageUrls = thumbnails.map(thumb => {
+            const img = thumb.querySelector("img");
+            if (!img) return null;
+            let src = img.parentElement.href || img.src;
+            if (src && !src.startsWith("http")) {
+                src = new URL(src, location.origin).href;
+            }
+            return src;
+        }).filter(Boolean);
+
+        if (imageUrls.length === 0) return;
+
+        if (!this.fullScreenContainer) {
+            this.fullScreenContainer = document.createElement("div");
+            this.fullScreenContainer.id = "full__slideshow__container";
+            Object.assign(this.fullScreenContainer.style, {
+                position: "fixed",
+                top: "0", left: "0",
+                width: "100%", height: "100%",
+                background: "rgba(0,0,0,0.97)",
+                zIndex: "99999",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                flexDirection: "column"
+            });
+            document.body.appendChild(this.fullScreenContainer);
         }
-        return src;
-    }).filter(Boolean);
 
-    if (imageUrls.length === 0) return;
+        const sizes = { small: "60%", medium: "80%", large: "100%" };
 
-    if (!this.fullScreenContainer) {
-        this.fullScreenContainer = document.createElement('div');
-        this.fullScreenContainer.id = 'full__slideshow__container';
-        Object.assign(this.fullScreenContainer.style, {
-            position: 'fixed',
-            top: '0', left: '0',
-            width: '100%', height: '100%',
-            background: 'rgba(0,0,0,0.97)',
-            zIndex: '99999',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexDirection: 'column'
-        });
-        document.body.appendChild(this.fullScreenContainer);
-    }
-
-    const sizes = { small: '60%', medium: '80%', large: '100%' };
-
-    this.fullScreenContainer.innerHTML = `
+        this.fullScreenContainer.innerHTML = `
         <div id="closeSlide" style="position:absolute;top:20px;right:30px;font-size:52px;color:#fff;
             cursor:pointer;width:70px;height:70px;line-height:70px;text-align:center;
             background:rgba(255,255,255,0.12);border-radius:50%;backdrop-filter:blur(12px);
@@ -198,38 +186,38 @@ class ImageGridEnhancer {
                     opacity:0;">
     `;
 
-    const imgEl = this.fullScreenContainer.querySelector('img');
-    imgEl.onload = () => imgEl.style.opacity = '1';
+        const imgEl = this.fullScreenContainer.querySelector("img");
+        imgEl.onload = () => imgEl.style.opacity = "1";
 
-    document.getElementById('closeSlide').onclick = () => {
-        this.fullScreenContainer.style.display = 'none';
-    };
+        document.getElementById("closeSlide").onclick = () => {
+            this.fullScreenContainer.style.display = "none";
+        };
 
-    const switchHandler = (e) => {
-        e.preventDefault();
-        if (e.type === 'click' || e.deltaY > 0) {
-            this.currentIndex = (this.currentIndex + 1) % imageUrls.length;
-        } else {
-            this.currentIndex = (this.currentIndex - 1 + imageUrls.length) % imageUrls.length;
-        }
-        imgEl.src = imageUrls[this.currentIndex];
-    };
-    this.fullScreenContainer.onclick = switchHandler;
-    this.fullScreenContainer.onwheel = switchHandler;
+        const switchHandler = (e) => {
+            e.preventDefault();
+            if (e.type === "click" || e.deltaY > 0) {
+                this.currentIndex = (this.currentIndex + 1) % imageUrls.length;
+            } else {
+                this.currentIndex = (this.currentIndex - 1 + imageUrls.length) % imageUrls.length;
+            }
+            imgEl.src = imageUrls[this.currentIndex];
+        };
+        this.fullScreenContainer.onclick = switchHandler;
+        this.fullScreenContainer.onwheel = switchHandler;
 
-    const keyHandler = (e) => {
-        if (['ArrowRight', 'ArrowDown', 'd', ' ', 'Enter'].includes(e.key)) {
-            switchHandler({ type: 'click', preventDefault: () => {} });
-        } else if (['ArrowLeft', 'ArrowUp', 'a'].includes(e.key)) {
-            switchHandler({ type: 'wheel', deltaY: -1, preventDefault: () => {} });
-        } else if (e.key === 'Escape') {
-            this.fullScreenContainer.style.display = 'none';
-        }
-    };
-    document.addEventListener('keydown', keyHandler);
+        const keyHandler = (e) => {
+            if (["ArrowRight", "ArrowDown", "d", " ", "Enter"].includes(e.key)) {
+                switchHandler({ type: "click", preventDefault: () => {} });
+            } else if (["ArrowLeft", "ArrowUp", "a"].includes(e.key)) {
+                switchHandler({ type: "wheel", deltaY: -1, preventDefault: () => {} });
+            } else if (e.key === "Escape") {
+                this.fullScreenContainer.style.display = "none";
+            }
+        };
+        document.addEventListener("keydown", keyHandler);
 
-    this.fullScreenContainer.style.display = 'flex';
-}
+        this.fullScreenContainer.style.display = "flex";
+    }
 
     async waitForElement(selector, parentElement = null, interval = 100) {
         return new Promise((resolve, reject) => {
@@ -257,14 +245,14 @@ class ImageGridEnhancer {
     }
 
     updateSlide() {
-        const img = this.fullScreenContainer.querySelector('img');
+        const img = this.fullScreenContainer.querySelector("img");
         img.src = this.images[this.currentIndex];
     }
 
-  openSettingsPanel() {
-        if (document.getElementById('imgmode__settings')) return;
-        const panel = document.createElement('div');
-        panel.id = 'imgmode__settings';
+    openSettingsPanel() {
+        if (document.getElementById("imgmode__settings")) return;
+        const panel = document.createElement("div");
+        panel.id = "imgmode__settings";
         panel.innerHTML = `
                 <div style="position:fixed;top:0;left:0;width:100%;height:100%;
                             background:rgba(0,0,0,0.5);z-index:9998;" onclick="this.parentNode.remove()"></div>
@@ -286,7 +274,7 @@ class ImageGridEnhancer {
                         </select>
                     </label>
                     <label style="display:block;margin:20px 0;">
-                        <input type="checkbox" id="autoSlide"${this.settings.autoSlideshow ? ' checked' : ''}>
+                        <input type="checkbox" id="autoSlide"${this.settings.autoSlideshow ? " checked" : ""}>
                         點選小圖直接進入幻燈片
                     </label>
                     <div style="text-align:center;">
@@ -297,27 +285,27 @@ class ImageGridEnhancer {
                     </div>
                 </div>
             `;
-            document.body.appendChild(panel);
-            document.getElementById('sizeSel').value = this.settings.slideshowSize;
-            const range = document.getElementById('colRange');
-            const num = document.getElementById('colNum');
-            range.oninput = () => num.textContent = range.value;
-            document.getElementById('saveSet').onclick = () => {
-                this.settings.gridColumns = parseInt(range.value);
-                this.settings.slideshowSize = document.getElementById('sizeSel').value;
-                this.settings.autoSlideshow = document.getElementById('autoSlide').checked;
-                GM_setValue('gridColumns', this.settings.gridColumns);
-                GM_setValue('slideshowSize', this.settings.slideshowSize);
-                GM_setValue('autoSlideshow', this.settings.autoSlideshow);
-                panel.remove();
-                this.container.removeAttribute('data-grid-processed');
-                this.tidyUpPostImage();
-            };
-        }
+        document.body.appendChild(panel);
+        document.getElementById("sizeSel").value = this.settings.slideshowSize;
+        const range = document.getElementById("colRange");
+        const num = document.getElementById("colNum");
+        range.oninput = () => num.textContent = range.value;
+        document.getElementById("saveSet").onclick = () => {
+            this.settings.gridColumns = parseInt(range.value);
+            this.settings.slideshowSize = document.getElementById("sizeSel").value;
+            this.settings.autoSlideshow = document.getElementById("autoSlide").checked;
+            GM_setValue("gridColumns", this.settings.gridColumns);
+            GM_setValue("slideshowSize", this.settings.slideshowSize);
+            GM_setValue("autoSlideshow", this.settings.autoSlideshow);
+            //console.log(GM_getValues(["gridColumns","slideshowSize","autoSlideshow"]))
+            panel.remove();
+            this.tidyUpPostImage();
+        };
+    }
 
     observeDOM() {
         const observer = new MutationObserver(() => {
-            const postFiles = document.querySelector('div.post__files');
+            const postFiles = document.querySelector("div.post__files");
             if (postFiles && !postFiles.dataset.gridProcessed) {
                 this.tidyUpPostImage();
             }
