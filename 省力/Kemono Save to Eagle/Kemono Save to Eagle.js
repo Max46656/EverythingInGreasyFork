@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.2.2
+// @version      1.2.3
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -106,7 +106,7 @@ class KemonoImage {
 
     fetchImages() {
         return Array.from(document.querySelectorAll("div.post__files img")).map((img, index) => ({
-            url: img.src,
+            url: img.parentElement.href == null ? img.src : img.parentElement.href,
             name: `${document.querySelector("title")?.textContent} P${index+1}` || `Kemono Image ${img.src.split('/').pop()}`
         }));
     }
