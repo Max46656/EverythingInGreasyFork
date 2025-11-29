@@ -12,7 +12,7 @@
 // @description:de Ändert Bilder in Beiträgen in ein übersichtliches Raster-Layout und fügt Vollbild-Diashow hinzu
 // @description:es Cambia las imágenes de las publicaciones a un diseño en cuadrícula limpio y añade modo presentación a pantalla completa
 //
-// @version 1.0.8
+// @version 1.0.7
 // @match https://kemono.cr/*/user/*/post/*
 // @match https://coomer.st/*/user/*/post/*
 // @grant GM_addStyle
@@ -43,56 +43,56 @@ class ImageGridEnhancer {
     }
 
     async tidyUpPostImage() {
-        try{
-            const postFiles = await this.waitForElement("div.post__files");
-            const imageGrid = postFiles.querySelector("div.image__grid");
-            if (imageGrid && imageGrid.style.gridTemplateColumns === `repeat(${GM_getValue("gridColumns")}, 1fr)`) return;
-            this.container = postFiles;
-            const figures = postFiles.querySelectorAll("div.post__thumbnail").length === 0 ? postFiles.querySelectorAll("figure:has(img)") : postFiles.querySelectorAll("div.post__thumbnail");
-            if (figures.length === 0) return;
-            this.container.style.position = "relative";
-            this.container.style.padding = "12px 12px 8px";
-            let grid = imageGrid;
-            if (!grid) {
-                grid = document.createElement("div");
-                grid.classList.add("image__grid");
-                this.container.appendChild(grid);
-            }
-            grid.innerHTML = "";
-            grid.style.display = "grid";
-            grid.style.gridTemplateColumns = `repeat(${this.settings.gridColumns}, 1fr)`;
-            grid.style.gap = "10px";
-            grid.style.marginTop = "8px";
-            figures.forEach((figure, index) => {
-                figure.style.cssText = "";
-                Object.assign(figure.style, {
-                    margin: "0",
-                    overflow: "hidden",
-                    borderRadius: "12px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
-                    cursor: this.settings.autoSlideshow ? "zoom-in" : "pointer",
-                    transition: "transform 0.2s ease, box-shadow 0.3s ease"
-                });
-                const img = figure.querySelector("img");
-                if (img) {
-                    Object.assign(img.style, {
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                        transition: "transform 0.35s ease"
-                    });
-                }
-                figure.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (this.settings.autoSlideshow) {
-                        this.openSlideshow(index);
-                    }
-                };
-                grid.appendChild(figure);
+      try{
+        const postFiles = await this.waitForElement("div.post__files");
+        const imageGrid = postFiles.querySelector("div.image__grid");
+        if (imageGrid && imageGrid.style.gridTemplateColumns === `repeat(${GM_getValue("gridColumns")}, 1fr)`) return;
+        this.container = postFiles;
+        const divs = postFiles.querySelectorAll("div");
+        if (divs.length === 0) return;
+        this.container.style.position = "relative";
+        this.container.style.padding = "12px 12px 8px";
+        let grid = imageGrid;
+        if (!grid) {
+            grid = document.createElement("div");
+            grid.classList.add("image__grid");
+            this.container.appendChild(grid);
+        }
+        grid.innerHTML = "";
+        grid.style.display = "grid";
+        grid.style.gridTemplateColumns = `repeat(${this.settings.gridColumns}, 1fr)`;
+        grid.style.gap = "10px";
+        grid.style.marginTop = "8px";
+        divs.forEach((figure, index) => {
+            figure.style.cssText = "";
+            Object.assign(figure.style, {
+                margin: "0",
+                overflow: "hidden",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                cursor: this.settings.autoSlideshow ? "zoom-in" : "pointer",
+                transition: "transform 0.2s ease, box-shadow 0.3s ease"
             });
-            this.createSlideshowButton();
+            const img = figure.querySelector("img");
+            if (img) {
+                Object.assign(img.style, {
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    transition: "transform 0.35s ease"
+                });
+            }
+            figure.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (this.settings.autoSlideshow) {
+                    this.openSlideshow(index);
+                }
+            };
+            grid.appendChild(figure);
+        });
+        this.createSlideshowButton();
         }catch(e){console.error(e)}
     }
 
@@ -126,12 +126,12 @@ class ImageGridEnhancer {
         });
 
         document.body.appendChild(btn);
-        console.log("pass createSlideshowButton 3")
+                console.log("pass createSlideshowButton 3")
     }
 
     openSlideshow(startIndex = 0) {
         const thumbnails = Array.from(
-            document.querySelectorAll("div.post__thumbnail").length === 0 ? document.querySelectorAll("figure:has(img)") : document.querySelectorAll("div.post__thumbnail");
+            document.querySelectorAll("div.post__thumbnail") || document.querySelectorAll("figure:has(img)")
         );
 
         if (thumbnails.length === 0) return;
