@@ -12,7 +12,7 @@
 // @description:de Ändert Bilder in Beiträgen in ein übersichtliches Raster-Layout und fügt Vollbild-Diashow hinzu
 // @description:es Cambia las imágenes de las publicaciones a un diseño en cuadrícula limpio y añade modo presentación a pantalla completa
 //
-// @version 1.0.8
+// @version 1.0.9
 // @match https://kemono.cr/*/user/*/post/*
 // @match https://coomer.st/*/user/*/post/*
 // @grant GM_addStyle
@@ -92,6 +92,7 @@ class ImageGridEnhancer {
                 grid.appendChild(div);
             });
             this.createSlideshowButton();
+            this.deleteEmptyContainer();
         }catch(e){console.error(e)}
     }
 
@@ -125,6 +126,15 @@ class ImageGridEnhancer {
         });
 
         document.body.appendChild(btn);
+    }
+
+    deleteEmptyContainer(){
+        const container = document.querySelectorAll("div.post__files div");
+        container.forEach((div)=>{
+            if(div.querySelectorAll("img").length === 0) {
+                div.remove();
+            }
+        });
     }
 
     openSlideshow(startIndex = 0) {
