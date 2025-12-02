@@ -5,7 +5,7 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.2.9
+// @version     2.2.10
 // @author      Max
 // @namespace   none
 // @match       https://twitter.com/*
@@ -50,7 +50,7 @@ const TMD = (function () {
             if (article) this.addButtonTo(article);
             let listitems = node.tagName == 'LI' && node.getAttribute('role') == 'listitem' && [node] || node.tagName == 'DIV' && node.querySelectorAll('li[role="listitem"]:not(li:has(div[data-testid="swipe-to-dismiss"]))');
             if (listitems) this.addButtonToMedia(listitems);
-            let photo = node.tagName == 'DIV' && node.getAttribute('data-testid') == 'swipe-to-dismiss' || node.getAttribute('role') == 'main' && node.querySelectorAll(".r-iyfy8q") || node.tagName == 'UL' && node.querySelectorAll(".r-deolkf");
+            let photo = node.tagName == 'DIV' && node.getAttribute('data-testid') == 'swipe-to-dismiss' || node.tagName == 'MAIN' && node.getAttribute('role') == 'main' && node.querySelectorAll(".r-iyfy8q") || node.tagName == 'UL' && node.querySelectorAll(".r-deolkf");
             //console.log(photo)
             if (photo) this.addButtonToFullScreen(Array.from(photo));
         },
@@ -152,8 +152,8 @@ const TMD = (function () {
                                 for (let option of s.options) option.selected = (option.value === select.value);
                             });
                         }
-                        //console.log("clickDownload",{btn_down, status_id, is_exist, index})
                         this.clickDownload(btn_down, status_id, is_exist, index);
+                        console.log("clickDownload",{btn_down, status_id, is_exist, index})
                     };
                     btn_down.parentElement.appendChild(select);
                 }
@@ -221,11 +221,12 @@ const TMD = (function () {
                     e.preventDefault();
                     if (GM_getValue("update_select") === true){
                         GM_setValue("eagle_last_folder", select.value);
-                        let selects = document.getElementsByClassName("eagle-folder-select");
+                        let selects = Array.from(document.getElementsByClassName("eagle-folder-select"));
                         selects.forEach( s => {
                             for (let option of s.options) option.selected = (option.value === select.value);
                         });
                     }
+                    index++;
                     this.clickDownload(btn_down, status_id, is_exist, index);
                 };
 
@@ -273,6 +274,7 @@ const TMD = (function () {
         },
         clickDownload: async function (btn, status_id, is_exist, index) {
             if (btn.classList.contains('loading')) return;
+            //console.log("clickDownload",{btn, status_id, is_exist, index})
             this.status(btn, 'loading');
             let out = (await GM_getValue('filename', filename)).split('\n').join('');
             let save_history = await GM_getValue('save_history', true);
@@ -478,9 +480,9 @@ const TMD = (function () {
             let tweet_detail = await fetch(url, {headers: headers}).then(result => result.json());
             //console.log(JSON.stringify(tweet_detail.data));
             let tweet_entrie = tweet_detail.data.threaded_conversation_with_injections_v2.instructions[1].entries.find(n => n.entryId == `tweet-${status_id}`);
-            console.log(tweet_entrie);
+            //console.log(tweet_entrie);
             let tweet_result = tweet_entrie.content.itemContent.tweet_results.result;
-            console.log(tweet_result);
+            //console.log(tweet_result);
             return tweet_result.tweet || tweet_result;
         },
         getCookie: function (name) {
