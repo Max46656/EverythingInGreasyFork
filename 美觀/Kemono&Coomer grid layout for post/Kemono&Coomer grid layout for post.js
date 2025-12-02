@@ -12,7 +12,7 @@
 // @description:de Ändert Bilder in Beiträgen in ein übersichtliches Raster-Layout und fügt Vollbild-Diashow hinzu
 // @description:es Cambia las imágenes de las publicaciones a un diseño en cuadrícula limpio y añade modo presentación a pantalla completa
 //
-// @version 1.0.9
+// @version 1.0.10
 // @match https://kemono.cr/*/user/*/post/*
 // @match https://coomer.st/*/user/*/post/*
 // @grant GM_addStyle
@@ -45,24 +45,21 @@ class ImageGridEnhancer {
     async tidyUpPostImage() {
         try{
             const postFiles = await this.waitForElement("div.post__files");
-            const imageGrid = postFiles.querySelector("div.image__grid");
-            if (imageGrid && imageGrid.style.gridTemplateColumns === `repeat(${GM_getValue("gridColumns")}, 1fr)`) return;
+            const hadGrid = postFiles.classList.contains("image__grid");
+            if (hadGrid && postFiles.style.gridTemplateColumns === `repeat(${GM_getValue("gridColumns")}, 1fr)`) return;
             this.container = postFiles;
             const divs = postFiles.querySelectorAll("div");
             if (divs.length === 0) return;
             this.container.style.position = "relative";
             this.container.style.padding = "12px 12px 8px";
-            let grid = imageGrid;
-            if (!grid) {
-                grid = document.createElement("div");
-                grid.classList.add("image__grid");
-                this.container.appendChild(grid);
+            if (!hadGrid) {
+                postFiles.classList.add("image__grid");
             }
-            grid.innerHTML = "";
-            grid.style.display = "grid";
-            grid.style.gridTemplateColumns = `repeat(${this.settings.gridColumns}, 1fr)`;
-            grid.style.gap = "10px";
-            grid.style.marginTop = "8px";
+            postFiles.innerHTML = "";
+            postFiles.style.display = "grid";
+            postFiles.style.gridTemplateColumns = `repeat(${this.settings.gridColumns}, 1fr)`;
+            postFiles.style.gap = "10px";
+            postFiles.style.marginTop = "8px";
             divs.forEach((div, index) => {
                 const img = div.querySelector("img");
                 if(!img) return;
@@ -89,7 +86,7 @@ class ImageGridEnhancer {
                         this.openSlideshow(index);
                     }
                 };
-                grid.appendChild(div);
+                postFiles.appendChild(div);
             });
             this.createSlideshowButton();
             this.deleteEmptyContainer();
@@ -130,11 +127,14 @@ class ImageGridEnhancer {
 
     deleteEmptyContainer(){
         const container = document.querySelectorAll("div.post__files div");
+        const count = 0;
         container.forEach((div)=>{
             if(div.querySelectorAll("img").length === 0) {
                 div.remove();
+                count++;
             }
         });
+        if(count > 0) console.log($"已刪除{count}個空div");
     }
 
     openSlideshow(startIndex = 0) {
