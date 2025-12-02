@@ -5,7 +5,7 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.2.8
+// @version     2.2.9
 // @author      Max
 // @namespace   none
 // @match       https://twitter.com/*
@@ -42,14 +42,16 @@ const TMD = (function () {
             show_sensitive = GM_getValue('show_sensitive', false);
             document.head.insertAdjacentHTML('beforeend', '<style>' + this.css + (show_sensitive ? this.css_ss : '') + '</style>');
             let observer = new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(node => this.detect(node))));
-            observer.observe(document.body, {childList: true, subtree: true});
+            observer.observe(document.body, {childList: true, subtree: true, attributes: true});
         },
         detect: function(node) {
             let article = node.tagName == 'ARTICLE' && node || node.tagName == 'DIV' && (node.querySelector('article') || node.closest('article'));
+            //console.log("article",article)
             if (article) this.addButtonTo(article);
             let listitems = node.tagName == 'LI' && node.getAttribute('role') == 'listitem' && [node] || node.tagName == 'DIV' && node.querySelectorAll('li[role="listitem"]:not(li:has(div[data-testid="swipe-to-dismiss"]))');
             if (listitems) this.addButtonToMedia(listitems);
-            let photo = node.tagName == 'UL' && node.querySelectorAll(".r-deolkf");
+            let photo = node.tagName == 'DIV' && node.getAttribute('data-testid') == 'swipe-to-dismiss' || node.getAttribute('role') == 'main' && node.querySelectorAll(".r-iyfy8q") || node.tagName == 'UL' && node.querySelectorAll(".r-deolkf");
+            //console.log(photo)
             if (photo) this.addButtonToFullScreen(Array.from(photo));
         },
         addButtonTo: async function (article) {
@@ -70,7 +72,7 @@ const TMD = (function () {
                 let btn_share = Array.from(btn_group.querySelectorAll(':scope>div>div, li.tweet-action-item>a, li.tweet-detail-action-item>a')).pop().parentNode;
                 let btn_down = btn_share.cloneNode(true);
                 let select = document.createElement("select");
-                select.id = "eagle-folder-select";
+                select.classList.add("eagle-folder-select");
                 select.style.padding = "5px";
                 select.style.fontSize = "14px";
 
@@ -117,7 +119,7 @@ const TMD = (function () {
                 let btn_group = article.querySelector('div.r-3o4zer');
                 for(let img of imgs){
                     let select = document.createElement("select");
-                    select.id = "eagle-folder-select";
+                    select.classList.add("eagle-folder-select");
                     select.style.padding = "5px";
                     select.style.fontSize = "14px";
                     let lastFolderId = GM_getValue("eagle_last_folder",select.value);
@@ -145,12 +147,13 @@ const TMD = (function () {
                         e.preventDefault();
                         if (GM_getValue("update_select") === true){
                             GM_setValue("eagle_last_folder", select.value);
-                            let selects = document.getElementsByClassName("eagle-folder-select");
+                            let selects = Array.from(document.getElementsByClassName("eagle-folder-select"))
                             selects.forEach( s => {
                                 for (let option of s.options) option.selected = (option.value === select.value);
                             });
                         }
-                        this.clickDownload(btn_down, status_id, is_exist, index + 1);
+                        //console.log("clickDownload",{btn_down, status_id, is_exist, index})
+                        this.clickDownload(btn_down, status_id, is_exist, index);
                     };
                     btn_down.parentElement.appendChild(select);
                 }
@@ -223,7 +226,7 @@ const TMD = (function () {
                             for (let option of s.options) option.selected = (option.value === select.value);
                         });
                     }
-                    this.clickDownload(btn_down, status_id, is_exist, index + 1);
+                    this.clickDownload(btn_down, status_id, is_exist, index);
                 };
 
                 select.onclick = e => {
@@ -285,7 +288,7 @@ const TMD = (function () {
             info['date-time'] = this.formatDate(tweet.created_at, datetime);
             info['date-time-local'] = this.formatDate(tweet.created_at, datetime, true);
             info['full-text'] = tweet.full_text.split('\n').join(' ').replace(/\s*https:\/\/t\.co\/\w+/g, '').replace(/[\\/|<>*?:"]|[\u200b-\u200d\u2060\ufeff]/g, v => invalid_chars[v]);
-            let medias = tweet.extended_entities && tweet.extended_entities.media;
+            let medias = tweet.extended_entities?.media;
             if (index) medias = [medias[index - 1]];
             if (medias.length > 0) {
                 let tasks = medias.length;
