@@ -121,7 +121,7 @@ class KemonoEagleUI {
     constructor() {
         this.eagle = new EagleClient();
         this.kemono = new KemonoImage(this.eagle);
-        this.buttonContainerSelector = "h2#Files";
+        this.buttonContainerSelector = "div.post__body h2";
         this.imageSelector = "div.post__files img";
         this.init();
     }
@@ -134,6 +134,7 @@ class KemonoEagleUI {
         this.observeDomChange(() => {
             this.addButtons()
             this.kemono.images = this.kemono.fetchImages()
+          console.log("image",this.kemono.images)
         })
     }
 
