@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.3.4
+// @version      1.3.5
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -308,13 +308,13 @@ class PixivEagleUI {
             btn.onclick = async () => {
                 const folderId = select.value
                 await GM.setValue("eagle_last_folder", folderId)
-                this.illust.fetchIllust()
-                if (this.illust.isSingle()) {
-                    await this.illust.handleSingle(folderId)
-                } else if (this.illust.isSet()) {
-                    await this.illust.handleSet(folderId)
-                } else if (this.illust.isGif()) {
-                    await this.illust.handleGif(folderId)
+                //this.pixiv.fetchIllusts();
+                if (this.pixiv.isSingle()) {
+                    await this.pixiv.handleSingle(folderId)
+                } else if (this.pixiv.isSet()) {
+                    await this.pixiv.handleSet(folderId)
+                } else if (this.pixiv.isGif()) {
+                    await this.pixiv.handleGif(folderId)
                 } else {
                     console.log("不支援此作品類型")
                 }
