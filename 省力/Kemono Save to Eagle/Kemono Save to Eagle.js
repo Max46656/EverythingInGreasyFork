@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.2.3
+// @version      1.2.4
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -121,7 +121,7 @@ class KemonoEagleUI {
     constructor() {
         this.eagle = new EagleClient();
         this.kemono = new KemonoImage(this.eagle);
-        this.buttonContainerSelector = "div.post__body h2";
+        this.buttonContainerSelector = "div.post__body h2:last-of-type";
         this.imageSelector = "div.post__files img";
         this.init();
     }
