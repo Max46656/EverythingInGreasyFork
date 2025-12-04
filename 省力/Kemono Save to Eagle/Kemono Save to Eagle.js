@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.2.4
+// @version      1.3.0
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -49,7 +49,7 @@ class EagleClient {
                 data: JSON.stringify(data),
                 onload: r => {
                     if (r.status >= 200 && r.status < 300) {
-                        console.log("✅ 已新增:", name)
+                        console.log("⭘ 已新增:", name)
                     } else {
                         console.error("失敗:", r)
                     }
@@ -134,7 +134,7 @@ class KemonoEagleUI {
         this.observeDomChange(() => {
             this.addButtons()
             this.kemono.images = this.kemono.fetchImages()
-          console.log("image",this.kemono.images)
+            //console.log("image",this.kemono.images)
         })
     }
 
@@ -212,7 +212,7 @@ class KemonoEagleUI {
             confirmButton.setAttribute("aria-label", "確定按鈕位置");
             confirmButton.onclick = async () => {
                 this.buttonPosition = select.value;
-                console.log("選中位置：", select.value);
+                //console.log("選中位置：", select.value);
                 await GM.setValue("buttonPosition", this.buttonPosition);
                 console.log("儲存位置：", await GM.getValue("buttonPosition"));
                 document.querySelectorAll("[id^=save-to-eagle-btn]").forEach(btn => btn.parentElement.remove());
@@ -222,9 +222,9 @@ class KemonoEagleUI {
 
             select.onchange = async () => {
                 this.buttonPosition = select.value;
-                console.log(select.value);
+                //console.log(select.value);
                 await GM.setValue("buttonPosition", this.buttonPosition);
-                console.log(await GM.getValue("buttonPosition"));
+                //console.log(await GM.getValue("buttonPosition"));
                 document.querySelectorAll("[id^=save-to-eagle-btn]").forEach(btn => btn.parentElement.remove());
                 this.addButtons(this.buttonPosition);
             };
@@ -246,10 +246,8 @@ class KemonoEagleUI {
             container.style.alignItems = "center";
             container.style.gap = "8px";
 
-            const LABEL_TEXT = "Eagle 資料夾：";
-
             const folderLabel = document.createElement("label");
-            folderLabel.textContent = LABEL_TEXT;
+            folderLabel.textContent = "Eagle 資料夾：";
             folderLabel.htmlFor = "eagle-folder-select";
             folderLabel.style.fontSize = "14px";
             folderLabel.style.fontWeight = "500";
@@ -260,9 +258,40 @@ class KemonoEagleUI {
             select.style.padding = "5px";
             select.style.fontSize = "14px";
 
-            const lastFolderId = await GM.getValue("eagle_last_folder");
+            const timeoutWarning = document.createElement("div");
+            timeoutWarning.id = "eagle-folder-timeout-warning";
+            timeoutWarning.textContent = "✕ 請檢查 Eagle 程式是否正常運行、沒有當機、已開啟「瀏覽器擴充功能支援」";
+            timeoutWarning.style.color = "#e8a17d";
+            timeoutWarning.style.fontSize = "13px";
+            timeoutWarning.style.marginTop = "8px";
+            timeoutWarning.style.display = "none";
 
-            const folders = await this.eagle.getFolderList();
+            container.appendChild(folderLabel);
+            container.appendChild(select);
+            section.appendChild(container);
+            section.appendChild(timeoutWarning);
+
+            const lastFolderId = await GM.getValue("eagle_last_folder");
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("TIMEOUT")), 2000)
+            );
+
+            let folders;
+            try {
+                folders = await Promise.race([
+                    this.eagle.getFolderList(),
+                    timeoutPromise
+                ]);
+            } catch (err) {
+                if (err.message === "TIMEOUT") {
+                    timeoutWarning.style.display = "block";
+                    folders = await this.eagle.getFolderList();
+                    //timeoutWarning.remove();
+                } else {
+                    throw err;
+                }
+            }
+
             folders.forEach(f => {
                 const option = document.createElement("option");
                 option.value = f.id;
@@ -271,9 +300,10 @@ class KemonoEagleUI {
                 select.appendChild(option);
             });
 
-            container.appendChild(folderLabel);
-            container.appendChild(select);
-            section.appendChild(container);
+            select.addEventListener("change", async () => {
+                await GM.setValue("eagle_last_folder", select.value);
+            });
+
         } catch (e) {
             console.error("無法新增資料夾選擇器:", e);
         }
@@ -283,7 +313,7 @@ class KemonoEagleUI {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector);
             const select = document.getElementById("eagle-folder-select");
-            console.log(select,document.getElementById("download-all-btn"))
+            //console.log(select,document.getElementById("download-all-btn"))
             if (!select || document.getElementById("download-all-btn")) return;
 
             const container = document.createElement("div");
@@ -309,7 +339,7 @@ class KemonoEagleUI {
                     await this.kemono.handleImage(image.url, image.name, folderId);
                     console.log(`已儲存圖片 ${index + 1}/${images.length}`);
                 }
-                console.log(`已將 ${images.length} 張圖片儲存到 Eagle`);
+                console.log(`⭘ 已將 ${images.length} 張圖片儲存到 Eagle`);
             };
 
             container.appendChild(btn);
@@ -336,7 +366,7 @@ class KemonoEagleUI {
                 "→": { top: "50%", right: "10px", transform: "translateY(-50%)" }
             };
             const position = await GM.getValue("buttonPosition", "↖")
-            console.log("position",position, this.buttonPosition)
+            //console.log("position",position, this.buttonPosition)
             document.querySelectorAll(this.imageSelector).forEach((img, index) => {
                 if (img.parentElement.querySelector(`#save-to-eagle-btn-${index}`)) return;
 
