@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.3.0
+// @version      1.3.1
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -102,10 +102,11 @@ class KemonoImage {
     constructor(eagleClient) {
         this.eagle = eagleClient
         this.images = this.fetchImages()
+        this.imageSelector = "div.post__files img";
     }
 
     fetchImages() {
-        return Array.from(document.querySelectorAll("div.post__files img")).map((img, index) => ({
+        return Array.from(document.querySelectorAll(this.imageSelector)).map((img, index) => ({
             url: img.parentElement.href == null ? img.src : img.parentElement.href,
             name: `${document.querySelector("title")?.textContent} P${index+1}` || `Kemono Image ${img.src.split('/').pop()}`
         }));
@@ -123,6 +124,7 @@ class KemonoEagleUI {
         this.kemono = new KemonoImage(this.eagle);
         this.buttonContainerSelector = "div.post__body h2:last-of-type";
         this.imageSelector = "div.post__files img";
+        this.processedSelector = "eagle-folder-select";
         this.init();
     }
 
@@ -238,7 +240,7 @@ class KemonoEagleUI {
     async addFolderSelect() {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector);
-            if (document.getElementById("eagle-folder-select")) return;
+            if (document.getElementById(this.processedSelector)) return;
 
             const container = document.createElement("div");
             container.style.margin = "10px 0";
@@ -248,13 +250,13 @@ class KemonoEagleUI {
 
             const folderLabel = document.createElement("label");
             folderLabel.textContent = "Eagle 資料夾：";
-            folderLabel.htmlFor = "eagle-folder-select";
+            folderLabel.htmlFor = this.processedSelector;
             folderLabel.style.fontSize = "14px";
             folderLabel.style.fontWeight = "500";
             folderLabel.style.color = "#FFFFFF";
 
             const select = document.createElement("select");
-            select.id = "eagle-folder-select";
+            select.id = this.processedSelector;
             select.style.padding = "5px";
             select.style.fontSize = "14px";
 
@@ -312,7 +314,7 @@ class KemonoEagleUI {
     async addDownloadAllButton() {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector);
-            const select = document.getElementById("eagle-folder-select");
+            const select = document.getElementById(this.processedSelector);
             //console.log(select,document.getElementById("download-all-btn"))
             if (!select || document.getElementById("download-all-btn")) return;
 
@@ -352,7 +354,7 @@ class KemonoEagleUI {
     async addButtons() {
         try {
             const images = await this.waitForElement(this.imageSelector);
-            const select = document.getElementById("eagle-folder-select");
+            const select = document.getElementById(this.processedSelector);
             if (!select) return;
 
             const positionStyles = {
