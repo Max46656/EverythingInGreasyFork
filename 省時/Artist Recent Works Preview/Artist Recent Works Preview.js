@@ -1,22 +1,24 @@
 // ==UserScript==
 // @name            作者近期作品瀏覽
-// @name:en         Artist Recent Works Preview
-// @name:ja         アーティスト最新作品プレビュー
-// @name:de         Vorschau der neuesten Werke von Künstlern
-// @name:uk         Перегляд останніх робіт художників
+// @name:en         Artist Recent Works Scamper
+// @name:ja         アーティスト最新作品ブラウザ
+// @name:de         Browser für die neuesten Werke von Künstlern
+// @name:uk         Браузер останніх робіт художників
 // @description     在 /artists 的作者欄中顯示作者的近期 3 個作品，方便快速瞭解創作風格。支援Kemono/Coomer。
-// @description:en  Displays the 3 most recent works in the /artists section for quick insight into their creative style. Supports Kemono and Coomer.
-// @description:ja  /artists のアーティスト欄に最新3作品を表示し、創作スタイルを素早く把握できます。KemonoとCoomerに対応。
-// @description:de  Zeigt die 3 neuesten Werke im /artists-Bereich an, um den kreativen Stil schnell zu erfassen. Unterstützt Kemono und Coomer.
-// @description:uk  Відображає 3 останні роботи в розділі /artists для швидкого ознайомлення з творчим стилем. Підтримує Kemono і Coomer.
+// @description:en  Displays the 3 most recent works in the artist section on /artists, making it easy to understand their creative style. Suppper Kemono/Coomer.
+// @description:ja  /artists のアーティスト欄に最新の3作品を表示し、創作スタイルを素早く理解できます。Kemono/Coomerに対応しています。
+// @description:de  Zeigt die 3 neuesten Werke im Künstlerbereich auf /artists an, um den kreativen Stil schnell zu verstehen. Supper Kemono/Coomer.
+// @description:uk  Відображає 3 останні роботи в розділі авторів на /artists, дозволяючи швидко зрозуміти їхній творчий стиль. Суппер Кемоно/Кумер.
 
 // @match        *://kemono.cr/artists*
 // @match        *://*.kemono.cr/artists*
+// @match        *://*.kemono.cr/*/user/*/recommended
+// @match        *://*.kemono.cr/artists/updated*
 // @match        *://coomer.st/artists*
 // @match        *://*.coomer.st/artists*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
 // @grant        GM_addStyle
-// @version      1.0.0
+// @version      1.1.0
 
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
@@ -32,9 +34,11 @@ class ArtistCardEnhancer {
     }
 
     init() {
-        this.loadArtistCards();
-        this.setupMutationObserver();
-        this.addStyle()
+        try{
+            this.loadArtistCards();
+            this.setupMutationObserver();
+            this.addStyle();
+        }catch(e){console.error(e)}
     }
 
     addStyle(){
@@ -192,7 +196,7 @@ class ArtistCardEnhancer {
 
         const invalidCards = this.artistCards.filter(card => !card.href);
 
-        if (invalidCards.length > 0) {
+        if (invalidCards.length > 0 ||this.artistCards.length == 0) {
             console.warn(`${invalidCards.length}項作者卡尚未載入完成，重試中`);
             setTimeout(() => this.loadArtistCards(), 1000);
             return;
@@ -204,7 +208,7 @@ class ArtistCardEnhancer {
         } else if (this.processedCards.size >= 50) {
             if (this.observer) {
                 this.observer.disconnect();
-                console.log('已處理50張作者卡');
+                console.log(`已處理張${this.artistCards.length}作者卡`);
             }
             document.title = "[🈵pageDone!]";
         }
@@ -389,7 +393,7 @@ class ArtistCardEnhancer {
         console.log(`已為卡片 ${userId} 添加 ${articles.length} 個作品`);
     }
 
-    async processQueue() {
+    /*async processQueue() {
         while (this.queue.length > 0) {
             const card = this.queue.shift();
             try {
@@ -410,10 +414,88 @@ class ArtistCardEnhancer {
         if (this.processedCards.size >= 50) {
             if (this.observer) {
                 this.observer.disconnect();
-                console.log('已處理50張作者卡，停止觀察');
+                console.log(`已處理張${this.artistCards.length}作者卡`);
             }
             document.title = "[🈵pageDone!]";
         }
+    }*/
+
+    async processQueue() {
+        this.queue = this.queue.filter(card => {
+            if (card.dataset && card.dataset.processed === "true") {
+                console.log(`卡片已處理，跳過：${card.href}`);
+                return false;
+            }
+            return true;
+        });
+
+        if (this.queue.length === 0) {
+            const allDiscoveredCards = this.artistCards || [];
+            const allProcessed = allDiscoveredCards.every(card =>
+                                                          card.dataset && card.dataset.processed === "true"
+                                                         );
+
+            if (allProcessed) {
+                if (this.observer) {
+                    this.observer.disconnect();
+                    console.log(`所有 ${allDiscoveredCards.length} 張作者卡已處理完畢`);
+                }
+                document.title = "[🈵pageDone!]";
+            } else {
+                document.title = "[🈱favoritesReading]";
+            }
+            return;
+        }
+
+        const currentBatch = [...this.queue];
+        this.queue.length = 0;
+
+        const settleResults = await Promise.allSettled(
+            currentBatch.map(card => this.processSingleCard(card))
+        );
+
+        let hasRetry = false;
+        settleResults.forEach((result, index) => {
+            const card = currentBatch[index];
+            if (result.status === "rejected") {
+                console.error(`${card.href} 處理失敗，將重試：`, result.reason);
+                this.queue.push(card);
+                hasRetry = true;
+            }
+        });
+
+        if (this.queue.length > 0) {
+            document.title = "[🈲waitForApi]";
+        } else {
+            document.title = "[🈱favoritesReading]";
+        }
+
+        if (hasRetry) {
+            await this.delay(1500);
+        }
+
+        await this.processQueue();
+    }
+
+    async processSingleCard(card) {
+        if (!card.href) {
+            throw new Error("Card href 為 null");
+        }
+
+        if (card.dataset && card.dataset.processed === "true") {
+            return;
+        }
+
+        const articles = await this.fetchUpdateArticles(card.href);
+        await this.addArticlesToCard(card, articles);
+
+        if (card.dataset) {
+            card.dataset.processed = "true";
+        } else {
+            card.setAttribute("data-processed", "true");
+        }
+
+        this.processedCards?.add(card);
     }
 
     delay(ms) {
@@ -435,6 +517,7 @@ class PageIndicatorObserver {
         this.retryInterval = setInterval(() => {
             this.pageIndicator = document.querySelector(this.selector);
             if (this.pageIndicator) {
+                console.log(`${this.selector} 頁數顯示器已獲取`);
                 clearInterval(this.retryInterval);
                 this.setupObserver();
             } else {
@@ -457,8 +540,8 @@ class PageIndicatorObserver {
         });
 
         const observerOptions = {
-          subtree: true,
-          characterData: true,
+            subtree: true,
+            characterData: true,
         };
 
         this.observer.observe(this.pageIndicator, observerOptions);
