@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.3.1
+// @version      1.4.0
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://kemono.cr/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -122,6 +122,7 @@ class KemonoEagleUI {
     constructor() {
         this.eagle = new EagleClient();
         this.kemono = new KemonoImage(this.eagle);
+        this.i18n = new Localization();
         this.buttonContainerSelector = "div.post__body h2:last-of-type";
         this.imageSelector = "div.post__files img";
         this.processedSelector = "eagle-folder-select";
@@ -136,7 +137,6 @@ class KemonoEagleUI {
         this.observeDomChange(() => {
             this.addButtons()
             this.kemono.images = this.kemono.fetchImages()
-            //console.log("image",this.kemono.images)
         })
     }
 
@@ -162,7 +162,7 @@ class KemonoEagleUI {
     }
 
     registerPositionMenu() {
-        GM_registerMenuCommand("選擇按鈕位置", () => {
+        GM_registerMenuCommand(this.i18n.get("選擇按鈕位置"), () => {
             const select = document.createElement("select");
             const options = [
                 { value: "↖", text: "↖" },
@@ -174,7 +174,6 @@ class KemonoEagleUI {
                 { value: "←", text: "←" },
                 { value: "→", text: "→" }
             ];
-
             options.forEach(opt => {
                 const option = document.createElement("option");
                 option.value = opt.value;
@@ -182,7 +181,6 @@ class KemonoEagleUI {
                 if (opt.value === this.buttonPosition) option.selected = true;
                 select.appendChild(option);
             });
-
             const container = document.createElement("div");
             container.style.position = "fixed";
             container.style.top = "50%";
@@ -196,11 +194,9 @@ class KemonoEagleUI {
             container.style.display = "flex";
             container.style.alignItems = "center";
             container.style.gap = "10px";
-
             const label = document.createElement("label");
-            label.textContent = "選擇按鈕位置：";
+            label.textContent = this.i18n.get("選擇按鈕位置：");
             label.style.marginRight = "10px";
-
             const confirmButton = document.createElement("button");
             confirmButton.textContent = "⭘";
             confirmButton.style.padding = "2px 8px";
@@ -210,74 +206,62 @@ class KemonoEagleUI {
             confirmButton.style.borderRadius = "4px";
             confirmButton.style.cursor = "pointer";
             confirmButton.style.fontSize = "14px";
-            confirmButton.title = "確定選擇";
-            confirmButton.setAttribute("aria-label", "確定按鈕位置");
+            confirmButton.title = this.i18n.get("確定選擇");
+            confirmButton.setAttribute("aria-label", this.i18n.get("確定按鈕位置"));
             confirmButton.onclick = async () => {
                 this.buttonPosition = select.value;
-                //console.log("選中位置：", select.value);
                 await GM.setValue("buttonPosition", this.buttonPosition);
-                console.log("儲存位置：", await GM.getValue("buttonPosition"));
                 document.querySelectorAll("[id^=save-to-eagle-btn]").forEach(btn => btn.parentElement.remove());
                 this.addButtons(this.buttonPosition);
                 container.remove();
             };
-
             select.onchange = async () => {
                 this.buttonPosition = select.value;
-                //console.log(select.value);
                 await GM.setValue("buttonPosition", this.buttonPosition);
-                //console.log(await GM.getValue("buttonPosition"));
                 document.querySelectorAll("[id^=save-to-eagle-btn]").forEach(btn => btn.parentElement.remove());
                 this.addButtons(this.buttonPosition);
             };
-
             container.appendChild(label);
             container.appendChild(select);
             container.appendChild(confirmButton);
             document.body.appendChild(container);
         });
     }
+
     async addFolderSelect() {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector);
             if (document.getElementById(this.processedSelector)) return;
-
             const container = document.createElement("div");
             container.style.margin = "10px 0";
             container.style.display = "flex";
             container.style.alignItems = "center";
             container.style.gap = "8px";
-
             const folderLabel = document.createElement("label");
-            folderLabel.textContent = "Eagle 資料夾：";
+            folderLabel.textContent = this.i18n.get("Eagle 資料夾：");
             folderLabel.htmlFor = this.processedSelector;
             folderLabel.style.fontSize = "14px";
             folderLabel.style.fontWeight = "500";
             folderLabel.style.color = "#FFFFFF";
-
             const select = document.createElement("select");
             select.id = this.processedSelector;
             select.style.padding = "5px";
             select.style.fontSize = "14px";
-
             const timeoutWarning = document.createElement("div");
             timeoutWarning.id = "eagle-folder-timeout-warning";
-            timeoutWarning.textContent = "✕ 請檢查 Eagle 程式是否正常運行、沒有當機、已開啟「瀏覽器擴充功能支援」";
+            timeoutWarning.textContent = this.i18n.get("請檢查 Eagle 程式是否正常運行、沒有當機、已開啟「瀏覽器擴充功能支援」");
             timeoutWarning.style.color = "#e8a17d";
             timeoutWarning.style.fontSize = "13px";
             timeoutWarning.style.marginTop = "8px";
             timeoutWarning.style.display = "none";
-
             container.appendChild(folderLabel);
             container.appendChild(select);
             section.appendChild(container);
             section.appendChild(timeoutWarning);
-
             const lastFolderId = await GM.getValue("eagle_last_folder");
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error("TIMEOUT")), 2000)
             );
-
             let folders;
             try {
                 folders = await Promise.race([
@@ -288,12 +272,10 @@ class KemonoEagleUI {
                 if (err.message === "TIMEOUT") {
                     timeoutWarning.style.display = "block";
                     folders = await this.eagle.getFolderList();
-                    //timeoutWarning.remove();
                 } else {
                     throw err;
                 }
             }
-
             folders.forEach(f => {
                 const option = document.createElement("option");
                 option.value = f.id;
@@ -301,11 +283,9 @@ class KemonoEagleUI {
                 if (f.id === lastFolderId) option.selected = true;
                 select.appendChild(option);
             });
-
             select.addEventListener("change", async () => {
                 await GM.setValue("eagle_last_folder", select.value);
             });
-
         } catch (e) {
             console.error("無法新增資料夾選擇器:", e);
         }
@@ -315,15 +295,12 @@ class KemonoEagleUI {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector);
             const select = document.getElementById(this.processedSelector);
-            //console.log(select,document.getElementById("download-all-btn"))
             if (!select || document.getElementById("download-all-btn")) return;
-
             const container = document.createElement("div");
             container.style.margin = "10px 0";
-
             const btn = document.createElement("button");
             btn.id = "download-all-btn";
-            btn.textContent = "全部儲存到 Eagle";
+            btn.textContent = this.i18n.get("全部儲存到 Eagle");
             btn.style.padding = "5px 10px";
             btn.style.backgroundColor = "#282a2e"
             btn.style.color = "#e8a17d"
@@ -332,7 +309,6 @@ class KemonoEagleUI {
             btn.style.cursor = "pointer";
             btn.style.fontSize = "14px";
             btn.style.marginLeft = "10px";
-
             btn.onclick = async () => {
                 const folderId = select.value;
                 await GM.setValue("eagle_last_folder", folderId);
@@ -343,7 +319,6 @@ class KemonoEagleUI {
                 }
                 console.log(`⭘ 已將 ${images.length} 張圖片儲存到 Eagle`);
             };
-
             container.appendChild(btn);
             select.parentElement.appendChild(container);
         } catch (e) {
@@ -356,7 +331,6 @@ class KemonoEagleUI {
             const images = await this.waitForElement(this.imageSelector);
             const select = document.getElementById(this.processedSelector);
             if (!select) return;
-
             const positionStyles = {
                 "↖": { top: "10px", left: "10px" },
                 "↗": { top: "10px", right: "10px" },
@@ -368,18 +342,15 @@ class KemonoEagleUI {
                 "→": { top: "50%", right: "10px", transform: "translateY(-50%)" }
             };
             const position = await GM.getValue("buttonPosition", "↖")
-            //console.log("position",position, this.buttonPosition)
             document.querySelectorAll(this.imageSelector).forEach((img, index) => {
                 if (img.parentElement.querySelector(`#save-to-eagle-btn-${index}`)) return;
-
                 const container = document.createElement("div");
                 container.style.position = "absolute";
                 container.style.zIndex = "1000";
                 Object.assign(container.style, positionStyles[position]);
-
                 const btn = document.createElement("button");
                 btn.id = `save-to-eagle-btn-${index}`;
-                btn.textContent = "儲存到 Eagle";
+                btn.textContent = this.i18n.get("儲存到 Eagle");
                 btn.style.padding = "5px 10px";
                 btn.style.backgroundColor = "#00000080"
                 btn.style.color = "#e8a17d"
@@ -387,13 +358,11 @@ class KemonoEagleUI {
                 btn.style.borderRadius = "4px";
                 btn.style.cursor = "pointer";
                 btn.style.fontSize = "12px";
-
                 btn.onclick = async () => {
                     let folderId = await GM.getValue("eagle_last_folder");
                     const image = this.kemono.images[index];
                     await this.kemono.handleImage(image.url, image.name, folderId);
                 };
-
                 container.appendChild(btn);
                 img.parentElement.style.position = "relative";
                 img.parentElement.appendChild(container);
@@ -408,6 +377,116 @@ class KemonoEagleUI {
             callback()
         })
         observer.observe(document.body, { childList: true, subtree: true })
+    }
+
+}
+
+class Localization {
+    constructor() {
+        this.translations = {
+            "Eagle 資料夾：": {
+                "zh-TW": "Eagle 資料夾：",
+                "ja": "Eagle フォルダー：",
+                "en": "Eagle Folder:",
+                "de": "Eagle Ordner:",
+                "es": "Carpeta de Eagle:"
+            },
+            "全部儲存到 Eagle": {
+                "zh-TW": "全部儲存到 Eagle",
+                "ja": "すべてを Eagle に保存",
+                "en": "Save All to Eagle",
+                "de": "Alles in Eagle speichern",
+                "es": "Guardar todo en Eagle"
+            },
+            "儲存到 Eagle": {
+                "zh-TW": "儲存到 Eagle",
+                "ja": "Eagle に保存",
+                "en": "Save to Eagle",
+                "de": "In Eagle speichern",
+                "es": "Guardar en Eagle"
+            },
+            "選擇按鈕位置": {
+                "zh-TW": "選擇按鈕位置",
+                "ja": "ボタンの位置を選択",
+                "en": "Select Button Position",
+                "de": "Schaltflächenposition auswählen",
+                "es": "Seleccionar posición del botón"
+            },
+            "選擇按鈕位置：": {
+                "zh-TW": "選擇按鈕位置：",
+                "ja": "ボタンの位置を選択：",
+                "en": "Select button position:",
+                "de": "Schaltflächenposition auswählen:",
+                "es": "Seleccionar posición del botón:"
+            },
+            "確定選擇": {
+                "zh-TW": "確定選擇",
+                "ja": "選択を確定",
+                "en": "Confirm Selection",
+                "de": "Auswahl bestätigen",
+                "es": "Confirmar selección"
+            },
+            "確定按鈕位置": {
+                "zh-TW": "確定按鈕位置",
+                "ja": "ボタン位置を確定",
+                "en": "Confirm button position",
+                "de": "Schaltflächenposition bestätigen",
+                "es": "Confirmar posición del botón"
+            },
+            "請檢查 Eagle 程式是否正常運行、沒有當機、已開啟「瀏覽器擴充功能支援」": {
+                "zh-TW": "✕ 請檢查 Eagle 程式是否正常運行、沒有當機、已開啟「瀏覽器擴充功能支援」",
+                "ja": "✕ Eagle アプリが正常に動作しているか、クラッシュしていないか、「ブラウザ拡張機能サポート」が有効になっているかを確認してください",
+                "en": "✕ Please check if the Eagle app is running normally, not crashed, and has 'Browser Extension Support' enabled",
+                "de": "✕ Bitte überprüfen Sie, ob die Eagle-App normal läuft, nicht abgestürzt ist und 'Browser-Erweiterungsunterstützung' aktiviert ist",
+                "es": "✕ Por favor, verifica si la aplicación Eagle está funcionando normalmente, no se ha bloqueado y tiene activado el 'Soporte para extensiones de navegador'"
+            }
+        };
+
+        this.supportedLanguages = ["zh-TW", "ja", "en", "de", "es"];
+
+        this.detectBrowserLanguage();
+    }
+
+    detectBrowserLanguage() {
+        let detected;
+
+        if (navigator.languages && navigator.languages.length > 0) {
+            for (const lang of navigator.languages) {
+                const normalized = this.normalizeLanguage(lang);
+                if (this.supportedLanguages.includes(normalized)) {
+                    detected = normalized;
+                    break;
+                }
+            }
+        } else if (navigator.language) {
+            const normalized = this.normalizeLanguage(navigator.language);
+            if (this.supportedLanguages.includes(normalized)) {
+                detected = normalized;
+            }
+        }
+
+        this.currentLanguage = detected || "zh-TW";
+        console.log(`Localization: 偵測到瀏覽器語言，使用 ${this.currentLanguage}`);
+    }
+
+    normalizeLanguage(lang) {
+        lang = lang.toLowerCase();
+
+        if (lang.startsWith("zh")) {
+            return "zh-TW";
+        }
+
+        const primary = lang.split("-")[0];
+        return primary;
+    }
+
+    get(key) {
+        const dict = this.translations[key];
+        if (!dict) {
+            console.warn(`缺少翻譯鍵：${key}`);
+            return key;
+        }
+        return dict[this.currentLanguage] || dict["zh-TW"];
     }
 }
 
