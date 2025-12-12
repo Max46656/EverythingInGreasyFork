@@ -18,7 +18,7 @@
 // @match        *://*.coomer.st/artists*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
 // @grant        GM_addStyle
-// @version      1.1.0
+// @version      1.1.1
 
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
@@ -30,6 +30,7 @@ class ArtistCardEnhancer {
         this.queue = [];
         this.observer = null;
         this.processedCards = new Set();
+        this.artistCardsSelector = "a.user-card:not([data-processed='true'])";
         this.init();
     }
 
@@ -192,7 +193,7 @@ class ArtistCardEnhancer {
     }
 
     loadArtistCards() {
-        this.artistCards = Array.from(document.querySelectorAll('a.user-card:not([data-processed="true"])'));
+        this.artistCards = Array.from(document.querySelectorAll(this.artistCardsSelector));
 
         const invalidCards = this.artistCards.filter(card => !card.href);
 
@@ -219,7 +220,7 @@ class ArtistCardEnhancer {
             const hasNewCards = mutations.some(mutation =>
                                                Array.from(mutation.addedNodes).some(node =>
                                                                                     node.nodeType === Node.ELEMENT_NODE &&
-                                                                                    node.matches('a.user-card:not([data-processed="true"])')
+                                                                                    node.matches(this.artistCardsSelector)
                                                                                    )
                                               );
             if (hasNewCards) {
@@ -504,8 +505,8 @@ class ArtistCardEnhancer {
 }
 
 class PageIndicatorObserver {
-    constructor(selector, checkInterval = 1000) {
-        this.selector = selector;
+    constructor(checkInterval = 1000) {
+        this.selector = "#paginator-top";
         this.checkInterval = checkInterval;
         this.pageIndicator = null;
         this.retryInterval = null;
@@ -562,4 +563,4 @@ class PageIndicatorObserver {
 
 new ArtistCardEnhancer();
 
-new PageIndicatorObserver("#paginator-top", 500);
+new PageIndicatorObserver(500);
