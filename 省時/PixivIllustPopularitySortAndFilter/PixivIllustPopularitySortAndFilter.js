@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.9.15
+// @version      1.10.0
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -114,6 +114,7 @@ class artScraper {
         this.allArtsWithoutLike = [];
         this.targetPages = GM_getValue("targetPages", 10) || targetPages;
         this.likesMinLimit = GM_getValue("likesMinLimit", 50) || likesMinLimit;
+        this.discardLikesMinLimit = GM_getValue("discardLikesMinLimit",false);
         this.strategy = this.setStrategy();
         this.currentArtCount=0;
         // console.log(strategy.getThumbnailClass(),strategy.getArtsClass(),strategy.getRenderArtWallClass(),strategy.getButtonAtClass(),strategy.getAllButtonClass())
@@ -337,6 +338,7 @@ class artScraper {
         likeCounts.forEach((likeCount, index) => {
             const art = this.allArtsWithoutLike[index];
             if (!art.getElementsByClassName('likes').length) {// 檢查是否已經有處理過
+                if (this.discardLikesMinLimit && likeCount < this.likesMinLimit) return;
                 const referenceElement = art.getElementsByTagName('div')[0];
                 if (referenceElement) {
                     const likeCountElement = document.createElement('span');
@@ -411,7 +413,7 @@ class artScraper {
          */
         if(GM_getValue("leftAlign", true)){
             if(self.location.href.includes('bookmark')){
-              console.log(document.getElementsByClassName(alignLeftClass))
+                console.log(document.getElementsByClassName(alignLeftClass))
                 this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[0],"leftAlign");
             }else if(self.location.href.includes('users')){
                 this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[3],"leftAlign");
@@ -781,6 +783,13 @@ class customMenu {
         alert(this.getFeatureMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
     }
 
+    discardLikesMinLimitMenu(){
+        const currentState = GM_getValue("discardLikesMinLimit", false);
+        const newState = !currentState;
+        GM_setValue("discardLikesMinLimit", newState);
+        alert(this.getFeatureMessageLocalization("likesMinLimitDiscardMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
+    }
+
     getFeatureMessageLocalization(word) {
         let display = {
             "zh-TW": {
@@ -789,6 +798,8 @@ class customMenu {
                 "rowsOfArtsWallMenuError": "請輸入一個數字，且不能小於1",
                 "leftAlign": "置左排版",
                 "leftAlignToggleMessage": "置左排版已",
+                "discardLikesMinLimit": "低讚數作品過濾",
+                "likesMinLimitDiscardMessage": "過濾低讚數作品（節省記憶體與加快載入）已",
                 "enabled": "啟用",
                 "disabled": "停用"
             },
@@ -798,6 +809,8 @@ class customMenu {
                 "rowsOfArtsWallMenuError": "Please enter a number, and it cannot be less than 1",
                 "leftAlign": "Left-aligned Layout",
                 "leftAlignToggleMessage": "Left-aligned layout is now ",
+                "discardLikesMinLimit": "Filter Low-Like Artworks",
+                "likesMinLimitDiscardMessage": "Filtering out low-like artworks (saves memory and speeds up loading) is now ",
                 "enabled": "enabled",
                 "disabled": "disabled"
             },
@@ -807,6 +820,8 @@ class customMenu {
                 "rowsOfArtsWallMenuError": "數値を入力してください。1 未満にすることはできません",
                 "leftAlign": "左揃えレイアウト",
                 "leftAlignToggleMessage": "左揃えレイアウトが",
+                "discardLikesMinLimit": "低いいね數作品フィルタリング",
+                "likesMinLimitDiscardMessage": "低いいね數作品をフィルタリング（メモリ節約・読み込み高速化）が",
                 "enabled": "有効",
                 "disabled": "無効"
             }
@@ -817,6 +832,7 @@ class customMenu {
     registerMenuCommand(instance) {
         GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
         GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("discardLikesMinLimit"), () => instance.discardLikesMinLimitMenu());
     }
 }
 
