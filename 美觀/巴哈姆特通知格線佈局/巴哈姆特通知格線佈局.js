@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         巴哈姆特訂閱通知格線佈局
+// @name         巴哈姆特通知格線佈局
 // @name:en      Bahamut Notification Grid Layout
 // @name:ja      バハムート通知グリッドレイアウト
 
-// @description  將巴哈姆特訂閱通知頁面改為格線佈局，全寬佔用，卡片寬度根據欄位數自動計算。
-// @description:en  Transform the Bahamut subscription notification page into a grid layout with full-width utilization, where card width is automatically calculated based on the number of columns.
-// @description:ja  バハムートの購読通知ページをグリッドレイアウトに変更し、全幅を使用。カードの幅は列數に応じて自動計算されます。
+// @description  將巴哈姆特通知頁面改為格線佈局，全寬佔用，卡片寬度根據欄位數自動計算。
+// @description:en  Transform the Bahamut notification page into a grid layout with full-width utilization, where card width is automatically calculated based on the number of columns.
+// @description:ja  バハムートの通知ページをグリッドレイアウトに変更し、全幅を使用。カードの幅は列數に応じて自動計算されます。
 
 // @author       Max
 // @namespace    https://github.com/Max46656
