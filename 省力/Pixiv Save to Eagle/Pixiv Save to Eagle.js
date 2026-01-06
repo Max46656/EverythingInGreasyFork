@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.3.5
+// @version      1.3.6
 // @match        https://www.pixiv.net/artworks/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -240,7 +240,7 @@ class PixivEagleUI {
         this.eagle = new EagleClient()
         this.pixiv = new PixivIllust(this.eagle)
         this.buttonContainerSelector = "section section"
-        this.imageSelector = "div[role='presentation'].sc-440d5b2c-0"
+        this.imageSelector = "figure div[role='presentation']"
         this.buttonPosition = "↖"
         this.init()
     }
