@@ -12,8 +12,8 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.5.1
-// @match        https://www.pixiv.net/artworks/*
+// @version      1.5.2
+// @match        https://www.pixiv.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
