@@ -17,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.1.0
+// @version      1.2.0
 // @match        https://exhentai.org/s/*/*
 // @match        https://e-hentai.org/s/*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=e-hentai.org
@@ -25,25 +25,78 @@
 // ==/UserScript==
 
 class ImageResizer {
-    applyStyles() {
-        GM_addStyle(`
-                #img {
-                    max-width: 100vw !important;
-                    max-height: 100vh !important;
-                    width: auto !important;
-                    height: auto !important;
-                }
-            `);
-        }
+        constructor() {
+            this.currentModeId = GM_getValue('img_mode_id', 'fit-window');
+        }
 
-    init() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.applyStyles());
-        } else {
-            this.applyStyles();
-        }
-    }
-}
+        get MODES() {
+            return {
+                '1': { id: 'fit-window', label: '🞎', mw: '100vw', mh: '100vh', w: 'auto', h: 'auto' },
+                '2': { id: 'fit-height', label: '⭿',  mw: 'none',  mh: '100vh', w: 'auto', h: '100vh' },
+                '3': { id: 'fit-width',  label: '⭾',  mw: '100vw', mh: 'none',   w: '100vw', h: 'auto' },
+                '4': { id: 'original',   label: '🞨',  mw: 'none',  mh: 'none',   w: 'auto', h: 'auto' }
+            };
+        }
 
-const resizer = new ImageResizer();
-resizer.init();
+        applyBaseStyles() {
+            GM_addStyle(`
+                :root {
+                    --eh-mw: none; --eh-mh: none; --eh-w: auto; --eh-h: auto;
+                }
+                #img {
+                    max-width: var(--eh-mw) !important;
+                    max-height: var(--eh-mh) !important;
+                    width: var(--eh-w) !important;
+                    height: var(--eh-h) !important;
+                    display: block;
+                    margin: 0 auto;
+                }
+            `);
+            this.updateCSSVariables();
+        }
+
+        updateCSSVariables() {
+            const modeConfig = Object.values(this.MODES).find(m => m.id === this.currentModeId) || this.MODES['1'];
+            const root = document.documentElement;
+            root.style.setProperty('--eh-mw', modeConfig.mw);
+            root.style.setProperty('--eh-mh', modeConfig.mh);
+            root.style.setProperty('--eh-w', modeConfig.w);
+            root.style.setProperty('--eh-h', modeConfig.h);
+        }
+
+        setModeById(modeId) {
+            this.currentModeId = modeId;
+            GM_setValue('img_mode_id', modeId);
+            this.updateCSSVariables();
+
+            const select = document.querySelector('.eh-resizer-select');
+            if (select) select.value = modeId;
+        }
+
+        registerMenu() {
+            GM_registerMenuCommand("Change Display Mode / 切換模式", () => {
+                let menuText = "Select Mode (Enter Number):\n";
+                for (const [num, config] of Object.entries(this.MODES)) {
+                    menuText += `${num}. ${config.label} (${config.id})\n`;
+                }
+
+                const choice = prompt(menuText, "");
+                if (choice && this.MODES[choice]) {
+                    this.setModeById(this.MODES[choice].id);
+                }
+            });
+        }
+
+        init() {
+            this.registerMenu();
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => this.applyBaseStyles());
+            } else {
+                this.applyBaseStyles();
+            }
+        }
+    }
+
+    const resizer = new ImageResizer();
+    resizer.init();
