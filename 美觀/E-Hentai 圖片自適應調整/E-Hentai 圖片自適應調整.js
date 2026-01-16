@@ -17,115 +17,131 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.2.0
+// @version      1.4.0
 // @match        https://exhentai.org/s/*/*
 // @match        https://e-hentai.org/s/*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=e-hentai.org
-// @grant        GM_addStyle
+// @grant        GM_addStyle
+// @grant        GM_registerMenuCommand
+// @grant        GM_unregisterMenuCommand
+// @grant        GM_setValue
+// @grant        GM_getValue
 // ==/UserScript==
 
 class ImageResizer {
-        constructor() {
-            this.currentModeId = GM_getValue('img_mode_id', 'fit-window');
-        }
+    constructor() {
+        this.currentModeId = GM_getValue('img_mode_id', 'fit-window');
+        this.menuId = null;
+    }
 
-        get MODES() {
-            return {
-                '1': { id: 'fit-window', label: '🞎', mw: '100vw', mh: '100vh', w: 'auto', h: 'auto' },
-                '2': { id: 'fit-height', label: '⭿',  mw: 'none',  mh: '100vh', w: 'auto', h: '100vh' },
-                '3': { id: 'fit-width',  label: '⭾',  mw: '100vw', mh: 'none',   w: '100vw', h: 'auto' },
-                '4': { id: 'original',   label: '🞨',  mw: 'none',  mh: 'none',   w: 'auto', h: 'auto' }
-            };
-        }
+    get MODES() {
+        return {
+            '1': { id: 'fit-window', label: '🞎', mw: '100vw', mh: '100vh', w: 'auto', h: 'auto' },
+            '2': { id: 'fit-height', label: '⭿',  mw: 'none',  mh: '100vh', w: 'auto', h: '100vh' },
+            '3': { id: 'fit-width',  label: '⭾',  mw: '100vw', mh: 'none',   w: '100vw', h: 'auto' },
+            '4': { id: 'original',   label: '🞨',  mw: 'none',  mh: 'none',   w: 'auto', h: 'auto' }
+        };
+    }
 
-        applyBaseStyles() {
-            GM_addStyle(`
-                :root {
-                    --eh-mw: none; --eh-mh: none; --eh-w: auto; --eh-h: auto;
-                }
-                #img {
-                    max-width: var(--eh-mw) !important;
-                    max-height: var(--eh-mh) !important;
-                    width: var(--eh-w) !important;
-                    height: var(--eh-h) !important;
-                    display: block;
-                    margin: 0 auto;
-                }
-                .eh-resizer-select {
-                    margin-left: 10px;
-                    padding: 0 5px;
-                    background: #34353b;
-                    color: #fff;
-                    border: 1px solid #5c5c5c;
-                    cursor: pointer;
-                    font-size: 14px;
-                }
-            `);
-            this.updateCSSVariables();
-        }
+    applyBaseStyles() {
+        GM_addStyle(`
+                :root {
+                    --eh-mw: none; --eh-mh: none; --eh-w: auto; --eh-h: auto;
+                }
+                #img {
+                    max-width: var(--eh-mw) !important;
+                    max-height: var(--eh-mh) !important;
+                    width: var(--eh-w) !important;
+                    height: var(--eh-h) !important;
+                    display: block;
+                    margin: 0 auto;
+                }
+                .eh-resizer-select {
+                    margin-left: 10px;
+                    padding: 0 5px;
+                    background: #34353b;
+                    color: #fff;
+                    border: 1px solid #5c5c5c;
+                    cursor: pointer;
+                    font-size: 14px;
+                    vertical-align: middle;
+                }
+            `);
+            this.updateCSSVariables();
+        }
 
-        updateCSSVariables() {
-            const modeConfig = Object.values(this.MODES).find(m => m.id === this.currentModeId) || this.MODES['1'];
-            const root = document.documentElement;
-            root.style.setProperty('--eh-mw', modeConfig.mw);
-            root.style.setProperty('--eh-mh', modeConfig.mh);
-            root.style.setProperty('--eh-w', modeConfig.w);
-            root.style.setProperty('--eh-h', modeConfig.h);
-        }
+    updateCSSVariables() {
+        const modeConfig = Object.values(this.MODES).find(m => m.id === this.currentModeId) || this.MODES['1'];
+        const root = document.documentElement;
+        root.style.setProperty('--eh-mw', modeConfig.mw);
+        root.style.setProperty('--eh-mh', modeConfig.mh);
+        root.style.setProperty('--eh-w', modeConfig.w);
+        root.style.setProperty('--eh-h', modeConfig.h);
+    }
 
-        setModeById(modeId) {
-            this.currentModeId = modeId;
-            GM_setValue('img_mode_id', modeId);
-            this.updateCSSVariables();
+    setModeById(modeId) {
+        this.currentModeId = modeId;
+        GM_setValue('img_mode_id', modeId);
+        this.updateCSSVariables();
 
-            const select = document.querySelector('.eh-resizer-select');
-            if (select) select.value = modeId;
-        }
+        const select = document.querySelector('.eh-resizer-select');
+        if (select) select.value = modeId;
 
-        registerMenu() {
-            GM_registerMenuCommand("Change Display Mode / 切換模式", () => {
-                let menuText = "Select Mode (Enter Number):\n";
-                for (const [num, config] of Object.entries(this.MODES)) {
-                    menuText += `${num}. ${config.label} (${config.id})\n`;
-                }
+        this.registerMenu();
+    }
 
-                const choice = prompt(menuText, "");
-                if (choice && this.MODES[choice]) {
-                    this.setModeById(this.MODES[choice].id);
-                }
-            });
-        }
+    registerMenu() {
+        if (this.menuId !== null) {
+            GM_unregisterMenuCommand(this.menuId);
+        }
 
-        injectUI() {
-            const target = document.querySelector('.sn');
-            if (!target) return;
+        const currentConfig = Object.values(this.MODES).find(m => m.id === this.currentModeId) || this.MODES['1'];
+        const menuLabel = `Mode: [ ${currentConfig.label} ] Click to Change`;
 
-            const select = document.createElement('select');
-            select.className = 'eh-resizer-select';
+        this.menuId = GM_registerMenuCommand(menuLabel, () => {
+            let menuPrompt = "Select Mode / 切換模式 (Enter Number):\n";
+            for (const [num, config] of Object.entries(this.MODES)) {
+                const activeMarker = (config.id === this.currentModeId) ? " ▶ " : "   ";
+                menuPrompt += `${num}.${activeMarker}${config.label} (${config.id})\n`;
+            }
 
-            Object.values(this.MODES).forEach(config => {
-                const opt = document.createElement('option');
-                opt.value = config.id;
-                opt.textContent = config.label;
-                if (config.id === this.currentModeId) opt.selected = true;
-                select.appendChild(opt);
-            });
+            const choice = prompt(menuPrompt, "");
+            if (choice && this.MODES[choice]) {
+                this.setModeById(this.MODES[choice].id);
+            }
+        });
+    }
 
-            select.addEventListener('change', (e) => this.setModeById(e.target.value));
-            target.appendChild(select);
-        }
+    injectUI() {
+        const target = document.querySelector('.sn');
+        if (!target) return;
 
-        init() {
-            this.applyBaseStyles();
-            this.registerMenu();
+        const select = document.createElement('select');
+        select.className = 'eh-resizer-select';
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => this.injectUI());
-            } else {
-                this.injectUI();
-            }
-        }
-    }
+        Object.values(this.MODES).forEach(config => {
+            const opt = document.createElement('option');
+            opt.value = config.id;
+            opt.textContent = config.label;
+            if (config.id === this.currentModeId) opt.selected = true;
+            select.appendChild(opt);
+        });
 
-    const resizer = new ImageResizer();
-    resizer.init();
+        select.addEventListener('change', (e) => this.setModeById(e.target.value));
+        target.appendChild(select);
+    }
+
+    init() {
+        this.applyBaseStyles();
+        this.registerMenu();
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.injectUI());
+        } else {
+            this.injectUI();
+        }
+    }
+}
+
+const resizer = new ImageResizer();
+resizer.init();
