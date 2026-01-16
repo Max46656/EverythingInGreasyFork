@@ -51,6 +51,15 @@ class ImageResizer {
                     display: block;
                     margin: 0 auto;
                 }
+                .eh-resizer-select {
+                    margin-left: 10px;
+                    padding: 0 5px;
+                    background: #34353b;
+                    color: #fff;
+                    border: 1px solid #5c5c5c;
+                    cursor: pointer;
+                    font-size: 14px;
+                }
             `);
             this.updateCSSVariables();
         }
@@ -87,13 +96,33 @@ class ImageResizer {
             });
         }
 
+        injectUI() {
+            const target = document.querySelector('.sn');
+            if (!target) return;
+
+            const select = document.createElement('select');
+            select.className = 'eh-resizer-select';
+
+            Object.values(this.MODES).forEach(config => {
+                const opt = document.createElement('option');
+                opt.value = config.id;
+                opt.textContent = config.label;
+                if (config.id === this.currentModeId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            select.addEventListener('change', (e) => this.setModeById(e.target.value));
+            target.appendChild(select);
+        }
+
         init() {
+            this.applyBaseStyles();
             this.registerMenu();
 
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => this.applyBaseStyles());
+                document.addEventListener('DOMContentLoaded', () => this.injectUI());
             } else {
-                this.applyBaseStyles();
+                this.injectUI();
             }
         }
     }
