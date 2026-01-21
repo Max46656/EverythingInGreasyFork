@@ -17,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.0.2
+// @version      1.1.0
 // @match        https://kemono.cr/*/user/*/post/*
 // @require      https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
 // @grant        GM_xmlhttpRequest
@@ -46,28 +46,17 @@ class ZipImageExtractor {
         this.startPolling();
     }
 
-    /**
-     * 取得 zip.js 物件
-     */
     get zipLib() {
         return (typeof zip !== 'undefined') ? zip : (window.zip || self.zip);
     }
 
-    /**
-     * 開始定時掃描（有限次數）
-     */
     startPolling() {
         this.intervalId = setInterval(() => {
             this.attempts++;
             const lib = this.zipLib;
-
             if (lib) {
-                //console.log(`${this.CONFIG.LOG_PREFIX} zip.js 已就緒，開始掃描 (${this.attempts}/${this.CONFIG.MAX_ATTEMPTS})`);
                 this.scan();
-            } else {
-                //console.warn(`${this.CONFIG.LOG_PREFIX} 等待 zip.js 載入... (${this.attempts}/${this.CONFIG.MAX_ATTEMPTS})`);
             }
-
             if (this.attempts >= this.CONFIG.MAX_ATTEMPTS) {
                 clearInterval(this.intervalId);
                 console.log(`${this.CONFIG.LOG_PREFIX} 達到最大掃描次數，停止尋找`);
@@ -75,9 +64,6 @@ class ZipImageExtractor {
         }, this.CONFIG.POLLING_INTERVAL);
     }
 
-    /**
-     * 掃描頁面尋找尚未處理的 ZIP 連結
-     */
     scan() {
         try {
             const links = document.querySelectorAll('li.post__attachment a:first-of-type');
@@ -93,9 +79,6 @@ class ZipImageExtractor {
         }
     }
 
-    /**
-     * 建立 UI 按鈕
-     */
     injectButton(link) {
         this.processedElements.add(link);
         const btn = document.createElement('button');
@@ -118,21 +101,40 @@ class ZipImageExtractor {
 
         btn.onclick = (e) => {
             e.preventDefault();
-            this.handleUnzipProcess(link.href, link, btn);
+            this.handleButtonClick(link.href, link, btn);
         };
 
         link.parentNode.insertBefore(btn, link.nextSibling);
     }
 
     /**
-     * 主處理流程
+     * 處理按鈕點選邏輯（包含二次確認）
+     */
+    handleButtonClick(url, anchor, btn) {
+        // 如果已經標記為 processed，進入二次確認
+        if (btn.dataset.processed === 'true') {
+            // 第一次點選已完成的按鈕 → 顯示確認文字
+            if (btn.innerText !== '[是否確定再次執行?]') {
+                this.updateBtnState(btn, 'confirm', '[是否確定再次執行?]');
+                return;
+            }
+            // 第二次點選確認 → 移除標記並執行
+            delete btn.dataset.processed;
+        }
+
+        // 正式執行解壓流程
+        this.handleUnzipProcess(url, anchor, btn);
+    }
+
+    /**
+     * 解壓主流程（成功後標記 data-processed）
      */
     async handleUnzipProcess(url, anchor, btn) {
         const lib = this.zipLib;
         const container = document.querySelector('.post__files');
 
         if (!lib || !container) {
-            alert('系統初始化失敗或找不到放置圖片的容器');
+            console.error('系統初始化失敗或找不到放置圖片的容器');
             return;
         }
 
@@ -165,15 +167,16 @@ class ZipImageExtractor {
             }
 
             await zipReader.close();
+
+            // 成功完成後標記 data-processed
+            btn.dataset.processed = 'true';
+
         } catch (err) {
             console.error(`${this.CONFIG.LOG_PREFIX} 錯誤:`, err);
             this.updateBtnState(btn, 'error', '🉈 失敗');
         }
     }
 
-    /**
-     * 封裝下載邏輯
-     */
     downloadFile(url, onProgress) {
         return new Promise((resolve, reject) => {
             GM_xmlhttpRequest({
@@ -191,9 +194,6 @@ class ZipImageExtractor {
         });
     }
 
-    /**
-     * 渲染圖片至 DOM
-     */
     renderImage(blob, filename, container) {
         const imageUrl = URL.createObjectURL(blob);
         const div = document.createElement('div');
@@ -208,14 +208,21 @@ class ZipImageExtractor {
         container.appendChild(div);
     }
 
-    /**
-     * 更新按鈕狀態 UI
-     */
     updateBtnState(btn, state, text) {
         btn.innerText = text;
         btn.disabled = (state === 'loading');
-        if (state === 'error') btn.style.borderColor = "#ff4444";
-        if (state === 'done') btn.style.borderColor = "#44ff44";
+
+        if (state === 'error') {
+            btn.style.borderColor = "#ff4444";
+        } else if (state === 'done') {
+            btn.style.borderColor = "#44ff44";
+        } else if (state === 'confirm') {
+            btn.style.borderColor = "#ffaa00";
+            btn.style.backgroundColor = "#3a2a00";
+        } else {
+            btn.style.borderColor = "#3b3e44CC";
+            btn.style.backgroundColor = "#282a2e";
+        }
     }
 }
 
