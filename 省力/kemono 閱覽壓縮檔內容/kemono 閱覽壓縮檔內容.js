@@ -17,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.3.0
+// @version      1.3.1
 // @match        https://kemono.cr/*/user/*/post/*
 // @require      https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
 // @grant        GM_xmlhttpRequest
@@ -25,13 +25,9 @@
 // @icon         https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kemono.cr&size=64
 // ==/UserScript==
 
-/**
- * 在地化翻譯類別
- */
 class I18n {
     constructor() {
-        // 取得瀏覽器語系 (例如 "zh-TW" -> "zh")
-        const navLang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+        const navLang = (navigator.languages && navigator.languages[0]) || navigator.language || 'zh';
         this.currentLang = navLang.split('-')[0];
 
         this.data = {
@@ -98,11 +94,8 @@ class I18n {
         };
     }
 
-    /**
-     * 取得翻譯文字，若無該語系則回傳英文
-     */
     t(key) {
-        const langData = this.data[this.currentLang] || this.data['en'];
+        const langData = this.data[this.currentLang] || this.data['zh'];
         return langData[key] || this.data['en'][key] || key;
     }
 }
@@ -149,7 +142,7 @@ class ZipImageExtractor {
             links.forEach(link => {
                 const href = link.href.toLowerCase().split('?')[0];
                 if (href.endsWith('.zip') && !this.processedElements.has(link)) {
-                    this.creatDownloadButton(link);
+                    this.createDownloadButton(link);
                 }
             });
         } catch (err) {
@@ -157,8 +150,10 @@ class ZipImageExtractor {
         }
     }
 
-    creatDownloadButton(link) {
+    createDownloadButton(link) {
+        if (this.processedElements.has(link)) return;
         this.processedElements.add(link);
+
         const btn = document.createElement('button');
         btn.innerText = this.i18n.t('read_images');
 
@@ -180,22 +175,21 @@ class ZipImageExtractor {
 
         btn.onclick = (e) => {
             e.preventDefault();
-            this.handleButtonClick(link.href, link, btn);
+
+            const confirmText = this.i18n.t('confirm_retry');
+
+            if (btn.dataset.processed === 'true') {
+                if (btn.innerText !== confirmText) {
+                    this.updateBtnState(btn, 'confirm', confirmText);
+                    return;
+                }
+                delete btn.dataset.processed;
+            }
+
+            this.downloadArchive(link.href, link, btn);
         };
 
         link.parentNode.insertBefore(btn, link.nextSibling);
-    }
-
-    handleButtonClick(url, anchor, btn) {
-        const confirmText = this.i18n.t('confirm_retry');
-        if (btn.dataset.processed === 'true') {
-            if (btn.innerText !== confirmText) {
-                this.updateBtnState(btn, 'confirm', confirmText);
-                return;
-            }
-            delete btn.dataset.processed;
-        }
-        this.downloadArchive(url, anchor, btn);
     }
 
     async downloadArchive(url, anchor, btn) {
@@ -310,8 +304,6 @@ class ZipImageExtractor {
         }
     }
 
-
-
     createPasswordInput(btn, callback) {
         if (btn.nextSibling?.classList?.contains('zip-password-input')) return;
 
@@ -341,7 +333,6 @@ class ZipImageExtractor {
         btn.after(input);
         input.focus();
     }
-
 
     renderImage(blob, filename, container) {
         const imageUrl = URL.createObjectURL(blob);
