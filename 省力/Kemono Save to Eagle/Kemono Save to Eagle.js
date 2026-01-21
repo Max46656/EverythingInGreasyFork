@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.4.1
+// @version      1.4.2
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://coomer.st/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -100,21 +100,72 @@ class EagleClient {
 
 class KemonoImage {
     constructor(eagleClient) {
-        this.eagle = eagleClient
-        this.images = this.fetchImages()
+        this.eagle = eagleClient;
+        this.images = this.fetchImages();
         this.imageSelector = "div.post__files img";
     }
 
     fetchImages() {
-        return Array.from(document.querySelectorAll(this.imageSelector)).map((img, index) => ({
-            url: img.parentElement.href == null ? img.src : img.parentElement.href,
-            name: `${document.querySelector("title")?.textContent} P${index+1}` || `Kemono Image ${img.src.split('/').pop()}`
-        }));
+        return Array.from(document.querySelectorAll(this.imageSelector)).map((img, index) => {
+            let url = img.parentElement?.href || img.src;
+
+            if (img.dataset.src) url = img.dataset.src;
+            if (img.dataset.original) url = img.dataset.original;
+
+            let title = document.querySelector("title")?.textContent?.trim() || "Kemono Post";
+            let name = `${title} P${index + 1}`;
+
+            const urlWithoutQuery = url.split(/[#?]/)[0];
+            const ext = urlWithoutQuery.split('.').pop().toLowerCase();
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'webm'].includes(ext)) {
+                name += `.${ext}`;
+            }
+
+            return { url, name };
+        });
+    }
+
+    async getImageDataUrl(url) {
+        if (!url.startsWith('blob:')) {
+            return url;
+        }
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`fetch blob 失敗：${response.status} ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (reader.result) {
+                        resolve(reader.result); // data:image/...;base64,xxxx...
+                    } else {
+                        reject(new Error("FileReader 讀取失敗"));
+                    }
+                };
+                reader.onerror = () => reject(new Error("FileReader 發生錯誤"));
+                reader.readAsDataURL(blob);
+            });
+        } catch (err) {
+            console.error("無法將 blob 轉為 base64:", url, err);
+            return null;
+        }
     }
 
     async handleImage(url, name, folderId) {
-        await this.eagle.save(url, name, folderId)
-        console.log("已送到 Eagle:", name)
+        const dataUrlOrOriginal = await this.getImageDataUrl(url);
+
+        if (!dataUrlOrOriginal) {
+            console.warn(`跳過無法處理的圖片：${name} (${url})`);
+            return;
+        }
+
+        await this.eagle.save(dataUrlOrOriginal, name, folderId);
+        console.log("已送到 Eagle:", name);
     }
 }
 
