@@ -17,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.3.3
+// @version      1.3.4
 // @match        https://kemono.cr/*/user/*/post/*
 // @require      https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
 // @grant        GM_xmlhttpRequest
@@ -65,7 +65,7 @@ class ZipImageExtractor {
         try {
             const links = document.querySelectorAll('li.post__attachment a:first-of-type');
             links.forEach(link => {
-                const href = link.href.toLowerCase().split('?')[0];
+                const href = link.href.toLowerCase();
                 if (href.endsWith('.zip') && !this.processedElements.has(link)) {
                     this.createDownloadButton(link);
                 }
