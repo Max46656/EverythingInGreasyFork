@@ -17,13 +17,95 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.1.0
+// @version      1.2.0
 // @match        https://kemono.cr/*/user/*/post/*
 // @require      https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
 // @grant        GM_xmlhttpRequest
 // @connect      self
 // @icon         https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kemono.cr&size=64
 // ==/UserScript==
+
+/**
+ * 在地化翻譯類別
+ */
+class I18n {
+    constructor() {
+        // 取得瀏覽器語系 (例如 "zh-TW" -> "zh")
+        const navLang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+        this.currentLang = navLang.split('-')[0];
+
+        this.data = {
+            zh: {
+                read_images: '讀取圖片',
+                confirm_retry: '[是否確定再次執行?]',
+                downloading: '下載中',
+                parsing: '解析中',
+                no_images: '無圖片',
+                unzipping: '解壓',
+                done: '完成',
+                failed: '失敗'
+            },
+            en: {
+                read_images: 'Read Images',
+                confirm_retry: '[Are you sure to run again?]',
+                downloading: 'Downloading',
+                parsing: 'Parsing',
+                no_images: 'No images',
+                unzipping: 'Extracting',
+                done: 'Done',
+                failed: 'Failed'
+            },
+            ja: {
+                read_images: '畫像を読み込む',
+                confirm_retry: '[もう一度実行しますか？]',
+                downloading: 'ダウンロード中',
+                parsing: '解析中',
+                no_images: '畫像なし',
+                unzipping: '解凍',
+                done: '完了',
+                failed: '失敗'
+            },
+            de: {
+                read_images: 'Bilder laden',
+                confirm_retry: '[Wirklich erneut ausführen?]',
+                downloading: 'Herunterladen',
+                parsing: 'Analysieren',
+                no_images: 'Keine Bilder',
+                unzipping: 'Entpacken',
+                done: 'Fertig',
+                failed: 'Fehlgeschlagen'
+            },
+            cs: {
+                read_images: 'Načíst obrázky',
+                confirm_retry: '[Opravdu spustit znovu?]',
+                downloading: 'Stahování',
+                parsing: 'Analýza',
+                no_images: 'Žádné obrázky',
+                unzipping: 'Rozbalování',
+                done: 'Hotovo',
+                failed: 'Selhalo'
+            },
+            lt: {
+                read_images: 'Skaityti paveikslėlius',
+                confirm_retry: '[Ar tikrai paleisti dar kartą?]',
+                downloading: 'Atsisiunčiama',
+                parsing: 'Analizuojama',
+                no_images: 'Nėra paveikslėlių',
+                unzipping: 'Išarchyvuojama',
+                done: 'Atlikta',
+                failed: 'Nepavyko'
+            }
+        };
+    }
+
+    /**
+     * 取得翻譯文字，若無該語系則回傳英文
+     */
+    t(key) {
+        const langData = this.data[this.currentLang] || this.data['en'];
+        return langData[key] || this.data['en'][key] || key;
+    }
+}
 
 class ZipImageExtractor {
     constructor() {
@@ -33,14 +115,13 @@ class ZipImageExtractor {
             POLLING_INTERVAL: 500,
             MAX_ATTEMPTS: 50
         };
+        this.i18n = new I18n(); // 初始化翻譯類別
         this.processedElements = new WeakSet();
         this.attempts = 0;
         this.intervalId = null;
+        this.toggleState = true;
     }
 
-    /**
-     * 入口點：開始定時掃描
-     */
     init() {
         console.log(`${this.CONFIG.LOG_PREFIX} 啟動中...`);
         this.startPolling();
@@ -54,12 +135,10 @@ class ZipImageExtractor {
         this.intervalId = setInterval(() => {
             this.attempts++;
             const lib = this.zipLib;
-            if (lib) {
-                this.scan();
-            }
+            if (lib) this.scan();
             if (this.attempts >= this.CONFIG.MAX_ATTEMPTS) {
                 clearInterval(this.intervalId);
-                console.log(`${this.CONFIG.LOG_PREFIX} 達到最大掃描次數，停止尋找`);
+                console.log(`${this.CONFIG.LOG_PREFIX} 輪詢掃描結束`);
             }
         }, this.CONFIG.POLLING_INTERVAL);
     }
@@ -69,20 +148,20 @@ class ZipImageExtractor {
             const links = document.querySelectorAll('li.post__attachment a:first-of-type');
             links.forEach(link => {
                 const href = link.href.toLowerCase().split('?')[0];
-                const isZip = href.endsWith('.zip');
-                if (isZip && !this.processedElements.has(link)) {
+                if (href.endsWith('.zip') && !this.processedElements.has(link)) {
                     this.injectButton(link);
                 }
             });
         } catch (err) {
-            console.error(`${this.CONFIG.LOG_PREFIX} 掃描時發生錯誤:`, err);
+            console.error(`${this.CONFIG.LOG_PREFIX} 掃描錯誤:`, err);
         }
     }
 
     injectButton(link) {
         this.processedElements.add(link);
         const btn = document.createElement('button');
-        btn.innerText = '讀取圖片';
+        btn.innerText = this.i18n.t('read_images');
+
         const btnStyle = {
             padding: "5px 10px",
             backgroundColor: "#282a2e",
@@ -107,46 +186,33 @@ class ZipImageExtractor {
         link.parentNode.insertBefore(btn, link.nextSibling);
     }
 
-    /**
-     * 處理按鈕點選邏輯（包含二次確認）
-     */
     handleButtonClick(url, anchor, btn) {
-        // 如果已經標記為 processed，進入二次確認
+        const confirmText = this.i18n.t('confirm_retry');
         if (btn.dataset.processed === 'true') {
-            // 第一次點選已完成的按鈕 → 顯示確認文字
-            if (btn.innerText !== '[是否確定再次執行?]') {
-                this.updateBtnState(btn, 'confirm', '[是否確定再次執行?]');
+            if (btn.innerText !== confirmText) {
+                this.updateBtnState(btn, 'confirm', confirmText);
                 return;
             }
-            // 第二次點選確認 → 移除標記並執行
             delete btn.dataset.processed;
         }
-
-        // 正式執行解壓流程
         this.handleUnzipProcess(url, anchor, btn);
     }
 
-    /**
-     * 解壓主流程（成功後標記 data-processed）
-     */
     async handleUnzipProcess(url, anchor, btn) {
         const lib = this.zipLib;
         const container = document.querySelector('.post__files');
 
-        if (!lib || !container) {
-            console.error('系統初始化失敗或找不到放置圖片的容器');
-            return;
-        }
+        if (!lib || !container) return;
 
         try {
-            let toggle = true;
             const response = await this.downloadFile(url, (p) => {
-                toggle = !toggle;
-                const icon = toggle ? '🈧' : '🈱';
-                this.updateBtnState(btn, 'loading', `${icon} 下載中...${p}%`);
+                this.toggleState = !this.toggleState;
+                const icon = this.toggleState ? '🈧' : '🈱';
+                btn.innerText = `${icon} ${this.i18n.t('downloading')}...${p}%`;
+                this.updateBtnState(btn, 'loading', btn.innerText);
             });
 
-            this.updateBtnState(btn, 'loading', '🈵︎ 解析中...');
+            this.updateBtnState(btn, 'loading', `🈵︎ ${this.i18n.t('parsing')}...`);
 
             const zipReader = new lib.ZipReader(new lib.Uint8ArrayReader(new Uint8Array(response)));
             const entries = await zipReader.getEntries();
@@ -156,24 +222,22 @@ class ZipImageExtractor {
             );
 
             if (images.length === 0) {
-                this.updateBtnState(btn, 'done', '🈳︎ 無圖片');
+                this.updateBtnState(btn, 'done', `🈳︎ ${this.i18n.t('no_images')}`);
             } else {
                 for (let i = 0; i < images.length; i++) {
-                    btn.innerText = `🉃 解壓 ${i + 1}/${images.length}`;
+                    btn.innerText = `🉃 ${this.i18n.t('unzipping')} ${i + 1}/${images.length}`;
                     const blob = await images[i].getData(new lib.BlobWriter());
                     this.renderImage(blob, images[i].filename, container);
                 }
-                this.updateBtnState(btn, 'done', `🉇 完成 (${images.length})`);
+                this.updateBtnState(btn, 'done', `🉇 ${this.i18n.t('done')} (${images.length})`);
             }
 
             await zipReader.close();
-
-            // 成功完成後標記 data-processed
             btn.dataset.processed = 'true';
 
         } catch (err) {
             console.error(`${this.CONFIG.LOG_PREFIX} 錯誤:`, err);
-            this.updateBtnState(btn, 'error', '🉈 失敗');
+            this.updateBtnState(btn, 'error', `🉈 ${this.i18n.t('failed')}`);
         }
     }
 
@@ -184,9 +248,7 @@ class ZipImageExtractor {
                 url: url,
                 responseType: "arraybuffer",
                 onprogress: (evt) => {
-                    if (evt.lengthComputable) {
-                        onProgress(Math.round((evt.loaded / evt.total) * 100));
-                    }
+                    if (evt.lengthComputable) onProgress(Math.round((evt.loaded / evt.total) * 100));
                 },
                 onload: (res) => (res.status === 200) ? resolve(res.response) : reject(res),
                 onerror: reject
