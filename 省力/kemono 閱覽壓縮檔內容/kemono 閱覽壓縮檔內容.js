@@ -17,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.2.0
+// @version      1.3.0
 // @match        https://kemono.cr/*/user/*/post/*
 // @require      https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
 // @grant        GM_xmlhttpRequest
@@ -149,7 +149,7 @@ class ZipImageExtractor {
             links.forEach(link => {
                 const href = link.href.toLowerCase().split('?')[0];
                 if (href.endsWith('.zip') && !this.processedElements.has(link)) {
-                    this.injectButton(link);
+                    this.creatDownloadButton(link);
                 }
             });
         } catch (err) {
@@ -157,7 +157,7 @@ class ZipImageExtractor {
         }
     }
 
-    injectButton(link) {
+    creatDownloadButton(link) {
         this.processedElements.add(link);
         const btn = document.createElement('button');
         btn.innerText = this.i18n.t('read_images');
@@ -195,66 +195,153 @@ class ZipImageExtractor {
             }
             delete btn.dataset.processed;
         }
-        this.handleUnzipProcess(url, anchor, btn);
+        this.downloadArchive(url, anchor, btn);
     }
 
-    async handleUnzipProcess(url, anchor, btn) {
+    async downloadArchive(url, anchor, btn) {
         const lib = this.zipLib;
         const container = document.querySelector('.post__files');
-
         if (!lib || !container) return;
 
+        const cache = {
+            buffer: null,
+            password: null,
+            processed: false
+        };
+
         try {
-            const response = await this.downloadFile(url, (p) => {
-                this.toggleState = !this.toggleState;
-                const icon = this.toggleState ? '🈧' : '🈱';
-                btn.innerText = `${icon} ${this.i18n.t('downloading')}...${p}%`;
-                this.updateBtnState(btn, 'loading', btn.innerText);
+            this.updateBtnState(btn, 'loading', `🈧 ${this.i18n.t('downloading')}...0%`);
+
+            const response = await new Promise((resolve, reject) => {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url,
+                    responseType: 'arraybuffer',
+                    onprogress: e => {
+                        if (e.lengthComputable) {
+                            const percent = Math.round(e.loaded / e.total * 100);
+                            this.toggleState = !this.toggleState;
+                            const icon = this.toggleState ? '🈧' : '🈱';
+                            btn.innerText = `${icon} ${this.i18n.t('downloading')}...${percent}%`;
+                            this.updateBtnState(btn, 'loading', btn.innerText);
+                        }
+                    },
+                    onload: res => {
+                        if (res.status === 200) {
+                            resolve(res.response);
+                        } else {
+                            reject(new Error(`下載失敗，狀態碼：${res.status}`));
+                        }
+                    },
+                    onerror: reject
+                });
             });
 
-            this.updateBtnState(btn, 'loading', `🈵︎ ${this.i18n.t('parsing')}...`);
+            cache.buffer = response;
+            this.updateBtnState(btn, 'loading', `🈵 ${this.i18n.t('parsing')}...`);
 
-            const zipReader = new lib.ZipReader(new lib.Uint8ArrayReader(new Uint8Array(response)));
-            const entries = await zipReader.getEntries();
+            await this.unzipArchive(cache, btn, container, url);
 
-            const images = entries.filter(entry =>
-                !entry.directory && this.CONFIG.EXTENSIONS.some(ext => entry.filename.toLowerCase().endsWith(ext))
-            );
-
-            if (images.length === 0) {
-                this.updateBtnState(btn, 'done', `🈳︎ ${this.i18n.t('no_images')}`);
-            } else {
-                for (let i = 0; i < images.length; i++) {
-                    btn.innerText = `🉃 ${this.i18n.t('unzipping')} ${i + 1}/${images.length}`;
-                    const blob = await images[i].getData(new lib.BlobWriter());
-                    this.renderImage(blob, images[i].filename, container);
-                }
-                this.updateBtnState(btn, 'done', `🉇 ${this.i18n.t('done')} (${images.length})`);
-            }
-
-            await zipReader.close();
             btn.dataset.processed = 'true';
+            cache.processed = true;
 
         } catch (err) {
-            console.error(`${this.CONFIG.LOG_PREFIX} 錯誤:`, err);
+            console.error(`${this.CONFIG.LOG_PREFIX} 處理失敗:`, err);
             this.updateBtnState(btn, 'error', `🉈 ${this.i18n.t('failed')}`);
         }
     }
 
-    downloadFile(url, onProgress) {
-        return new Promise((resolve, reject) => {
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: url,
-                responseType: "arraybuffer",
-                onprogress: (evt) => {
-                    if (evt.lengthComputable) onProgress(Math.round((evt.loaded / evt.total) * 100));
-                },
-                onload: (res) => (res.status === 200) ? resolve(res.response) : reject(res),
-                onerror: reject
-            });
-        });
+    async unzipArchive(cache, btn, container, url) {
+        const lib = this.zipLib;
+
+        const reader = new lib.ZipReader(
+            new lib.Uint8ArrayReader(new Uint8Array(cache.buffer))
+        );
+
+        try {
+            const entries = await reader.getEntries();
+            const images = entries.filter(entry =>
+                                          !entry.directory &&
+                                          this.CONFIG.EXTENSIONS.some(ext => entry.filename.toLowerCase().endsWith(ext))
+                                         );
+
+            if (images.length === 0) {
+                this.updateBtnState(btn, 'done', `🈳 ${this.i18n.t('no_images')}`);
+                return;
+            }
+
+            const isEncrypted = images.some(e => e.encrypted);
+
+            if (isEncrypted && !cache.password) {
+                this.updateBtnState(btn, 'waiting', this.i18n.t('password_required'));
+                this.createPasswordInput(btn, (pwd) => {
+                    cache.password = pwd;
+                    this.unzipArchive(cache, btn, container, url);
+                });
+                return;
+            }
+
+            for (let i = 0; i < images.length; i++) {
+                btn.innerText = `🉃 ${this.i18n.t('unzipping')} ${i + 1}/${images.length}`;
+                this.updateBtnState(btn, 'loading', btn.innerText);
+
+                const options = isEncrypted ? { password: cache.password } : undefined;
+                const blob = await images[i].getData(new lib.BlobWriter(), options);
+
+                this.renderImage(blob, images[i].filename, container);
+            }
+
+            this.updateBtnState(btn, 'done', `🉇 ${this.i18n.t('done')} (${images.length})`);
+
+        } catch (err) {
+            if (err.message?.includes('password') || err.message?.includes('decrypt')) {
+                this.updateBtnState(btn, 'error', `🉈 ${this.i18n.t('wrong_password')}`);
+                cache.password = null;
+                this.createPasswordInput(btn, (pwd) => {
+                    cache.password = pwd;
+                    this.unzipArchive(cache, btn, container, url);
+                });
+            } else {
+                console.error(`${this.CONFIG.LOG_PREFIX} 解壓錯誤:`, err);
+                this.updateBtnState(btn, 'error', `🉈 ${this.i18n.t('failed')}`);
+            }
+        } finally {
+            await reader.close();
+        }
     }
+
+
+
+    createPasswordInput(btn, callback) {
+        if (btn.nextSibling?.classList?.contains('zip-password-input')) return;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'zip-password-input';
+        input.placeholder = this.i18n.t('enter_password');
+
+        Object.assign(input.style, {
+            marginLeft: '8px',
+            padding: '4px 8px',
+            background: '#1e1f22',
+            color: '#fff',
+            border: '1px solid #666',
+            borderRadius: '4px',
+            width: '160px',
+            fontSize: '14px'
+        });
+
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && input.value.trim()) {
+                callback(input.value.trim());
+                input.remove();
+            }
+        });
+
+        btn.after(input);
+        input.focus();
+    }
+
 
     renderImage(blob, filename, container) {
         const imageUrl = URL.createObjectURL(blob);
