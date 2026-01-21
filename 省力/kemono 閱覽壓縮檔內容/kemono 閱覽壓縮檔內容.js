@@ -17,99 +17,13 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.3.2
+// @version      1.3.3
 // @match        https://kemono.cr/*/user/*/post/*
 // @require      https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
 // @grant        GM_xmlhttpRequest
 // @connect      self
 // @icon         https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kemono.cr&size=64
 // ==/UserScript==
-
-class I18n {
-    constructor() {
-        let navLang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
-        navLang = navLang.toLowerCase();
-
-        if (navLang.startsWith('zh') || navLang === 'cmn') {
-            this.currentLang = 'zh';
-        } else {
-            this.currentLang = navLang.split('-')[0];
-        }
-
-        this.data = {
-            zh: {
-                read_images: '讀取圖片',
-                confirm_retry: '[是否確定再次執行?]',
-                downloading: '下載中',
-                parsing: '解析中',
-                no_images: '無圖片',
-                unzipping: '解壓',
-                done: '完成',
-                failed: '失敗'
-            },
-            en: {
-                read_images: 'Read Images',
-                confirm_retry: '[Are you sure to run again?]',
-                downloading: 'Downloading',
-                parsing: 'Parsing',
-                no_images: 'No images',
-                unzipping: 'Extracting',
-                done: 'Done',
-                failed: 'Failed'
-            },
-            ja: {
-                read_images: '画像を読み込む',
-                confirm_retry: '[もう一度実行しますか？]',
-                downloading: 'ダウンロード中',
-                parsing: '解析中',
-                no_images: '画像なし',
-                unzipping: '解凍',
-                done: '完了',
-                failed: '失敗'
-            },
-            de: {
-                read_images: 'Bilder laden',
-                confirm_retry: '[Wirklich erneut ausführen?]',
-                downloading: 'Herunterladen',
-                parsing: 'Analysieren',
-                no_images: 'Keine Bilder',
-                unzipping: 'Entpacken',
-                done: 'Fertig',
-                failed: 'Fehlgeschlagen'
-            },
-            cs: {
-                read_images: 'Načíst obrázky',
-                confirm_retry: '[Opravdu spustit znovu?]',
-                downloading: 'Stahování',
-                parsing: 'Analýza',
-                no_images: 'Žádné obrázky',
-                unzipping: 'Rozbalování',
-                done: 'Hotovo',
-                failed: 'Selhalo'
-            },
-            lt: {
-                read_images: 'Skaityti paveikslėlius',
-                confirm_retry: '[Ar tikrai paleisti dar kartą?]',
-                downloading: 'Atsisiunčiama',
-                parsing: 'Analizuojama',
-                no_images: 'Nėra paveikslėlių',
-                unzipping: 'Išarchyvuojama',
-                done: 'Atlikta',
-                failed: 'Nepavyko'
-            }
-        };
-    }
-
-    t(key) {
-        let langData = this.data[this.currentLang];
-
-        if (!langData) {
-            langData = this.data['zh'];
-        }
-
-        return langData[key] || this.data['en'][key] || key;
-    }
-}
 
 class ZipImageExtractor {
     constructor() {
@@ -142,7 +56,7 @@ class ZipImageExtractor {
             if (lib) this.scan();
             if (this.attempts >= this.CONFIG.MAX_ATTEMPTS) {
                 clearInterval(this.intervalId);
-                console.log(`${this.CONFIG.LOG_PREFIX} 輪詢掃描結束`);
+                console.log(`${this.CONFIG.LOG_PREFIX} 搜尋結束`);
             }
         }, this.CONFIG.POLLING_INTERVAL);
     }
@@ -157,7 +71,7 @@ class ZipImageExtractor {
                 }
             });
         } catch (err) {
-            console.error(`${this.CONFIG.LOG_PREFIX} 掃描錯誤:`, err);
+            console.error(`${this.CONFIG.LOG_PREFIX} 搜尋錯誤:`, err);
         }
     }
 
@@ -374,6 +288,98 @@ class ZipImageExtractor {
             btn.style.borderColor = "#3b3e44CC";
             btn.style.backgroundColor = "#282a2e";
         }
+    }
+}
+
+class I18n {
+    constructor() {
+        let navLang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+        navLang = navLang.toLowerCase();
+
+        if (navLang.startsWith('zh') || navLang === 'cmn') {
+            this.currentLang = 'zh';
+        } else {
+            this.currentLang = navLang.split('-')[0];
+        }
+
+        this.data = {
+            zh: {
+                read_images: '讀取圖片',
+                confirm_retry: '[是否確定再次執行?]',
+                downloading: '下載中',
+                parsing: '解析中',
+                no_images: '無圖片',
+                unzipping: '解壓',
+                enter_password: '輸入密碼',
+                done: '完成',
+                failed: '失敗'
+            },
+            en: {
+                read_images: 'Read Images',
+                confirm_retry: '[Confirm to run again?]',
+                downloading: 'Downloading',
+                parsing: 'Parsing',
+                no_images: 'No Images',
+                unzipping: 'Extracting',
+                enter_password: 'Enter Password',
+                done: 'Done',
+                failed: 'Failed'
+            },
+            ja: {
+                read_images: '画像を読み込む',
+                confirm_retry: '[もう一度実行しますか？]',
+                downloading: 'ダウンロード中',
+                parsing: '解析中',
+                no_images: '画像なし',
+                unzipping: '解凍中',
+                enter_password: 'パスワードを入力',
+                done: '完了',
+                failed: '失敗'
+            },
+            de: {
+                read_images: 'Bilder laden',
+                confirm_retry: '[Erneut ausführen?]',
+                downloading: 'Herunterladen',
+                parsing: 'Analysieren',
+                no_images: 'Keine Bilder',
+                unzipping: 'Entpacken',
+                enter_password: 'Passwort eingeben',
+                done: 'Fertig',
+                failed: 'Fehlgeschlagen'
+            },
+            cs: {
+                read_images: 'Načíst obrázky',
+                confirm_retry: '[Opravdu spustit znovu?]',
+                downloading: 'Stahování',
+                parsing: 'Analýza',
+                no_images: 'Žádné obrázky',
+                unzipping: 'Rozbalování',
+                enter_password: 'Zadat heslo',
+                done: 'Hotovo',
+                failed: 'Selhalo'
+            },
+            lt: {
+                read_images: 'Skaityti paveikslėlius',
+                confirm_retry: '[Ar tikrai paleisti dar kartą?]',
+                downloading: 'Atsisiunčiama',
+                parsing: 'Analizuojama',
+                no_images: 'Nėra paveikslėlių',
+                unzipping: 'Išarchyvuojama',
+                enter_password: 'Įvesti slaptažodį',
+                done: 'Atlikta',
+                failed: 'Nepavyko'
+            }
+        };
+    }
+
+    t(key) {
+        let langData = this.data[this.currentLang];
+
+        if (!langData) {
+            langData = this.data['zh'];
+        }
+
+        return langData[key] || this.data['en'][key] || key;
     }
 }
 
