@@ -17,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.3.1
+// @version      1.3.2
 // @match        https://kemono.cr/*/user/*/post/*
 // @require      https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
 // @grant        GM_xmlhttpRequest
@@ -27,8 +27,14 @@
 
 class I18n {
     constructor() {
-        const navLang = (navigator.languages && navigator.languages[0]) || navigator.language || 'zh';
-        this.currentLang = navLang.split('-')[0];
+        let navLang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+        navLang = navLang.toLowerCase();
+
+        if (navLang.startsWith('zh') || navLang === 'cmn') {
+            this.currentLang = 'zh';
+        } else {
+            this.currentLang = navLang.split('-')[0];
+        }
 
         this.data = {
             zh: {
@@ -52,11 +58,11 @@ class I18n {
                 failed: 'Failed'
             },
             ja: {
-                read_images: '畫像を読み込む',
+                read_images: '画像を読み込む',
                 confirm_retry: '[もう一度実行しますか？]',
                 downloading: 'ダウンロード中',
                 parsing: '解析中',
-                no_images: '畫像なし',
+                no_images: '画像なし',
                 unzipping: '解凍',
                 done: '完了',
                 failed: '失敗'
@@ -95,7 +101,12 @@ class I18n {
     }
 
     t(key) {
-        const langData = this.data[this.currentLang] || this.data['zh'];
+        let langData = this.data[this.currentLang];
+
+        if (!langData) {
+            langData = this.data['zh'];
+        }
+
         return langData[key] || this.data['en'][key] || key;
     }
 }
