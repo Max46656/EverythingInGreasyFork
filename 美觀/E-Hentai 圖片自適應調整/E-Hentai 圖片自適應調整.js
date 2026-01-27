@@ -18,7 +18,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.6.0
+// @version      1.7.0
 // @match        https://exhentai.org/s/*/*
 // @match        https://e-hentai.org/s/*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=e-hentai.org
@@ -33,6 +33,14 @@ class ImageResizer {
     constructor() {
         this.currentModeId = GM_getValue('img_mode_id', 'fit-window');
         this.menuId = null;
+        this.imgElements = [];
+        this.focusedIndex = 0;
+        this.shortcuts = GM_getValue('shortcuts', {
+            modifier: 'CapsLock',
+            next: 'W',
+            prev: 'Q',
+            first: 'E'
+        });
     }
 
     get MODES() {
@@ -47,9 +55,16 @@ class ImageResizer {
     init() {
         this.applyBaseStyles();
         this.registerMenu();
-        this.scrollToCurrent();
+        this.registerKeyboardShortcuts();
+
         const loadHandler = () => {
             this.injectUI();
+            this.collectImages();
+
+            if (this.imgElements.length > 0) {
+                this.focusedIndex = 0;
+                this.scrollToCurrent(false);
+            }
         };
 
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadHandler);
@@ -138,15 +153,46 @@ class ImageResizer {
         target.appendChild(select);
     }
 
-      scrollToCurrent(center = true) {
-        const pic = document.querySelector('#img');
-        if (pic) {
-            pic.scrollIntoView({
+    collectImages() {
+        this.imgElements = Array.from(document.querySelectorAll('#img'));
+    }
+
+    scrollToCurrent(center = true) {
+        if (this.imgElements[this.focusedIndex]) {
+            this.imgElements[this.focusedIndex].scrollIntoView({
                 block: center ? 'center' : 'start',
                 behavior: 'smooth'
             });
             // console.log(`[${GM_info.script.name}] Focused image #${this.focusedIndex + 1} of ${this.imgElements.length}`);
         }
+    }
+
+    switchImage(direction) {
+        this.collectImages();
+        if (this.imgElements.length === 0) return;
+        if(direction == 0)  this.focusedIndex = 0;
+        else this.focusedIndex = (this.focusedIndex + direction + this.imgElements.length) % this.imgElements.length;
+        this.scrollToCurrent(true);
+    }
+
+    registerKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            console.log(e.getModifierState,e.key)
+            if (!e.getModifierState(this.shortcuts.modifier)) return;
+
+            const key = e.key.toLowerCase();
+
+            if (key === this.shortcuts.next.toLowerCase()) {
+                e.preventDefault();
+                this.switchImage(1);
+            } else if (key === this.shortcuts.prev.toLowerCase()) {
+                e.preventDefault();
+                this.switchImage(-1);
+            } else if (key === this.shortcuts.first.toLowerCase()) {
+                e.preventDefault();
+                this.switchImage(0);
+            }
+        });
     }
 }
 
