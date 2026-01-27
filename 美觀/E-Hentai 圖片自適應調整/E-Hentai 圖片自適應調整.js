@@ -18,7 +18,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.5.2
+// @version      1.6.0
 // @match        https://exhentai.org/s/*/*
 // @match        https://e-hentai.org/s/*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=e-hentai.org
@@ -38,45 +38,54 @@ class ImageResizer {
     get MODES() {
         return {
             '1': { id: 'fit-window', label: '🞎', mw: '100vw', mh: '100vh', w: 'auto', h: 'auto' },
-            '2': { id: 'fit-height', label: '⭿',  mw: 'none',  mh: '100vh', w: 'auto', h: '100vh' },
-            '3': { id: 'fit-width',  label: '⭾',  mw: '100%', mh: 'none',   w: '100vw', h: 'auto' },
-            '4': { id: 'original',   label: '🞨',  mw: 'none',  mh: 'none',   w: 'auto', h: 'auto' }
+            '2': { id: 'fit-height', label: '⭿', mw: 'none', mh: '100vh', w: 'auto', h: '100vh' },
+            '3': { id: 'fit-width', label: '⭾', mw: '100%', mh: 'none', w: '100vw', h: 'auto' },
+            '4': { id: 'original', label: '🞨', mw: 'none', mh: 'none', w: 'auto', h: 'auto' }
         };
+    }
+
+    init() {
+        this.applyBaseStyles();
+        this.registerMenu();
+        this.scrollToCurrent();
+        const loadHandler = () => {
+            this.injectUI();
+        };
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadHandler);
+        else loadHandler();
     }
 
     applyBaseStyles() {
         GM_addStyle(`
-            :root {
-                --eh-mw: none; --eh-mh: none; --eh-w: auto; --eh-h: auto;
-            }
-
-            #i1 {
-                width: 100% !important;
-            }
-
-            #img {
-                max-width: var(--eh-mw) !important;
-                max-height: var(--eh-mh) !important;
-                width: var(--eh-w) !important;
-                height: var(--eh-h) !important;
-                display: block !important;
-                margin: 0 auto !important;
-                flex-shrink: 0;
-            }
-
-            .eh-resizer-select {
-                margin-left: 10px;
-                padding: 0 5px;
-                background: #34353b;
-                color: #fff;
-                border: 1px solid #5c5c5c;
-                cursor: pointer;
-                font-size: 14px;
-                vertical-align: middle;
-            }
-        `);
-        this.updateCSSVariables();
-    }
+                :root {
+                    --eh-mw: none; --eh-mh: none; --eh-w: auto; --eh-h: auto;
+                }
+                #i1 {
+                    width: 100% !important;
+                }
+                #img {
+                    max-width: var(--eh-mw) !important;
+                    max-height: var(--eh-mh) !important;
+                    width: var(--eh-w) !important;
+                    height: var(--eh-h) !important;
+                    display: block !important;
+                    margin: 0 auto !important;
+                    flex-shrink: 0;
+                }
+                .eh-resizer-select {
+                    margin-left: 10px;
+                    padding: 0 5px;
+                    background: #34353b;
+                    color: #fff;
+                    border: 1px solid #5c5c5c;
+                    cursor: pointer;
+                    font-size: 14px;
+                    vertical-align: middle;
+                }
+            `);
+            this.updateCSSVariables();
+        }
 
     updateCSSVariables() {
         const modeConfig = Object.values(this.MODES).find(m => m.id === this.currentModeId) || this.MODES['1'];
@@ -91,10 +100,8 @@ class ImageResizer {
         this.currentModeId = modeId;
         GM_setValue('img_mode_id', modeId);
         this.updateCSSVariables();
-
         const select = document.querySelector('.eh-resizer-select');
         if (select) select.value = modeId;
-
         this.registerMenu();
     }
 
@@ -102,31 +109,24 @@ class ImageResizer {
         if (this.menuId !== null) {
             GM_unregisterMenuCommand(this.menuId);
         }
-
         const currentConfig = Object.values(this.MODES).find(m => m.id === this.currentModeId) || this.MODES['1'];
         const menuLabel = `Mode: [ ${currentConfig.label} ] Click to Change`;
-
         this.menuId = GM_registerMenuCommand(menuLabel, () => {
             let menuPrompt = "Select Mode / 切換模式 (Enter Number):\n";
             for (const [num, config] of Object.entries(this.MODES)) {
-                const activeMarker = (config.id === this.currentModeId) ? " ▶ " : "    ";
+                const activeMarker = (config.id === this.currentModeId) ? " ▶ " : " ";
                 menuPrompt += `${num}.${activeMarker}${config.label} (${config.id})\n`;
             }
-
             const choice = prompt(menuPrompt, "");
-            if (choice && this.MODES[choice]) {
-                this.setModeById(this.MODES[choice].id);
-            }
+            if (choice && this.MODES[choice]) this.setModeById(this.MODES[choice].id);
         });
     }
 
     injectUI() {
         const target = document.querySelector('.sn');
         if (!target) return;
-
         const select = document.createElement('select');
         select.className = 'eh-resizer-select';
-
         Object.values(this.MODES).forEach(config => {
             const opt = document.createElement('option');
             opt.value = config.id;
@@ -134,19 +134,18 @@ class ImageResizer {
             if (config.id === this.currentModeId) opt.selected = true;
             select.appendChild(opt);
         });
-
         select.addEventListener('change', (e) => this.setModeById(e.target.value));
         target.appendChild(select);
     }
 
-    init() {
-        this.applyBaseStyles();
-        this.registerMenu();
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.injectUI());
-        } else {
-            this.injectUI();
+      scrollToCurrent(center = true) {
+        const pic = document.querySelector('#img');
+        if (pic) {
+            pic.scrollIntoView({
+                block: center ? 'center' : 'start',
+                behavior: 'smooth'
+            });
+            // console.log(`[${GM_info.script.name}] Focused image #${this.focusedIndex + 1} of ${this.imgElements.length}`);
         }
     }
 }
