@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.10.7
+// @version      1.10.8
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -67,7 +67,7 @@ class tagsStrategy extends pageStrategy{
         return 'section:not(:has(aside)) li:has(a[data-gtm-user-id])';
     }
     getRenderArtWallClass() {
-        return 'div~div:has(a[data-gtm-user-id]):not(:has(aside))';
+        return 'div~div:has(a[data-gtm-user-id]):not(:has(aside)) ul';
     }
     getArtWallAlignLeftClass(){
         return 'iJEVBL';
@@ -76,7 +76,7 @@ class tagsStrategy extends pageStrategy{
         return 'div:nth-child(3) div:first-child div:first-child:has(div span+a+button)';
     }
     getAllButtonClass() {
-        return ['eeVCEP','kAYFHF','dfpVDH','kJllWI','kIZPuM','eZKthY','kdCJVt'];
+        return ['eeVCEP','kAYFHF','dfpVDH','kJllWI','kIZPuM','eZKthY','kdCJVt','kHGsvi','kAHnAR'];
     }
     getArtsCountClass(){
         return 'h3+div span:not([class])';
@@ -431,7 +431,7 @@ class artScraper {
 
         const table = document.createElement('table');
         table.classList.add('TableArtWall');
-        table.style.cssText = 'width: 1223px; overflow-y: auto; margin: 0 auto;';
+        //table.style.cssText = 'width: 1223px; overflow-y: auto; margin: 0 auto;';
 
         const  alignLeftClass =this.strategy.getArtWallAlignLeftClass();
 
