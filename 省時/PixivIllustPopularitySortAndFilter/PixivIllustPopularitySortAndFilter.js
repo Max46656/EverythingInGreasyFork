@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.10.9
+// @version      1.10.10
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -431,7 +431,7 @@ class artScraper {
 
         const table = document.createElement('table');
         table.classList.add('TableArtWall');
-        //table.style.cssText = 'width: 1223px; overflow-y: auto; margin: 0 auto;';
+        table.style.cssText = 'width: auto; overflow-y: auto; margin: 0 auto;';
 
         const  alignLeftClass =this.strategy.getArtWallAlignLeftClass();
 
