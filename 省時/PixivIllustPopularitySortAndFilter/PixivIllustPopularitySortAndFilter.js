@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.10.6
+// @version      1.10.7
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -76,7 +76,7 @@ class tagsStrategy extends pageStrategy{
         return 'div:nth-child(3) div:first-child div:first-child:has(div span+a+button)';
     }
     getAllButtonClass() {
-        return ['eeVCEP','kAYFHF','dfpVDH'];
+        return ['eeVCEP','kAYFHF','dfpVDH','kJllWI','kIZPuM','eZKthY','kdCJVt'];
     }
     getArtsCountClass(){
         return 'h3+div span:not([class])';
@@ -872,14 +872,20 @@ class readingStand {
     }
 }
 
-//網頁名稱不論載入或AJAX更換頁面都會在過程會觸發1次，hashchange與popstate在此無法正確處理
-const title = document.querySelector('title');
-//新增對網頁網址的檢查，以確保即便標題被其他程式修改，腳本仍能意識到是否在相同頁面
-let pageUrl = window.location.href;
+//網頁名稱不論載入或AJAX更換頁面都會在過程會觸發1次，hashchange與popstate在此無法正確處理，改使用自定事件
+let currentTitle = document.title;
+Object.defineProperty(document, 'title', {
+    get: function() {
+        return currentTitle;
+    },
+    set: function(newTitle) {
+        currentTitle = newTitle;
+        const event = new CustomEvent('titlechange', { detail: { newTitle: newTitle } });
+        window.dispatchEvent(event);
+    }
+});
 
-const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        //console.log('頁面名稱更改為 "%s"', document.title);
+window.addEventListener('titlechange', (e) => {
         readingStand.expandAllArtworks();
         if (window.location.href === pageUrl) {
             return;
@@ -887,11 +893,11 @@ const observer = new MutationObserver(function(mutations) {
         pageUrl = window.location.href;
         let johnTheHornyOne = new artScraper(10, 50);
         johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
-    });
 });
 
-let config = {childList: true,};
-observer.observe(title, config);
+//新增對網頁網址的檢查，以確保即便標題被其他程式修改，腳本仍能意識到是否在相同頁面
+let pageUrl = window.location.href;
+
 //初始化
 let johnTheHornyOne = new artScraper(10, 50);
 johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
