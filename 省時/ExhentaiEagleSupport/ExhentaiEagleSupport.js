@@ -7,7 +7,7 @@
 // @description:en Automatically open Exhentai original images and add them to Eagle (with batch support)
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.2.3
+// @version      1.2.4
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -62,7 +62,7 @@ class PicTrioFactory {
 }
 
 /**
- * 只負責「自動模式」與相簿資訊儲存
+ * 負責「自動模式」與相簿資訊儲存
  */
 class AlbumPageManager {
   constructor() {
@@ -121,95 +121,93 @@ class AlbumPageManager {
  */
 class BatchDownloader {
   constructor() {
-    this.processedLinks = new WeakSet();
     this.gdtObserver = null;
   }
 
   init() {
+    this.injectStyles();
+
     this.addBatchButton();
-    this.startGdtObserver();
-    this.processExistingThumbnails();
+    this.startGalleryObserver();
+
+    this.processThumbnails();
   }
 
-  startGdtObserver() {
+  /**
+   * 注入必要的 CSS 樣式（只執行一次）
+   */
+  injectStyles() {
+    if (document.getElementById('eagle-batch-css')) return;
+
+    GM_addStyle(`
+      .eagle-batch-wrapper {
+        display: inline-block;
+        vertical-align: top;
+        text-align: center;
+        position: relative;
+      }
+      .eagle-batch-wrapper input[type="checkbox"] {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        z-index: 10;
+        width: 16px;
+        height: 16px;
+        opacity: 0.9;
+        cursor: pointer;
+      }
+      #gdt.gdtc .eagle-batch-wrapper,
+      #gdt.gdta .eagle-batch-wrapper {
+        width: 100%;
+        height: 100%;
+      }
+    `);
+
+    const marker = document.createElement('style');
+    marker.id = 'eagle-batch-css';
+    document.head.appendChild(marker);
+  }
+
+  startGalleryObserver() {
     const gdt = document.querySelector('#gdt');
     if (!gdt) return;
 
-    this.gdtObserver = new MutationObserver((mutations) => {
-      let hasNew = false;
-      for (const mutation of mutations) {
-        if (mutation.type !== 'childList') continue;
-        mutation.addedNodes.forEach(node => {
-          if (node.nodeType !== Node.ELEMENT_NODE) return;
-          if (node.tagName === 'A' && node.href?.includes('/s/')) hasNew = true;
-          else if (node.querySelectorAll) {
-            if (node.querySelectorAll('a[href*="hentai.org/s/"]').length > 0) hasNew = true;
-          }
-        });
-      }
-      if (hasNew) this.processNewThumbnails();
+    this.gdtObserver = new MutationObserver(() => {
+      this.processThumbnails();
     });
 
-    this.gdtObserver.observe(gdt, { childList: true, subtree: true });
+    this.gdtObserver.observe(gdt, {
+      childList: true,
+      subtree: true
+    });
   }
 
-  processExistingThumbnails() {
-    this.processThumbnails(document.querySelectorAll('#gdt > a[href*="hentai.org/s/"]'));
-  }
 
-  processNewThumbnails() {
-    const all = document.querySelectorAll('#gdt > a[href*="hentai.org/s/"]');
-    const newlyAdded = Array.from(all).filter(link => !this.processedLinks.has(link));
-    if (newlyAdded.length === 0) return;
-    this.processThumbnails(newlyAdded);
-  }
+  processThumbnails() {
+    const unprocessedLinks = document.querySelectorAll('#gdt a[href*="hentai.org/s/"]:not(.eagle-batch-wrapper *)');
 
-  processThumbnails(links) {
-    links.forEach(link => {
-      if (this.processedLinks.has(link)) return;
+    if (unprocessedLinks.length === 0) return;
 
+    console.log(`[BatchDownloader] 發現 ${unprocessedLinks.length} 個尚未包裝的縮圖連結`);
+
+    unprocessedLinks.forEach(link => {
       const wrapper = document.createElement('div');
       wrapper.className = 'eagle-batch-wrapper';
 
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.style.marginRight = '6px';
-      cb.style.verticalAlign = 'middle';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.style.marginRight = '6px';
+      checkbox.style.verticalAlign = 'middle';
 
-      wrapper.appendChild(cb);
+      wrapper.appendChild(checkbox);
       wrapper.appendChild(link.cloneNode(true));
       link.parentNode.replaceChild(wrapper, link);
-
-      this.processedLinks.add(link);
     });
-
-    if (!document.getElementById('eagle-batch-css')) {
-      GM_addStyle(`
-        .eagle-batch-wrapper {
-          display: inline-block;
-          vertical-align: top;
-          text-align: center;
-          position: relative;
-        }
-        .eagle-batch-wrapper input[type="checkbox"] {
-          position: absolute;
-          top: 4px;
-          left: 4px;
-          z-index: 10;
-          width: 16px;
-          height: 16px;
-          opacity: 0.9;
-          cursor: pointer;
-        }
-        #gdt.gdtc .eagle-batch-wrapper,
-        #gdt.gdta .eagle-batch-wrapper {
-          width: 100%;
-          height: 100%;
-        }
-      `, { id: 'eagle-batch-css' });
-    }
   }
 
+  /**
+   * 新增批次下載按鈕
+   */
   addBatchButton() {
     const container = document.querySelector('#gd2');
     if (!container) return;
@@ -217,30 +215,37 @@ class BatchDownloader {
     const button = document.createElement('button');
     button.id = 'eagleOnSPage';
     button.textContent = 'Batch Add to Eagle';
-    button.style.padding = '5px 10px';
+    button.style.padding     = '5px 10px';
     button.style.backgroundColor = 'rgb(79, 83, 91)';
-    button.style.color = 'white';
-    button.style.border = '1px solid #ccc';
+    button.style.color       = 'white';
+    button.style.border      = '1px solid #ccc';
     button.style.borderRadius = '5px';
-    button.style.cursor = 'pointer';
-    button.style.margin = '4px';
+    button.style.cursor      = 'pointer';
+    button.style.margin      = '4px';
+    button.style.fontWeight  = '500';
 
     button.addEventListener('click', this.handleBatchClick.bind(this));
     container.appendChild(button);
   }
 
+  /**
+   * 處理「批次加入 Eagle」按鈕點擊
+   */
   handleBatchClick() {
     const checked = document.querySelectorAll('.eagle-batch-wrapper input[type="checkbox"]:checked');
+
     if (checked.length === 0) {
-      alert('請先勾選至少一張圖片');
+      console.error('請先勾選至少一張圖片');
       return;
     }
 
-    checked.forEach(cb => {
-      const wrapper = cb.closest('.eagle-batch-wrapper');
+    console.log(`[BatchDownloader] 開始批次開啟 ${checked.length} 個頁面`);
+
+    checked.forEach(checkbox => {
+      const wrapper = checkbox.closest('.eagle-batch-wrapper');
       const link = wrapper?.querySelector('a[href*="hentai.org/s/"]');
       if (link?.href) {
-        GM_openInTab(link.href + '?batch=1', {
+        GM_openInTab(link.href + '?batch=true', {
           active: false,
           insert: true,
           setParent: true
@@ -253,7 +258,7 @@ class BatchDownloader {
 class OriginalPicOpener {
   constructor() {
     this.isAuto = GM_getValue('isAuto', false);
-    this.batchMode = window.location.search.includes('batch=1');
+    this.batchMode = window.location.search.includes('batch=true');
   }
 
   processPage() {
@@ -278,7 +283,7 @@ class OriginalPicOpener {
                        document.querySelector('div.sn span')?.textContent ||
                        'unknown';
 
-    const currentUrl = window.location.href.replace(/\?batch=1$/, '');
+    const currentUrl = window.location.href.replace(/\?batch=true$/, '');
     const picIDMatch = currentUrl.match(/\/s\/(.*?)\/(.*?)$/);
     if (!picIDMatch) return;
 
@@ -296,7 +301,7 @@ class OriginalPicOpener {
   }
 
   savePicInfo() {
-    const currentUrl = window.location.href.replace(/\?batch=1$/, '');
+    const currentUrl = window.location.href.replace(/\?batch=true$/, '');
     const picIDMatch = currentUrl.match(/\/s\/(.*?)\/(.*?)$/);
     if (!picIDMatch) return;
 
