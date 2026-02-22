@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.4.2
+// @version      1.5.1
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -520,7 +520,6 @@ class DataCleaner {
 }
 
 class I18n {
-
     static currentLang = I18n.detectLanguage();
 
     static detectLanguage() {
@@ -529,7 +528,6 @@ class I18n {
     }
 
     static messages = {
-
         zh: {
             autoOn: 'AutoEagle：開啟',
             autoOff: 'AutoEagle：關閉',
@@ -546,7 +544,9 @@ class I18n {
             imageAdded: '圖片已加入 Eagle',
             eagleError: 'Eagle API 發生錯誤',
             cleaned: '已清除舊資料',
-            cleanMenu: '清除舊資料'
+            cleanMenu: '清除舊資料',
+            selectFolder: '─ 選擇儲存資料夾 ─',
+            folderUpdated: (id) => `儲存資料夾已更新，ID: ${id}`
         },
 
         en: {
@@ -565,7 +565,9 @@ class I18n {
             imageAdded: 'Image added to Eagle',
             eagleError: 'Eagle API error',
             cleaned: 'Old data cleaned',
-            cleanMenu: 'Clean Old Data'
+            cleanMenu: 'Clean Old Data',
+            selectFolder: '─ Select Folder ─',
+            folderUpdated: (id) => `Target folder updated, ID: ${id}`
         },
 
         ja: {
@@ -584,23 +586,19 @@ class I18n {
             imageAdded: 'Eagle に追加しました',
             eagleError: 'Eagle API エラー',
             cleaned: '古いデータを削除しました',
-            cleanMenu: '古いデータを削除'
+            cleanMenu: '古いデータを削除',
+            selectFolder: '─ 保存先フォルダを選択 ─',
+            folderUpdated: (id) => `保存先フォルダを更新しました、ID: ${id}`
         }
     };
 
     static t(key, ...args) {
-        const pack =
-              I18n.messages[I18n.currentLang] ||
-              I18n.messages.en;
-
-        const value =
-              pack[key] ||
-              I18n.messages.en[key];
+        const pack = I18n.messages[I18n.currentLang] || I18n.messages.en;
+        const value = pack[key] || I18n.messages.en[key];
 
         if (typeof value === 'function') {
             return value(...args);
         }
-
         return value || key;
     }
 }
