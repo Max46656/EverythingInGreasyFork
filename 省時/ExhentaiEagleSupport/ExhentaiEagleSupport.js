@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.4.0
+// @version      1.4.1
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -67,11 +67,11 @@ class PicTrioFactory {
             opener.processPage();
         }
         else if (currentUrl.match(/.*:\/\/(ex|e-)?hentai\.org\/g\/.*/)) {
-            const albumManager = new AlbumPageManager();
             const batchDownloader = new BatchDownloader();
+            const albumManager = new AlbumPageManager();
 
-            albumManager.init();
             batchDownloader.init();
+            albumManager.init();
         }
     }
 }
