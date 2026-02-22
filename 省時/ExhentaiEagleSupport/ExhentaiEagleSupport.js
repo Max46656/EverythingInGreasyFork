@@ -7,7 +7,7 @@
 // @description:en Automatically open Exhentai original images and add them to Eagle (with batch support)
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.3.0
+// @version      1.3.1
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -17,6 +17,7 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
+// @geant        GM_unregisterMenuCommand
 // @grant        GM_openInTab
 // @grant        GM_addStyle
 // @grant        window.close
@@ -64,39 +65,66 @@ class PicTrioFactory {
 class AlbumPageManager {
   constructor() {
     this.isAuto = GM_getValue('isAuto', false);
+    this.trackTitleChanges = GM_getValue('trackTitleChanges', false);
     this.lastSavedTitle = null;
     this.titleObserver = null;
+    this.menuCommandId = 'track-title-changes';
   }
 
   init() {
     this.saveAlbumInfo();
     this.addAutoButton();
-    this.startTitleObserver();
+    this.registerTrackMenuCommand();
+    if (this.trackTitleChanges) {
+      this.startTitleObserver();
+    }
   }
 
   /**
-   * 監視 h1#gj 和 h1#gn 的文字內容變化，以應對自動翻譯器
+   * 註冊或更新「追蹤標題變化」選單項目
    */
-  startTitleObserver() {
-    const titleContainer = document.querySelector('#gd2') || document.body;
+  registerTrackMenuCommand() {
+    const statusText = this.trackTitleChanges ? '開啟' : '關閉';
+    const caption = `追蹤標題變化 (目前：${statusText})`;
 
+    GM_registerMenuCommand(caption, () => {
+      this.trackTitleChanges = !this.trackTitleChanges;
+      GM_setValue('trackTitleChanges', this.trackTitleChanges);
+
+      if (this.trackTitleChanges) {
+        this.startTitleObserver();
+      } else if (this.titleObserver) {
+        this.titleObserver.disconnect();
+        this.titleObserver = null;
+        console.log('[AlbumPageManager] 已停止追蹤標題變化');
+      }
+
+      this.registerTrackMenuCommand();
+
+      this.saveAlbumInfo();
+    }, { id: this.menuCommandId });
+  }
+
+  startTitleObserver() {
+    if (this.titleObserver) {
+      this.titleObserver.disconnect();
+    }
+
+    const titleContainer = document.querySelector('#gd2') || document.body;
     if (!titleContainer) return;
 
     this.titleObserver = new MutationObserver((mutations) => {
       let titleChanged = false;
-
       for (const mutation of mutations) {
         if (mutation.type === 'characterData' || mutation.type === 'childList') {
           const gj = document.querySelector('h1#gj');
           const gn = document.querySelector('h1#gn');
-
           if (gj || gn) {
             titleChanged = true;
             break;
           }
         }
       }
-
       if (titleChanged) {
         this.saveAlbumInfo();
       }
@@ -107,6 +135,8 @@ class AlbumPageManager {
       characterData: true,
       subtree: true
     });
+
+    console.log('[AlbumPageManager] 已開始追蹤標題變化');
   }
 
   addAutoButton() {
@@ -134,16 +164,19 @@ class AlbumPageManager {
     button.textContent = this.isAuto ? 'AutoEagle: On' : 'AutoEagle: Off';
   }
 
-  /**
-   * 儲存相簿資訊 - 優先使用 h1#gj，若無則使用 h1#gn
-   */
   saveAlbumInfo() {
     const urlID = window.location.pathname.split('/')[2];
 
     let albumTitle = document.querySelector('h1#gj')?.textContent?.trim() ||
-                     document.querySelector('h1#gn')?.textContent?.trim()
+                     document.querySelector('h1#gn')?.textContent?.trim() ||
+                     document.title.replace(/ - ExHentai\.org$/, '')
+                                   .replace(/ - E-Hentai\.org$/, '')
+                                   .trim() ||
+                     'Unknown Album';
 
-    if (albumTitle === this.lastSavedTitle) return;
+    if (albumTitle === this.lastSavedTitle) {
+      return;
+    }
 
     this.lastSavedTitle = albumTitle;
 
@@ -152,8 +185,8 @@ class AlbumPageManager {
       albumUrl: window.location.href,
       albumTitle
     };
-
     GM_setValue('albumData', albumData);
+
     console.log(`[AlbumPageManager] 相簿標題已更新為：${albumTitle}`);
   }
 }
@@ -172,9 +205,6 @@ class BatchDownloader {
     this.processThumbnails();
   }
 
-  /**
-   * 注入必要的 CSS 樣式（只執行一次）
-   */
   injectStyles() {
     if (document.getElementById('eagle-batch-css')) return;
 
@@ -244,9 +274,6 @@ class BatchDownloader {
     });
   }
 
-  /**
-   * 新增批次下載按鈕
-   */
   addBatchButton() {
     const container = document.querySelector('#gd2');
     if (!container) return;
@@ -267,9 +294,6 @@ class BatchDownloader {
     container.appendChild(button);
   }
 
-  /**
-   * 處理「批次加入 Eagle」按鈕點擊
-   */
   handleBatchClick() {
     const checked = document.querySelectorAll('.eagle-batch-wrapper input[type="checkbox"]:checked');
 
