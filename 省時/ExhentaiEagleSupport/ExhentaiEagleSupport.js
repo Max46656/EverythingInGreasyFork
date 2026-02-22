@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.4.1
+// @version      1.4.2
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -151,7 +151,7 @@ class AlbumPageManager {
     }
 
     addAutoButton() {
-        const container = document.querySelector('#gd2');
+        const container = document.querySelector('#taglist');
         if (!container) return;
         const button = document.createElement('button');
         button.id = 'eagleOnHathPage';
@@ -286,7 +286,7 @@ class BatchDownloader {
     }
 
     addBatchButton() {
-        const container = document.querySelector('#gd2');
+        const container = document.querySelector('#taglist');
         if (!container) return;
 
         const button = document.createElement('button');
