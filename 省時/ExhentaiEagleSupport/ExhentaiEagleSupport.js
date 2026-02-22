@@ -1,13 +1,29 @@
 // ==UserScript==
 // @name         熊貓 Eagle 支援
-// @name:ja      Exhentaiイーグルサポート
-// @name:en      Exhentai Eagle Support
-// @description  自動開啟 Exhentai 原圖並將其加入 Eagle + 支援批次加入 Eagle
-// @description:ja Exhentaiのオリジナル画像を自動的に開き、Eagleに追加します（バッチ対応）
-// @description:en Automatically open Exhentai original images and add them to Eagle (with batch support)
+// @name:en      Panda Eagle Support
+// @name:ja      パンダ Eagle サポート
+// @name:hi      पांडा ईगल सपोर्ट
+// @name:es      Soporte Panda Eagle
+// @name:sv      Panda Eagle Stöd
+// @name:nl      Panda Eagle Ondersteuning
+// @name:lt      Panda Eagle Palaikymas
+// @name:cs      Podpora Panda Eagle
+// @description  將Exhentai批次加入Eagle。將開啟Exhentai原圖改為將其加入Eagle
+// @description:en Batch add Exhentai images to Eagle. Change opening original Exhentai images to adding them to Eagle instead.
+// @description:ja Exhentaiの畫像を一括でEagleに追加。Exhentaiのオリジナル畫像を開く動作をEagleに追加する動作に変更。
+// @description:hi Exhentai छवियों को बैच में Eagle में जोड़ें। मूल Exhentai छवियों को खोलने के बजाय उन्हें Eagle में जोड़ें।
+// @description:es Añadir imágenes de Exhentai en lote a Eagle. Cambiar la acción de abrir imágenes originales de Exhentai por añadirlas a Eagle.
+// @description:sv Lägg till Exhentai-bilder i batch till Eagle. Ändra öppning av original Exhentai-bilder till att lägga till dem i Eagle istället.
+// @description:nl Exhentai-afbeeldingen in bulk toevoegen aan Eagle. Wijzig het openen van originele Exhentai-afbeeldingen naar toevoegen aan Eagle.
+// @description:lt Pridėti Exhentai vaizdus grupėmis į Eagle. Pakeisti originalių Exhentai vaizdų atidarymą į pridėjimą prie Eagle.
+// @description:cs Přidávat obrázky Exhentai hromadně do Eagle. Změnit otevírání originálních obrázků Exhentai na jejich přidávání do Eagle.
+//
 // @author       Max
-// @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.3.1
+// @namespace    https://github.com/Max46656
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
+// @license      MPL2.0
+//
+// @version      1.3.2
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -17,12 +33,10 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
-// @geant        GM_unregisterMenuCommand
 // @grant        GM_openInTab
 // @grant        GM_addStyle
 // @grant        window.close
 // @icon         https://exhentai.org/favicon.ico
-// @license      MPL2.0
 // @downloadURL  https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.user.js
 // @updateURL    https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.meta.js
 // ==/UserScript==
