@@ -2,12 +2,12 @@
 // @name         熊貓 Eagle 支援
 // @name:ja      Exhentaiイーグルサポート
 // @name:en      Exhentai Eagle Support
-// @description  自動開啟 Exhentai 原圖並將其加入 Eagle
-// @description:ja Exhentaiのオリジナル画像を自動的に開き、Eagleに追加します
-// @description:en Automatically open Exhentai original images and add them to Eagle
+// @description  自動開啟 Exhentai 原圖並將其加入 Eagle + 支援批次加入 Eagle
+// @description:ja Exhentaiのオリジナル画像を自動的に開き、Eagleに追加します（バッチ対応）
+// @description:en Automatically open Exhentai original images and add them to Eagle (with batch support)
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.2.2
+// @version      1.2.3
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -26,9 +26,6 @@
 // @updateURL    https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.meta.js
 // ==/UserScript==
 
-/**
- * 腳本工廠類別，負責根據頁面類型建立對應處理器
- */
 class PicTrioFactory {
   constructor() {
     this.url = window.location.href;
@@ -45,32 +42,90 @@ class PicTrioFactory {
 
   getToWork() {
     const currentUrl = window.location.href;
+
     if (currentUrl.match(/.*\.hath\.network.*\/(h|om)/)) {
       const eagleAdder = new EagleImageAdder();
       eagleAdder.addImageToEagle();
-    } else if (currentUrl.match(/.*:\/\/(ex|e-)?hentai\.org\/s\/.*/)) {
+    }
+    else if (currentUrl.match(/.*:\/\/(ex|e-)?hentai\.org\/s\/.*/)) {
       const opener = new OriginalPicOpener();
       opener.processPage();
-    } else if (currentUrl.match(/.*:\/\/(ex|e-)?hentai\.org\/g\/.*/)) {
-      const albumManager = new AlbumPageManager();
+    }
+    else if (currentUrl.match(/.*:\/\/(ex|e-)?hentai\.org\/g\/.*/)) {
+      const albumManager   = new AlbumPageManager();
+      const batchDownloader = new BatchDownloader();
+
       albumManager.init();
+      batchDownloader.init();
     }
   }
 }
 
 /**
- * 相冊頁面管理器，處理 UI 注入和批次功能
+ * 只負責「自動模式」與相簿資訊儲存
  */
 class AlbumPageManager {
   constructor() {
     this.isAuto = GM_getValue('isAuto', false);
-    this.processedLinks = new WeakSet();
-    this.gdtObserver = null;
   }
 
   init() {
     this.saveAlbumInfo();
     this.addAutoButton();
+  }
+
+  addAutoButton() {
+    const container = document.querySelector('#gd2');
+    if (!container) return;
+    const button = document.createElement('button');
+    button.id = 'eagleOnHathPage';
+    this.updateButtonText(button);
+    button.style.padding = '5px 10px';
+    button.style.backgroundColor = 'rgb(79, 83, 91)';
+    button.style.color = 'white';
+    button.style.border = '1px solid #ccc';
+    button.style.borderRadius = '5px';
+    button.style.cursor = 'pointer';
+    button.style.margin = '4px';
+    button.addEventListener('click', () => {
+      this.isAuto = !this.isAuto;
+      GM_setValue('isAuto', this.isAuto);
+      this.updateButtonText(button);
+    });
+    container.appendChild(button);
+  }
+
+  updateButtonText(button) {
+    button.textContent = this.isAuto ? 'AutoEagle: On' : 'AutoEagle: Off';
+  }
+
+  saveAlbumInfo() {
+    const urlID = window.location.pathname.split('/')[2];
+
+    let albumTitle = document.querySelector('h1#gj')?.textContent?.trim() ||
+                     document.querySelector('h1#gn')?.textContent?.trim() ||
+                     document.title.replace(/ - ExHentai\.org$/, '').replace(/ - E-Hentai\.org$/, '').trim() ||
+                     'Unknown Album';
+
+    const albumData = GM_getValue('albumData', {});
+    albumData[urlID] = {
+      albumUrl: window.location.href,
+      albumTitle
+    };
+    GM_setValue('albumData', albumData);
+  }
+}
+
+/**
+ * 負責批次下載相關的所有功能（checkbox、監視、批次按鈕）
+ */
+class BatchDownloader {
+  constructor() {
+    this.processedLinks = new WeakSet();
+    this.gdtObserver = null;
+  }
+
+  init() {
     this.addBatchButton();
     this.startGdtObserver();
     this.processExistingThumbnails();
@@ -79,25 +134,22 @@ class AlbumPageManager {
   startGdtObserver() {
     const gdt = document.querySelector('#gdt');
     if (!gdt) return;
+
     this.gdtObserver = new MutationObserver((mutations) => {
-      let hasNewThumbnails = false;
+      let hasNew = false;
       for (const mutation of mutations) {
-        if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach(node => {
-            if (node.nodeType !== Node.ELEMENT_NODE) return;
-            if (node.tagName === 'A' && node.href.includes('/s/')) {
-              hasNewThumbnails = true;
-            } else if (node.querySelector) {
-              const newLinks = node.querySelectorAll('a[href*="hentai.org/s/"]');
-              if (newLinks.length > 0) hasNewThumbnails = true;
-            }
-          });
-        }
+        if (mutation.type !== 'childList') continue;
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType !== Node.ELEMENT_NODE) return;
+          if (node.tagName === 'A' && node.href?.includes('/s/')) hasNew = true;
+          else if (node.querySelectorAll) {
+            if (node.querySelectorAll('a[href*="hentai.org/s/"]').length > 0) hasNew = true;
+          }
+        });
       }
-      if (hasNewThumbnails) {
-        this.processNewThumbnails();
-      }
+      if (hasNew) this.processNewThumbnails();
     });
+
     this.gdtObserver.observe(gdt, { childList: true, subtree: true });
   }
 
@@ -106,28 +158,32 @@ class AlbumPageManager {
   }
 
   processNewThumbnails() {
-    const allLinks = document.querySelectorAll('#gdt > a[href*="hentai.org/s/"]');
-    const newLinks = Array.from(allLinks).filter(link => !this.processedLinks.has(link));
-    if (newLinks.length === 0) return;
-    this.processThumbnails(newLinks);
+    const all = document.querySelectorAll('#gdt > a[href*="hentai.org/s/"]');
+    const newlyAdded = Array.from(all).filter(link => !this.processedLinks.has(link));
+    if (newlyAdded.length === 0) return;
+    this.processThumbnails(newlyAdded);
   }
 
   processThumbnails(links) {
     links.forEach(link => {
       if (this.processedLinks.has(link)) return;
+
       const wrapper = document.createElement('div');
       wrapper.className = 'eagle-batch-wrapper';
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.style.marginRight = '6px';
-      checkbox.style.verticalAlign = 'middle';
-      wrapper.appendChild(checkbox);
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.style.marginRight = '6px';
+      cb.style.verticalAlign = 'middle';
+
+      wrapper.appendChild(cb);
       wrapper.appendChild(link.cloneNode(true));
       link.parentNode.replaceChild(wrapper, link);
+
       this.processedLinks.add(link);
     });
 
-    if (!document.querySelector('#eagle-batch-styles')) {
+    if (!document.getElementById('eagle-batch-css')) {
       GM_addStyle(`
         .eagle-batch-wrapper {
           display: inline-block;
@@ -142,7 +198,7 @@ class AlbumPageManager {
           z-index: 10;
           width: 16px;
           height: 16px;
-          opacity: 0.85;
+          opacity: 0.9;
           cursor: pointer;
         }
         #gdt.gdtc .eagle-batch-wrapper,
@@ -150,95 +206,47 @@ class AlbumPageManager {
           width: 100%;
           height: 100%;
         }
-      `);
+      `, { id: 'eagle-batch-css' });
     }
-  }
-
-  addAutoButton() {
-    const container = document.querySelector('#gd2');
-    if (!container) return;
-    const button = document.createElement('button');
-    button.id = 'eagleOnHathPage';
-    this.updateButtonText(button, 'auto');
-    this.styleButton(button);
-    button.addEventListener('click', () => {
-      this.isAuto = !this.isAuto;
-      GM_setValue('isAuto', this.isAuto);
-      this.updateButtonText(button, 'auto');
-    });
-    container.appendChild(button);
   }
 
   addBatchButton() {
     const container = document.querySelector('#gd2');
     if (!container) return;
+
     const button = document.createElement('button');
     button.id = 'eagleOnSPage';
     button.textContent = 'Batch Add to Eagle';
-    this.styleButton(button);
+    button.style.padding = '5px 10px';
+    button.style.backgroundColor = 'rgb(79, 83, 91)';
+    button.style.color = 'white';
+    button.style.border = '1px solid #ccc';
+    button.style.borderRadius = '5px';
+    button.style.cursor = 'pointer';
+    button.style.margin = '4px';
+
     button.addEventListener('click', this.handleBatchClick.bind(this));
     container.appendChild(button);
   }
 
   handleBatchClick() {
-    const checkboxes = document.querySelectorAll('.eagle-batch-wrapper input[type="checkbox"]:checked');
-    checkboxes.forEach(checkbox => {
-      const wrapper = checkbox.closest('.eagle-batch-wrapper');
+    const checked = document.querySelectorAll('.eagle-batch-wrapper input[type="checkbox"]:checked');
+    if (checked.length === 0) {
+      alert('請先勾選至少一張圖片');
+      return;
+    }
+
+    checked.forEach(cb => {
+      const wrapper = cb.closest('.eagle-batch-wrapper');
       const link = wrapper?.querySelector('a[href*="hentai.org/s/"]');
-      if (link && link.href) {
-        GM_openInTab(`${link.href}?batch=1`, {
+      if (link?.href) {
+        GM_openInTab(link.href + '?batch=1', {
           active: false,
           insert: true,
           setParent: true
         });
       }
     });
-  }
-
-  updateButtonText(button, type) {
-    if (type === 'auto') {
-      button.textContent = this.isAuto ? 'AutoEagle: On' : 'AutoEagle: Off';
-    }
-  }
-
-  styleButton(button) {
-    button.style.padding = '5px';
-    button.style.backgroundColor = 'rgb(79, 83, 91)';
-    button.style.color = 'rgb(241, 241, 242)';
-    button.style.border = '1px solid #ccc';
-    button.style.borderRadius = '5px';
-    button.style.cursor = 'pointer';
-    button.style.margin = '5px';
-  }
-
-  /**
-   * 儲存相冊資訊 - 優先使用 h1#gj，若無則使用 h1#gn
-   */
-  saveAlbumInfo() {
-    const urlID = window.location.pathname.split('/')[2];
-
-    // 優先抓取自訂標題 (gj = gallery japanese)
-    let albumTitle = document.querySelector('h1#gj')?.textContent?.trim();
-
-    // 若無 gj 則使用預設英文標題 (gn = gallery name)
-    if (!albumTitle) {
-      albumTitle = document.querySelector('h1#gn')?.textContent?.trim();
-    }
-
-    // 最後防線：從 document.title 去除後綴
-    if (!albumTitle) {
-      albumTitle = document.title
-        .replace(/ - ExHentai\.org$/, '')
-        .replace(/ - E-Hentai\.org$/, '')
-        .trim();
-    }
-
-    const albumData = GM_getValue('albumData', {});
-    albumData[urlID] = {
-      albumUrl: window.location.href,
-      albumTitle: albumTitle || 'Unknown Album'
-    };
-    GM_setValue('albumData', albumData);
   }
 }
 
@@ -258,13 +266,8 @@ class OriginalPicOpener {
   }
 
   openOriginalPic() {
-    const links = document.querySelectorAll('a');
-    for (const link of links) {
-      if (link.textContent.includes('original')) {
-        link.click();
-        break;
-      }
-    }
+    const link = [...document.querySelectorAll('a')].find(a => a.textContent.includes('original'));
+    if (link) link.click();
   }
 
   downloadToEagle() {
@@ -272,8 +275,8 @@ class OriginalPicOpener {
     if (!img) return;
 
     const pageNumber = document.querySelector('div.sn span.cn')?.textContent ||
-                      document.querySelector('div.sn span')?.textContent ||
-                      'unknown';
+                       document.querySelector('div.sn span')?.textContent ||
+                       'unknown';
 
     const currentUrl = window.location.href.replace(/\?batch=1$/, '');
     const picIDMatch = currentUrl.match(/\/s\/(.*?)\/(.*?)$/);
@@ -281,7 +284,7 @@ class OriginalPicOpener {
 
     const albumID = picIDMatch[2].split('-')[0];
     const albumData = GM_getValue('albumData', {});
-    const albumInfo = albumData[albumID] || {};
+    const albumInfo = albumData[albumID] || { albumTitle: 'Unknown Album' };
 
     const imageData = {
       url: img.src,
@@ -289,8 +292,7 @@ class OriginalPicOpener {
       website: currentUrl
     };
 
-    const eagleAdder = new EagleImageAdder();
-    eagleAdder.addImageToEagle(imageData, true);
+    new EagleImageAdder().addImageToEagle(imageData, true);
   }
 
   savePicInfo() {
@@ -299,7 +301,7 @@ class OriginalPicOpener {
     if (!picIDMatch) return;
 
     const albumID = picIDMatch[2].split('-')[0];
-    const picID = picIDMatch[1];
+    const picID   = picIDMatch[1];
 
     const albumData = GM_getValue('albumData', {});
     const albumInfo = albumData[albumID] || {};
@@ -307,7 +309,7 @@ class OriginalPicOpener {
     const picData = GM_getValue('picData', {});
     picData[picID] = {
       albumUrl: albumInfo.albumUrl,
-      albumTitle: albumInfo.albumTitle,
+      albumTitle: albumInfo.albumTitle
     };
     GM_setValue('picData', picData);
   }
@@ -327,30 +329,27 @@ class EagleImageAdder {
       headers: { "Content-Type": "application/json" },
       data: JSON.stringify(data),
       onload: (response) => {
-        console.log('Image added to Eagle:', response);
+        console.log('[熊貓 Eagle 支援] Image added:', response.status);
         if (response.status >= 200 && response.status < 300 && closeAfter) {
           window.close();
         }
       },
-      onerror: (error) => {
-        console.error('Failed to add image to Eagle:', error);
-      }
+      onerror: (err) => console.error('[熊貓 Eagle 支援] Eagle API error:', err)
     });
   }
 
   getImageData() {
-    const imageUrl = window.location.href;
-    let picIDMatch = imageUrl.match(/\/h\/(.{10})/);
-    if (!picIDMatch) {
-      picIDMatch = imageUrl.match(/\/om\/\d+\/(.{10})/);
-    }
+    const url = window.location.href;
+    let picIDMatch = url.match(/\/h\/(.{10})/) || url.match(/\/om\/\d+\/(.{10})/);
     const picID = picIDMatch ? picIDMatch[1] : null;
+
     const picData = GM_getValue('picData', {});
-    const picInfo = picData[picID] || {};
+    const info = picData[picID] || {};
+
     return {
-      url: imageUrl,
-      name: `${picInfo.albumTitle || 'Unknown'} - ${imageUrl.split('/').pop()}`,
-      website: picInfo.albumUrl ?? imageUrl
+      url,
+      name: `${info.albumTitle || 'Unknown'} - ${url.split('/').pop()}`,
+      website: info.albumUrl || url
     };
   }
 }
@@ -361,23 +360,17 @@ class DataCleaner {
   }
 
   registerMenu() {
-    GM_registerMenuCommand('Clean Old Data', this.cleanOldData.bind(this));
+    GM_registerMenuCommand('Clean Old Data (清除舊資料)', this.cleanOldData.bind(this));
   }
 
   cleanOldData() {
-    const albumData = GM_getValue('albumData', {});
-    const picData = GM_getValue('picData', {});
-    let albumDeleted = 0;
-    let picDeleted = 0;
-    for (const key in albumData) { delete albumData[key]; albumDeleted++; }
-    for (const key in picData)   { delete picData[key];   picDeleted++;   }
-    GM_setValue('albumData', albumData);
-    GM_setValue('picData', picData);
-    console.log(`Old data cleaned. Deleted ${albumDeleted} album entries and ${picDeleted} picture entries.`);
+    GM_setValue('albumData', {});
+    GM_setValue('picData', {});
+    console.log('[熊貓 Eagle 支援] 已清除所有儲存的相簿與圖片對應資料');
+    alert('已清除舊資料');
   }
 }
 
-// 啟動腳本
-const picPage = new PicTrioFactory();
-picPage.getToWork();
-const dataCleaner = new DataCleaner();
+const factory = new PicTrioFactory();
+factory.getToWork();
+new DataCleaner();
