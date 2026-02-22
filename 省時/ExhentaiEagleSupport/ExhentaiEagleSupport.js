@@ -7,7 +7,7 @@
 // @description:en Automatically open Exhentai original images and add them to Eagle (with batch support)
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.2.4
+// @version      1.3.0
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -61,17 +61,52 @@ class PicTrioFactory {
   }
 }
 
-/**
- * 負責「自動模式」與相簿資訊儲存
- */
 class AlbumPageManager {
   constructor() {
     this.isAuto = GM_getValue('isAuto', false);
+    this.lastSavedTitle = null;
+    this.titleObserver = null;
   }
 
   init() {
     this.saveAlbumInfo();
     this.addAutoButton();
+    this.startTitleObserver();
+  }
+
+  /**
+   * 監視 h1#gj 和 h1#gn 的文字內容變化，以應對自動翻譯器
+   */
+  startTitleObserver() {
+    const titleContainer = document.querySelector('#gd2') || document.body;
+
+    if (!titleContainer) return;
+
+    this.titleObserver = new MutationObserver((mutations) => {
+      let titleChanged = false;
+
+      for (const mutation of mutations) {
+        if (mutation.type === 'characterData' || mutation.type === 'childList') {
+          const gj = document.querySelector('h1#gj');
+          const gn = document.querySelector('h1#gn');
+
+          if (gj || gn) {
+            titleChanged = true;
+            break;
+          }
+        }
+      }
+
+      if (titleChanged) {
+        this.saveAlbumInfo();
+      }
+    });
+
+    this.titleObserver.observe(titleContainer, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
   }
 
   addAutoButton() {
@@ -99,26 +134,30 @@ class AlbumPageManager {
     button.textContent = this.isAuto ? 'AutoEagle: On' : 'AutoEagle: Off';
   }
 
+  /**
+   * 儲存相簿資訊 - 優先使用 h1#gj，若無則使用 h1#gn
+   */
   saveAlbumInfo() {
     const urlID = window.location.pathname.split('/')[2];
 
     let albumTitle = document.querySelector('h1#gj')?.textContent?.trim() ||
-                     document.querySelector('h1#gn')?.textContent?.trim() ||
-                     document.title.replace(/ - ExHentai\.org$/, '').replace(/ - E-Hentai\.org$/, '').trim() ||
-                     'Unknown Album';
+                     document.querySelector('h1#gn')?.textContent?.trim()
+
+    if (albumTitle === this.lastSavedTitle) return;
+
+    this.lastSavedTitle = albumTitle;
 
     const albumData = GM_getValue('albumData', {});
     albumData[urlID] = {
       albumUrl: window.location.href,
       albumTitle
     };
+
     GM_setValue('albumData', albumData);
+    console.log(`[AlbumPageManager] 相簿標題已更新為：${albumTitle}`);
   }
 }
 
-/**
- * 負責批次下載相關的所有功能（checkbox、監視、批次按鈕）
- */
 class BatchDownloader {
   constructor() {
     this.gdtObserver = null;
