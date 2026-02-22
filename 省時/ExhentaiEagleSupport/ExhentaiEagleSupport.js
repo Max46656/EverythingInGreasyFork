@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.5.1
+// @version      1.5.2
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -295,8 +295,8 @@ class BatchDownloader {
         top: 4px;
         left: 4px;
         z-index: 10;
-        width: 16px;
-        height: 16px;
+        width: 24px;
+        height: 24px;
         opacity: 0.9;
         cursor: pointer;
       }
