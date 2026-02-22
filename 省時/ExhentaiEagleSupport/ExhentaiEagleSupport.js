@@ -7,7 +7,7 @@
 // @description:en Automatically open Exhentai original images and add them to Eagle
 // @author       Max
 // @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @version      1.2.1
+// @version      1.2.2
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -26,7 +26,9 @@
 // @updateURL    https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.meta.js
 // ==/UserScript==
 
-
+/**
+ * 腳本工廠類別，負責根據頁面類型建立對應處理器
+ */
 class PicTrioFactory {
   constructor() {
     this.url = window.location.href;
@@ -56,22 +58,16 @@ class PicTrioFactory {
   }
 }
 
-
+/**
+ * 相冊頁面管理器，處理 UI 注入和批次功能
+ */
 class AlbumPageManager {
-  /**
-   * 建立相冊管理器
-   */
   constructor() {
     this.isAuto = GM_getValue('isAuto', false);
-    /** @type {WeakSet<HTMLElement>} 已經處理過的連結元素，避免重複包裝 */
     this.processedLinks = new WeakSet();
-    /** @type {MutationObserver|null} */
     this.gdtObserver = null;
   }
 
-  /**
-   * 初始化相冊頁面功能
-   */
   init() {
     this.saveAlbumInfo();
     this.addAutoButton();
@@ -80,19 +76,13 @@ class AlbumPageManager {
     this.processExistingThumbnails();
   }
 
-  /**
-   * 開始監視 #gdt 的子節點變化
-   */
   startGdtObserver() {
     const gdt = document.querySelector('#gdt');
     if (!gdt) return;
-
     this.gdtObserver = new MutationObserver((mutations) => {
       let hasNewThumbnails = false;
-
       for (const mutation of mutations) {
         if (mutation.type === 'childList') {
-          // 檢查是否有新的 a 元素被加入
           mutation.addedNodes.forEach(node => {
             if (node.nodeType !== Node.ELEMENT_NODE) return;
             if (node.tagName === 'A' && node.href.includes('/s/')) {
@@ -104,64 +94,40 @@ class AlbumPageManager {
           });
         }
       }
-
       if (hasNewThumbnails) {
         this.processNewThumbnails();
       }
     });
-
-    this.gdtObserver.observe(gdt, {
-      childList: true,
-      subtree: true
-    });
+    this.gdtObserver.observe(gdt, { childList: true, subtree: true });
   }
 
-  /**
-   * 處理頁面初次載入時已存在的縮圖連結
-   */
   processExistingThumbnails() {
     this.processThumbnails(document.querySelectorAll('#gdt > a[href*="hentai.org/s/"]'));
   }
 
-  /**
-   * 處理新加入的縮圖連結
-   */
   processNewThumbnails() {
     const allLinks = document.querySelectorAll('#gdt > a[href*="hentai.org/s/"]');
     const newLinks = Array.from(allLinks).filter(link => !this.processedLinks.has(link));
     if (newLinks.length === 0) return;
-
     this.processThumbnails(newLinks);
   }
 
-  /**
-   * 核心處理函式：為傳入的連結加上 checkbox + wrapper
-   * @param {NodeList|Array<HTMLElement>} links
-   */
   processThumbnails(links) {
     links.forEach(link => {
       if (this.processedLinks.has(link)) return;
-
       const wrapper = document.createElement('div');
       wrapper.className = 'eagle-batch-wrapper';
-
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.style.marginRight = '6px';
       checkbox.style.verticalAlign = 'middle';
-
       wrapper.appendChild(checkbox);
-      wrapper.appendChild(link.cloneNode(true));           // 複製原連結
-      link.parentNode.replaceChild(wrapper, link);         // 替換原位置
-
+      wrapper.appendChild(link.cloneNode(true));
+      link.parentNode.replaceChild(wrapper, link);
       this.processedLinks.add(link);
-
-      // 如果原結構有其他子元素（例如某些排版會有 div 包著縮圖），這裡可視情況補處理
     });
 
-    // 確保樣式只注入一次
     if (!document.querySelector('#eagle-batch-styles')) {
-      const styleId = 'eagle-batch-styles';
       GM_addStyle(`
         .eagle-batch-wrapper {
           display: inline-block;
@@ -184,13 +150,10 @@ class AlbumPageManager {
           width: 100%;
           height: 100%;
         }
-      `, { id: styleId });
+      `);
     }
   }
 
-  /**
-   * 新增自動模式按鈕
-   */
   addAutoButton() {
     const container = document.querySelector('#gd2');
     if (!container) return;
@@ -206,9 +169,6 @@ class AlbumPageManager {
     container.appendChild(button);
   }
 
-  /**
-   * 新增批次下載按鈕
-   */
   addBatchButton() {
     const container = document.querySelector('#gd2');
     if (!container) return;
@@ -220,9 +180,6 @@ class AlbumPageManager {
     container.appendChild(button);
   }
 
-  /**
-   * 處理批次按鈕點擊
-   */
   handleBatchClick() {
     const checkboxes = document.querySelectorAll('.eagle-batch-wrapper input[type="checkbox"]:checked');
     checkboxes.forEach(checkbox => {
@@ -238,21 +195,12 @@ class AlbumPageManager {
     });
   }
 
-  /**
-   * 更新按鈕文字
-   * @param {HTMLElement} button - 按鈕元素
-   * @param {string} type - 按鈕類型 ('auto')
-   */
   updateButtonText(button, type) {
     if (type === 'auto') {
       button.textContent = this.isAuto ? 'AutoEagle: On' : 'AutoEagle: Off';
     }
   }
 
-  /**
-   * 設定按鈕樣式
-   * @param {HTMLElement} button - 按鈕元素
-   */
   styleButton(button) {
     button.style.padding = '5px';
     button.style.backgroundColor = 'rgb(79, 83, 91)';
@@ -264,33 +212,42 @@ class AlbumPageManager {
   }
 
   /**
-   * 儲存相冊資訊
+   * 儲存相冊資訊 - 優先使用 h1#gj，若無則使用 h1#gn
    */
   saveAlbumInfo() {
     const urlID = window.location.pathname.split('/')[2];
-    let albumTitle = document.title.replace(/ - ExHentai\.org$/, '').replace(/ - E-Hentai\.org$/, '');
+
+    // 優先抓取自訂標題 (gj = gallery japanese)
+    let albumTitle = document.querySelector('h1#gj')?.textContent?.trim();
+
+    // 若無 gj 則使用預設英文標題 (gn = gallery name)
+    if (!albumTitle) {
+      albumTitle = document.querySelector('h1#gn')?.textContent?.trim();
+    }
+
+    // 最後防線：從 document.title 去除後綴
+    if (!albumTitle) {
+      albumTitle = document.title
+        .replace(/ - ExHentai\.org$/, '')
+        .replace(/ - E-Hentai\.org$/, '')
+        .trim();
+    }
+
     const albumData = GM_getValue('albumData', {});
     albumData[urlID] = {
       albumUrl: window.location.href,
-      albumTitle: albumTitle,
+      albumTitle: albumTitle || 'Unknown Album'
     };
     GM_setValue('albumData', albumData);
   }
 }
 
-
 class OriginalPicOpener {
-  /**
-   * 建立開啟器實例
-   */
   constructor() {
     this.isAuto = GM_getValue('isAuto', false);
     this.batchMode = window.location.search.includes('batch=1');
   }
 
-  /**
-   * 處理圖片頁面邏輯
-   */
   processPage() {
     this.savePicInfo();
     if (this.batchMode) {
@@ -300,9 +257,6 @@ class OriginalPicOpener {
     }
   }
 
-  /**
-   * 開啟原圖連結
-   */
   openOriginalPic() {
     const links = document.querySelectorAll('a');
     for (const link of links) {
@@ -313,39 +267,43 @@ class OriginalPicOpener {
     }
   }
 
-  /**
-   * 下載顯示圖片至 Eagle (批次模式)
-   */
   downloadToEagle() {
     const img = document.querySelector('img#img');
     if (!img) return;
-    const pageNumber = document.querySelector('div.sn span.cn')?.textContent || document.querySelector('div.sn span')?.textContent || 'unknown';
+
+    const pageNumber = document.querySelector('div.sn span.cn')?.textContent ||
+                      document.querySelector('div.sn span')?.textContent ||
+                      'unknown';
+
     const currentUrl = window.location.href.replace(/\?batch=1$/, '');
     const picIDMatch = currentUrl.match(/\/s\/(.*?)\/(.*?)$/);
     if (!picIDMatch) return;
+
     const albumID = picIDMatch[2].split('-')[0];
     const albumData = GM_getValue('albumData', {});
     const albumInfo = albumData[albumID] || {};
+
     const imageData = {
       url: img.src,
       name: `${albumInfo.albumTitle} - ${pageNumber}`,
       website: currentUrl
     };
+
     const eagleAdder = new EagleImageAdder();
-    eagleAdder.addImageToEagle(imageData, true); // 傳入 batch 旗標以關閉分頁
+    eagleAdder.addImageToEagle(imageData, true);
   }
 
-  /**
-   * 儲存圖片資訊
-   */
   savePicInfo() {
     const currentUrl = window.location.href.replace(/\?batch=1$/, '');
     const picIDMatch = currentUrl.match(/\/s\/(.*?)\/(.*?)$/);
     if (!picIDMatch) return;
+
     const albumID = picIDMatch[2].split('-')[0];
     const picID = picIDMatch[1];
+
     const albumData = GM_getValue('albumData', {});
     const albumInfo = albumData[albumID] || {};
+
     const picData = GM_getValue('picData', {});
     picData[picID] = {
       albumUrl: albumInfo.albumUrl,
@@ -355,26 +313,18 @@ class OriginalPicOpener {
   }
 }
 
-
 class EagleImageAdder {
   constructor() {
     this.EAGLE_SERVER_URL = "http://localhost:41595";
     this.EAGLE_IMPORT_API_URL = `${this.EAGLE_SERVER_URL}/api/item/addFromURL`;
   }
 
-  /**
-   * 加入圖片至 Eagle
-   * @param {Object} [imageData=null] - 自訂圖片資料 (批次模式使用)
-   * @param {boolean} [closeAfter=false] - 加入後是否關閉分頁
-   */
   addImageToEagle(imageData = null, closeAfter = false) {
     const data = imageData || this.getImageData();
     GM_xmlhttpRequest({
       url: this.EAGLE_IMPORT_API_URL,
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       data: JSON.stringify(data),
       onload: (response) => {
         console.log('Image added to Eagle:', response);
@@ -388,10 +338,6 @@ class EagleImageAdder {
     });
   }
 
-  /**
-   * 取得圖片資料 (自動模式)
-   * @returns {Object} 圖片資料
-   */
   getImageData() {
     const imageUrl = window.location.href;
     let picIDMatch = imageUrl.match(/\/h\/(.{10})/);
@@ -403,49 +349,31 @@ class EagleImageAdder {
     const picInfo = picData[picID] || {};
     return {
       url: imageUrl,
-      name: `${picInfo.albumTitle} - ${imageUrl.split('/').pop()}`,
+      name: `${picInfo.albumTitle || 'Unknown'} - ${imageUrl.split('/').pop()}`,
       website: picInfo.albumUrl ?? imageUrl
     };
   }
 }
 
-/**
- * 資料清理器
- */
 class DataCleaner {
-  /**
-   * 建立清理器實例
-   */
   constructor() {
     this.registerMenu();
   }
 
-  /**
-   * 註冊清理選單
-   */
   registerMenu() {
     GM_registerMenuCommand('Clean Old Data', this.cleanOldData.bind(this));
   }
 
-  /**
-   * 清理舊資料
-   */
   cleanOldData() {
     const albumData = GM_getValue('albumData', {});
     const picData = GM_getValue('picData', {});
-    let albumDataDeleted = 0;
-    let picDataDeleted = 0;
-    for (const key in albumData) {
-      delete albumData[key];
-      albumDataDeleted++;
-    }
-    for (const key in picData) {
-      delete picData[key];
-      picDataDeleted++;
-    }
+    let albumDeleted = 0;
+    let picDeleted = 0;
+    for (const key in albumData) { delete albumData[key]; albumDeleted++; }
+    for (const key in picData)   { delete picData[key];   picDeleted++;   }
     GM_setValue('albumData', albumData);
     GM_setValue('picData', picData);
-    console.log(`Old data cleaned. Deleted ${albumDataDeleted} albumData and ${picDataDeleted} picData entries.`);
+    console.log(`Old data cleaned. Deleted ${albumDeleted} album entries and ${picDeleted} picture entries.`);
   }
 }
 
