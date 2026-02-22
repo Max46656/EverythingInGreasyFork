@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.5.2
+// @version      1.5.3
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -179,7 +179,8 @@ class AlbumPageManager {
 
     async addFolderSelector() {
         const container = document.querySelector('#taglist');
-        if (!container) return;
+        const selectExist = document.querySelector('#eagleFolderSelector');
+        if (!container || selectExist) return;
 
         const folders = await this.getFolderList();
         const select = document.createElement('select');
@@ -216,7 +217,8 @@ class AlbumPageManager {
 
     addAutoButton() {
         const container = document.querySelector('#taglist');
-        if (!container) return;
+        const buttonExist = document.querySelector('#eagleOnHathPage');
+        if (!container || buttonExist) return;
         const button = document.createElement('button');
         button.id = 'eagleOnHathPage';
         this.updateButtonText(button);
@@ -351,7 +353,8 @@ class BatchDownloader {
 
     addBatchButton() {
         const container = document.querySelector('#taglist');
-        if (!container) return;
+        const buttonExist = document.querySelector('#eagleOnSPage');
+        if (!container || buttonExist) return;
 
         const button = document.createElement('button');
         button.id = 'eagleOnSPage';
