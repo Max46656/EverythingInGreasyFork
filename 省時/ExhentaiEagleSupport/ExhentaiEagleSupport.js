@@ -37,8 +37,6 @@
 // @grant        GM_addStyle
 // @grant        window.close
 // @icon         https://exhentai.org/favicon.ico
-// @downloadURL  https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.user.js
-// @updateURL    https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.meta.js
 // ==/UserScript==
 
 class PicTrioFactory {
@@ -79,14 +77,16 @@ class PicTrioFactory {
 class AlbumPageManager {
     constructor() {
         this.isAuto = GM_getValue('isAuto', false);
+        this.selectedFolderId = GM_getValue('selectedFolderId', '');
         this.trackTitleChanges = GM_getValue('trackTitleChanges', false);
         this.lastSavedTitle = null;
         this.titleObserver = null;
         this.menuCommandId = 'track-title-changes';
     }
 
-    init() {
+    async init() {
         this.saveAlbumInfo();
+        await this.addFolderSelector();
         this.addAutoButton();
         this.registerTrackMenuCommand();
         if (this.trackTitleChanges) {
@@ -148,6 +148,70 @@ class AlbumPageManager {
         });
 
         console.log('[AlbumPageManager]', I18n.t('startTracking'));
+    }
+
+    async getFolderList() {
+        return new Promise(resolve => {
+            GM_xmlhttpRequest({
+                url: "http://localhost:41595/api/folder/list",
+                method: "GET",
+                onload: res => {
+                    try {
+                        const folders = JSON.parse(res.responseText).data || [];
+                        const list = [];
+                        const appendFolder = (f, prefix = "") => {
+                            list.push({ id: f.id, name: prefix + f.name });
+                            if (f.children && f.children.length) {
+                                f.children.forEach(c => appendFolder(c, "　" + prefix + "└─ "));
+                            }
+                        };
+                        folders.forEach(f => appendFolder(f));
+                        resolve(list);
+                    } catch (e) {
+                        console.error("解析資料夾列表失敗", e);
+                        resolve([]);
+                    }
+                },
+                onerror: () => resolve([])
+            });
+        });
+    }
+
+    async addFolderSelector() {
+        const container = document.querySelector('#taglist');
+        if (!container) return;
+
+        const folders = await this.getFolderList();
+        const select = document.createElement('select');
+        select.id = 'eagleFolderSelector';
+        select.style.margin = '4px';
+        select.style.padding = '4px';
+        select.style.borderRadius = '5px';
+        select.style.backgroundColor = 'rgb(79, 83, 91)';
+        select.style.color = 'white';
+        select.style.border = '1px solid #ccc';
+
+        // 預設選項
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = '─ 選擇儲存資料夾 ─';
+        select.appendChild(defaultOpt);
+
+        folders.forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.id;
+            opt.textContent = f.name;
+            if (f.id === this.selectedFolderId) opt.selected = true;
+            select.appendChild(opt);
+        });
+
+        select.addEventListener('change', (e) => {
+            this.selectedFolderId = e.target.value;
+            GM_setValue('selectedFolderId', this.selectedFolderId);
+            console.log('[AlbumPageManager] 已更新預設資料夾 ID:', this.selectedFolderId);
+        });
+
+        container.appendChild(select);
     }
 
     addAutoButton() {
@@ -243,10 +307,10 @@ class BatchDownloader {
       }
     `);
 
-      const marker = document.createElement('style');
-      marker.id = 'eagle-batch-css';
-      document.head.appendChild(marker);
-  }
+        const marker = document.createElement('style');
+        marker.id = 'eagle-batch-css';
+        document.head.appendChild(marker);
+    }
 
     startGalleryObserver() {
         const gdt = document.querySelector('#gdt');
@@ -402,18 +466,24 @@ class EagleImageAdder {
 
     addImageToEagle(imageData = null, closeAfter = false) {
         const data = imageData || this.getImageData();
+
+        const folderId = GM_getValue('selectedFolderId', '');
+        if (folderId) {
+            data.folderId = [folderId];
+        }
+
         GM_xmlhttpRequest({
             url: this.EAGLE_IMPORT_API_URL,
             method: "POST",
             headers: { "Content-Type": "application/json" },
             data: JSON.stringify(data),
             onload: (response) => {
-                console.log('[熊貓 Eagle 支援]',I18n.t('imageAdded'));
+                console.log('[熊貓 Eagle 支援]', I18n.t('imageAdded'));
                 if (response.status >= 200 && response.status < 300 && closeAfter) {
                     window.close();
                 }
             },
-            onerror: (err) => console.error('[熊貓 Eagle 支援]',I18n.t('eagleError'),err)
+            onerror: (err) => console.error('[熊貓 Eagle 支援]', I18n.t('eagleError'), err)
         });
     }
 
