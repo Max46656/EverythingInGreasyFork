@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.5.4
+// @version      1.6.0
 // @match        https://www.pixiv.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -533,8 +533,64 @@ class OtherPagesHandler {
     }
 
     async init() {
+        this.addFolderSelect();
         this.addButtonsToThumbnails();
         this.observeDomChange(() => this.addButtonsToThumbnails());
+    }
+
+    /**
+     * 建立並插入浮動的 Eagle 資料夾選擇器（固定在左下或右下角）
+     * @param {string} [defaultPosition='right'] - 預設位置：'left' 或 'right'
+     */
+    async addFolderSelect(position = 'left') {
+        if (!['left', 'right'].includes(position)) position = 'left'
+
+        const select = document.createElement('select');
+        select.id = 'eagle-folder-select';
+        select.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                ${position === 'left' ? 'left: 20px;' : 'right: 20px;'}
+                z-index: 9999;
+                background: rgba(30, 30, 50, 0.92);
+                backdrop-filter: blur(8px);
+                color: #eee;
+                border: 1px solid rgba(255, 255, 255, 0.18);
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-size: 13px;
+                outline: none;
+                cursor: pointer;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+                appearance: none;
+                -webkit-appearance: none;
+                transition: all 0.2s ease;
+            `;
+
+        const lastFolderId = await GM.getValue(this.storageKey);
+        const folders = await this.eagle.getFolderList();
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '─ 選擇資料夾 ─';
+        select.appendChild(defaultOption);
+
+        folders.forEach(f => {
+            const option = document.createElement('option');
+            option.value = f.id;
+            option.textContent = f.name;
+            if (f.id === lastFolderId) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+
+        select.onchange = async () => {
+            await GM.setValue(this.storageKey, select.value);
+            console.log(`[${GM_info.script.name}] 已切換 Eagle 資料夾為：${select.value}`);
+        };
+
+        document.body.appendChild(select);
     }
 
     addButtonsToThumbnails() {
