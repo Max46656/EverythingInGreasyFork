@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.5.4
+// @version      1.5.5
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -177,22 +177,83 @@ class AlbumPageManager {
         });
     }
 
-    async addFolderSelector() {
+    /**
+     * 新增資料夾選擇器
+     * - 原位置：#taglist 內（inline）
+     * - 額外浮動版：固定在左下或右下角，避免與批次按鈕重疊
+     * @param {string} [position='right'] - 浮動選單的位置：'left' 或 'right'
+     */
+    async addFolderSelector(position = 'left') {
         const container = document.querySelector('#taglist');
-        const selectExist = document.querySelector('#eagleFolderSelector');
-        if (!container || selectExist) return;
+        if (container && !document.querySelector('#eagleFolderSelector-inline')) {
+            const folders = await this.getFolderList();
+            const select = document.createElement('select');
+            select.id = 'eagleFolderSelector-inline';
+            select.style.margin = '4px';
+            select.style.padding = '4px 8px';
+            select.style.borderRadius = '5px';
+            select.style.backgroundColor = 'rgb(79, 83, 91)';
+            select.style.color = 'white';
+            select.style.border = '1px solid #ccc';
+            select.style.fontSize = '14px';
+
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = '─ 選擇儲存資料夾 ─';
+            select.appendChild(defaultOpt);
+
+            folders.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = f.name;
+                if (f.id === this.selectedFolderId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            select.addEventListener('change', (e) => {
+                this.selectedFolderId = e.target.value;
+                GM_setValue('selectedFolderId', this.selectedFolderId);
+                const floatingSelect = document.querySelector('#eagleFolderSelector-floating');
+                if (floatingSelect) floatingSelect.value = this.selectedFolderId;
+                console.log('[AlbumPageManager] 已更新預設資料夾 ID:', this.selectedFolderId);
+            });
+
+            container.appendChild(select);
+        }
+
+        // ── 浮動版選擇器（fixed 定位） ──
+        if (document.querySelector('#eagleFolderSelector-floating')) return;
 
         const folders = await this.getFolderList();
         const select = document.createElement('select');
-        select.id = 'eagleFolderSelector';
-        select.style.margin = '4px';
-        select.style.padding = '4px';
-        select.style.borderRadius = '5px';
-        select.style.backgroundColor = 'rgb(79, 83, 91)';
-        select.style.color = 'white';
-        select.style.border = '1px solid #ccc';
+        select.id = 'eagleFolderSelector-floating';
 
-        // 預設選項
+        Object.assign(select.style, {
+            position: 'fixed',
+            bottom: '50px',
+            [position]: '20px',
+            zIndex: '10000',
+            padding: '8px 12px',
+            backgroundColor: 'rgb(79, 83, 91)',
+            color: 'white',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            outline: 'none',
+            transition: 'all 0.2s ease'
+        });
+
+        select.addEventListener('mouseenter', () => {
+            select.style.backgroundColor = 'rgb(99, 103, 111)';
+            select.style.boxShadow = '0 6px 16px rgba(0,0,0,0.5)';
+        });
+        select.addEventListener('mouseleave', () => {
+            select.style.backgroundColor = 'rgb(79, 83, 91)';
+            select.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+        });
+
         const defaultOpt = document.createElement('option');
         defaultOpt.value = '';
         defaultOpt.textContent = '─ 選擇儲存資料夾 ─';
@@ -209,10 +270,14 @@ class AlbumPageManager {
         select.addEventListener('change', (e) => {
             this.selectedFolderId = e.target.value;
             GM_setValue('selectedFolderId', this.selectedFolderId);
+            const inlineSelect = document.querySelector('#eagleFolderSelector-inline');
+            if (inlineSelect) inlineSelect.value = this.selectedFolderId;
             console.log('[AlbumPageManager] 已更新預設資料夾 ID:', this.selectedFolderId);
         });
 
-        container.appendChild(select);
+        document.body.appendChild(select);
+
+        console.log(`[AlbumPageManager] 已新增浮動資料夾選擇器，位置：${position}`);
     }
 
     addAutoButton() {
@@ -222,7 +287,7 @@ class AlbumPageManager {
         const button = document.createElement('button');
         button.id = 'eagleOnHathPage';
         this.updateButtonText(button);
-        button.style.padding = '5px 10px';
+        button.style.padding = '3px 5px';
         button.style.backgroundColor = 'rgb(79, 83, 91)';
         button.style.color = 'white';
         button.style.border = '1px solid #ccc';
@@ -351,25 +416,52 @@ class BatchDownloader {
         });
     }
 
-    addBatchButton() {
-        const container = document.querySelector('#taglist');
-        const buttonExist = document.querySelector('#eagleOnSPage');
-        if (!container || buttonExist) return;
+    /**
+     * 新增批次下載按鈕 - 浮動在頁面左下或右下角
+     * @param {string} [position='right'] - 按鈕位置：'left' 或 'right'
+     */
+    addBatchButton(position = 'left') {
+        if (document.querySelector('#eagleOnSPage')) return;
 
         const button = document.createElement('button');
         button.id = 'eagleOnSPage';
         button.textContent = I18n.t('batchAdd');
-        button.style.padding     = '5px 10px';
-        button.style.backgroundColor = 'rgb(79, 83, 91)';
-        button.style.color       = 'white';
-        button.style.border      = '1px solid #ccc';
-        button.style.borderRadius = '5px';
-        button.style.cursor      = 'pointer';
-        button.style.margin      = '4px';
-        button.style.fontWeight  = '500';
+
+        Object.assign(button.style, {
+            position: 'fixed',
+            bottom: '20px',
+            [position]: '20px',
+            zIndex: '9999',
+            padding: '3px 5px',
+            backgroundColor: 'rgb(79, 83, 91)',
+            color: 'white',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '14px',
+            //boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            transition: 'all 0.2s ease',
+            //minWidth: '140px',
+            textAlign: 'center'
+        });
+
+        button.addEventListener('mouseenter', () => {
+            button.style.backgroundColor = 'rgb(99, 103, 111)';
+            button.style.transform = 'translateY(-2px)';
+            button.style.boxShadow = '0 6px 16px rgba(0,0,0,0.4)';
+        });
+        button.addEventListener('mouseleave', () => {
+            button.style.backgroundColor = 'rgb(79, 83, 91)';
+            button.style.transform = 'translateY(0)';
+            button.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        });
 
         button.addEventListener('click', this.handleBatchClick.bind(this));
-        container.appendChild(button);
+
+        document.body.appendChild(button);
+
+        console.log(`[BatchDownloader] 已新增批次按鈕，位置：${position}`);
     }
 
     handleBatchClick() {
