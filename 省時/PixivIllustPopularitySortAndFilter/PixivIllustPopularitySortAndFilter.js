@@ -6,20 +6,23 @@
 // @description  在追蹤繪師作品、繪師作品、標籤作品頁面中以按讚數進行排序，並僅顯示高於閾值的作品。
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
-// @namespace    https://github.com/Max46656
-// @version      1.10.15
+//
 // @author       Max
+// @namespace    https://github.com/Max46656
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/PixivIllustPopularitySortAndFilter
+// @license MPL2.0
+//
+// @version      1.10.16
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
 // @match        https://www.pixiv.net/*
-// @exclude       https://www.pixiv.net/*/novels
+// @exclude      https://www.pixiv.net/*/novels
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM.info
-// @license MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.meta.js
 // ==/UserScript==
@@ -92,7 +95,7 @@ class subStrategy extends pageStrategy{
         return 'li[offset]';
     }
     getRenderArtWallClass() {
-        return 'section div:not([class]) div:not([class]) div:has(li[offset])';
+        return 'section div:not([class]) div:not([class]) ul';
     }
     getArtWallAlignLeftClass(){
         return 'iJEVBL';
@@ -156,52 +159,24 @@ class artScraper {
         await this.executeAndcountUpSec('sortArts', this.sortArts.bind(this));
         let renderArtWallAtClass = this.strategy.getRenderArtWallClass();
         await this.executeAndcountUpSec('renderArtWall', () => this.renderArtWall(renderArtWallAtClass));
-        let buttonAtClass = this.strategy.getButtonAtClass();
         //this.addRestoreButton(buttonAtClass, this.strategy.getAllButtonClass());
-        this.addRerenderButton(renderArtWallAtClass, buttonAtClass, this.strategy.getAllButtonClass());
-
+        this.addRerenderButton(renderArtWallAtClass, this.strategy.getButtonAtClass(), this.strategy.getAllButtonClass());
         const endTime = performance.now();
         console.log(`${GM_info.script.name} 總耗時: ${(endTime - startTime) / 1000} 秒`);
     }
 
-    async getElementBySelector(selector, timeoutMs = 30000) {
-        const start = Date.now();
-
-        while (Date.now() - start < timeoutMs) {
-            const el = document.querySelector(selector);
-            if (el) return el;
-
-            await this.delay(50);
-        }
-
-        throw new Error(`Timeout: 找不到元素 ${selector} (${timeoutMs}ms)`);
-    }
-
-    async getElementListBySelector(selector) {
-        let elements = document.querySelectorAll(selector);
-        while (elements.length === 0) {
-            await this.delay(50);
-            elements = document.querySelectorAll(selector);
-            //console.log("selector",selector,"找不到，將重試")
-        }
-        return elements;
-    }
-
     async readingPages(thumbnailClass, artsClass) {
         const startTime = performance.now();
-        if(document.getElementById("RerenderButton")){
-            this.toNextPage();
-        }
+
         const allArtCount = this.getMaxPage();
-        const artInpage = this.getElementListBySelector(artsClass).length - 1;
+        const artInPage = this.getElementListBySelector(artsClass).length - 1;
         const initPage = Number(document.querySelector("nav button span").textContent) - 1;
         const endPage = this.targetPages + initPage;
-        let lastPage = location.search;
         const nextButton = document.querySelector('a:has(polyline[points="1,2 5,6 9,2"]):last-of-type');
-        let page = Number(new URLSearchParams(location.search).get('p'));
-        for (let i = initPage; i <= endPage; i++) {
+        let page = initPage;
+        for (let i = initPage; i < endPage; i++) {
             const iterationStartTime = performance.now();
-            page = Number(new URLSearchParams(location.search).get('p'));
+            page = Number(document.querySelector("nav button span").textContent);
             if(page && i > page){
                 i--;
             }else if(!page || page == 0){
@@ -210,26 +185,28 @@ class artScraper {
                 await this.delay(3000);
                 i--;
             }
-            lastPage = location.search;
             await this.getArtsInPage(thumbnailClass, artsClass);
 
             let nextPageLink = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
             let retryCount = 0;
-            if(page *  artInpage > allArtCount){
+            if(nextPageLink[nextPageLink.length-1].hasAttribute("hidden")&& Number(new URL(nextPageLink[nextPageLink.length-1].href).searchParams.get('p')) === Number(document.querySelector('nav button span')?.textContent.trim())){
                 console.log(this.getAPIMessageLocalization("lastPageReached"));
                 break;
             }else{
-                while(nextPageLink[nextPageLink.length-1].hasAttribute("hidden") && retryCount < 1000) {
+                while(nextPageLink[nextPageLink.length-1].hasAttribute("hidden") && retryCount < 2000) {
                     await this.delay(1);
                     retryCount++;
                 }
-                if(retryCount >= 1000) break;
+                if(retryCount >= 2000){
+                    break;
+                    console.error(this.getAPIMessageLocalization("pageZeroError"));
+                }
             }
 
-            let checkInterval = Math.floor(Math.random() * 10) + 30;
+            /*let checkInterval = Math.floor(Math.random() * 10) + 30;
             let cooldown = Math.floor(Math.random() * 3000) + 2000;
 
-            /*if(i - initPage > 150 && (i - initPage) % (checkInterval * 10) == 0){
+            if(i - initPage > 150 && (i - initPage) % (checkInterval * 10) == 0){
                 const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
                 console.log(cooldownMessage);
                 const sorterContainer = document.getElementById("SorterBtnContainer");
@@ -266,7 +243,7 @@ class artScraper {
                 }
             }
 
-            if (i <= endPage - 1) {
+            if (i < endPage - 1) {
                 //if((endPage - i) % 15 ===0) await this.delay(Math.random() * 2000 + 1000);
                 this.toNextPage();
             }
@@ -278,46 +255,23 @@ class artScraper {
             try{
                 await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
             }catch (e){
-                const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
+                /*const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
                 console.log(`${GM_info.script.name} `+cooldownMessage);
                 const sorterContainer = document.getElementById("SorterBtnContainer");
                 const messageElement = document.createElement("span");
                 messageElement.textContent = cooldownMessage;
                 sorterContainer.appendChild(messageElement);
                 await this.delay(cooldown);
-                sorterContainer.removeChild(messageElement);
+                sorterContainer.removeChild(messageElement);*/
             }
         }
     }
 
-    getAPIMessageLocalization(word, params = {}) {
-        let display = {
-            "zh-TW": {
-                "pageZeroError": `${GM_info.script.name} 觸發page0錯誤，停止排序`,
-                "lastPageReached": `${GM_info.script.name} 已經來到最後一頁，停止排序`,
-                "apiCooldown": `請等待API冷卻時間 ${params.waitTime/1000 || ''}秒`
-        },
-            "en": {
-                "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
-                "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
-                "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
-        },
-            "ja": {
-                "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
-                "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
-                "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
-        }
-        };
-        return display[navigator.language]?.[word] ?? display["en"][word];
-    }
-
     async getArtsInPage(thumbnailClass, artsClass) {
-        let retryCount = 0;
-        const maxRetries = 2;
         //出於某種黑魔法不斷上下拖動有助於圖片元素的確實載入
-        while (retryCount < maxRetries) {
-            let pageStandard = this.getElementListBySelector(artsClass);
-            pageStandard = pageStandard.length - 1;
+        while (true) {
+            let pageStandard = await this.getElementListBySelector(artsClass);
+            pageStandard = pageStandard.length;
             let thumbnailCount = 0;
 
             while (thumbnailCount < pageStandard) {
@@ -335,25 +289,25 @@ class artScraper {
                     }
                 }
             }
-
             const arts = await this.getElementListBySelector(artsClass);
+            //console.info(pageStandard,thumbnailCount,arts)
             //console.log(`找到${arts.length}張圖片，開始抓取圖片`);
 
             const artsArray = Array.from(arts);
             const allArtsSet = new Set(this.allArtsWithoutLike);
             const areFirstThreePresent = artsArray.slice(0, 3).every(art => allArtsSet.has(art));
-
-            if (areFirstThreePresent && retryCount < maxRetries) {
-                //console.log(`前3張圖片已存在，重試第${retryCount + 1}次`);
-                retryCount++;
-                await this.delay(50);
+            const allPresent = artsArray.every(art => allArtsSet.has(art));
+            if (allPresent) {
+                console.log(`${GM_info.script.name} 本頁所有作品已處理完畢，結束蒐集`);
+                break;
+            }
+            if (areFirstThreePresent) {
+                await this.delay(20);
                 window.scrollTo(0, 0);
                 await this.delay(30);
                 continue;
             }
-            for (let art of arts) {
-                this.allArtsWithoutLike.push(art);
-            }
+            for (let art of arts) this.allArtsWithoutLike.push(art);
             break;
         }
     }
@@ -384,7 +338,7 @@ class artScraper {
                 this.allArts.push({ art, likeCount });
             }
         });
-
+        //console.info(this.allArtsWithoutLike.length,this.allArts.length);
         this.allArtsWithoutLike = [];
     }
 
@@ -395,7 +349,7 @@ class artScraper {
         nextPageButton.click();
     }
 
-    async toPervPage() {
+    toPervPage() {
         let pageButtonsClass='a:has(polyline[points="1,2 5,6 9,2"])';
         const pageButtons = document.querySelectorAll(pageButtonsClass);
         let nextPageButton = pageButtons[0];
@@ -441,7 +395,7 @@ class artScraper {
          */
         if(GM_getValue("leftAlign", true)){
             if(self.location.href.includes('bookmark')){
-                console.log(document.getElementsByClassName(alignLeftClass))
+                //console.log(document.getElementsByClassName(alignLeftClass))
                 this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[0],"leftAlign");
             }else if(self.location.href.includes('users')){
                 this.changeElementClassName(document.getElementsByClassName(alignLeftClass)[3],"leftAlign");
@@ -618,7 +572,7 @@ class artScraper {
         buttonsorterContainer.appendChild(rerenderButton);
         parentElement.appendChild(buttonsorterContainer);
     }
-    
+
     addLikeRangeInput(sorterContainer,Button) {
         const likesMinLimitsRange = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 7500, 10000];
 
@@ -765,6 +719,29 @@ class artScraper {
         parentElement.appendChild(restoreButton);
     }
 
+    async getElementBySelector(selector, timeoutMs = 30000) {
+        const start = Date.now();
+
+        while (Date.now() - start < timeoutMs) {
+            const el = document.querySelector(selector);
+            if (el) return el;
+
+            await this.delay(50);
+        }
+
+        throw new Error(`Timeout: 找不到元素 ${selector} (${timeoutMs}ms)`);
+    }
+
+    async getElementListBySelector(selector) {
+        let elements = document.querySelectorAll(selector);
+        while (elements.length === 0) {
+            await this.delay(50);
+            elements = document.querySelectorAll(selector);
+            //console.log("selector",selector,"找不到，將重試")
+        }
+        return elements;
+    }
+
     clearElement(element) {
         element.innerHTML='';
     }
@@ -784,6 +761,27 @@ class artScraper {
         await fn();
         const endTime = performance.now();
         console.log(`${GM_info.script.name} ${label} 花費時間: ${(endTime - startTime) / 1000} 秒`);
+    }
+
+    getAPIMessageLocalization(word, params = {}) {
+        let display = {
+            "zh-TW": {
+                "pageZeroError": `${GM_info.script.name} 觸發page0錯誤，停止排序`,
+                "lastPageReached": `${GM_info.script.name} 已經來到最後一頁，停止排序`,
+                "apiCooldown": `請等待API冷卻時間 ${params.waitTime/1000 || ''}秒`
+        },
+            "en": {
+                "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
+                "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
+                "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
+        },
+            "ja": {
+                "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
+                "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
+                "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
+        }
+        };
+        return display[navigator.language]?.[word] ?? display["en"][word];
     }
 
 }
@@ -887,13 +885,13 @@ Object.defineProperty(document, 'title', {
 });
 
 window.addEventListener('titlechange', (e) => {
-        readingStand.expandAllArtworks();
-        if (window.location.href === pageUrl) {
-            return;
-        }
-        pageUrl = window.location.href;
-        let johnTheHornyOne = new artScraper(10, 50);
-        johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
+    readingStand.expandAllArtworks();
+    if (window.location.href === pageUrl) {
+        return;
+    }
+    pageUrl = window.location.href;
+    let johnTheHornyOne = new artScraper(10, 50);
+    johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
 });
 
 //新增對網頁網址的檢查，以確保即便標題被其他程式修改，腳本仍能意識到是否在相同頁面
@@ -902,5 +900,4 @@ let pageUrl = window.location.href;
 //初始化
 let johnTheHornyOne = new artScraper(10, 50);
 johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
-
 const johnTheRestaurantWaiter = new customMenu();
