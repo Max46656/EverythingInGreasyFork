@@ -7,7 +7,7 @@
 // @description:ja  フォローアーティスト作品、アーティスト作品、タグ作品ページで、いいね數でソートし、閾値以上の作品のみを表示します。
 // @description:en  Sort Illustration by likes and display only those above the threshold on followed artist illustrations, artist illustrations, and tag illustrations pages.
 // @namespace    https://github.com/Max46656
-// @version      1.10.14
+// @version      1.10.15
 // @author       Max
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
@@ -44,7 +44,7 @@ class userStrategy extends pageStrategy{
         return 'li[offset]';
     }
     getRenderArtWallClass() {
-        return 'div:not([class]) div div div:not([class]) div:not([class]) div:has(li[offset])';
+        return 'div:not([class]) div div div:not([class]) div:not([class]) ul';
     }
     getArtWallAlignLeftClass(){
         return 'iJEVBL';
@@ -593,10 +593,11 @@ class artScraper {
             document.getElementById("RerenderButton").textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`;
             return;
         }
-        document.querySelector("nav#SorterBtnContainer input[id=LikeRangeInput]").style.display="none";
-        document.getElementById("LikeIcon").style.display="none";
+        document.getElementById("LikeRangeInput").remove();
+        document.getElementById("LikeIcon").remove();
+        document.getElementById("StartButton").remove();
+        [...document.getElementsByClassName("pageInput")].forEach(el => el.style.display = "none");
         await this.delay(0);//黑魔法
-        document.getElementById("StartButton").textContent = 'bug? you can try again.';
 
         const buttonsorterContainer = document.createElement('div');
         buttonsorterContainer.style.display = 'flex';
@@ -611,14 +612,13 @@ class artScraper {
             await this.renderArtWall(renderArtWallAtClass);
             rerenderButton.textContent = `likes: ${this.likesMinLimit} Rerender Go! now:${this.currentArtCount}(${Math.round(this.currentArtCount/this.allArts.length *100)}％)`; // 更新繪畫數量
         });
-
         this.addLikeRangeInput(buttonsorterContainer, rerenderButton);
 
         const parentElement = await this.getElementBySelector(ParentClass);
         buttonsorterContainer.appendChild(rerenderButton);
         parentElement.appendChild(buttonsorterContainer);
     }
-
+    
     addLikeRangeInput(sorterContainer,Button) {
         const likesMinLimitsRange = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 7500, 10000];
 
