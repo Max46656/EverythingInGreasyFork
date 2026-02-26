@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/PixivIllustPopularitySortAndFilter
 // @license MPL2.0
 //
-// @version      1.10.17
+// @version      1.10.18
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -62,28 +62,28 @@ class userStrategy extends pageStrategy{
         return 'h2+div span:not([class])';
     }
 }
-//需注意FANBOX創作者需要第二組選擇器
+
 class tagsStrategy extends pageStrategy{
     getThumbnailClass() {
         return 'a[data-gtm-user-id] img'
     }
     getArtsClass() {
-        return 'section:not(:has(aside)) li:has(a[data-gtm-user-id]),div[width][height]';
+        return 'section:not(:has(aside)) li:has(a[data-gtm-user-id])';
     }
     getRenderArtWallClass() {
-        return 'section div~div:has(a[data-gtm-user-id]):not(:has(aside)),div[data-ga4-label] div:has(div div div div a[href^="/artworks/"])';
+        return 'section div~div:has(a[data-gtm-user-id]):not(:has(aside))';
     }
     getArtWallAlignLeftClass(){
         return 'iJEVBL';
     }
     getButtonAtClass() {
-        return 'div:nth-child(3) div:first-child div:first-child:has(div span+a+button),nav~div div div:has(nav)';
+        return 'div:nth-child(3) div:first-child div:first-child:has(div span+a+button)';
     }
     getAllButtonClass() {
         return ['kBpizq','kBgAgO','kIZwSN','kIZQyE','eeVGDc','efgaHs'];
     }
     getArtsCountClass(){
-        return 'h3+div span:not([class]),div>div>div>div>span>span';
+        return 'h3+div span:not([class])';
     }
 }
 
@@ -185,7 +185,6 @@ class artScraper {
                 await this.delay(3000);
                 i--;
             }
-            console.log("呼叫getArtsInPage",i,page,endPage)
             await this.getArtsInPage(thumbnailClass, artsClass);
             let nextPageLink = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
             let retryCount = 0;
