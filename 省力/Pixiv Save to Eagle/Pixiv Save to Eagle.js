@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.6.0
+// @version      1.6.1
 // @match        https://www.pixiv.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -309,8 +309,8 @@ class IllustProcessor {
     async handleSet(illust, baseName, folderId) {
         const baseUrl = illust.urls.original;
         const urls = Array.from({ length: illust.pageCount }, (_, i) =>
-            baseUrl.replace(/_p\d\./, `_p${i}.`)
-        );
+                                baseUrl.replace(/_p\d\./, `_p${i}.`)
+                               );
 
         for (const [i, url] of urls.entries()) {
             const name = `${baseName}_p${i}`;
@@ -450,7 +450,7 @@ class ArtworkPageHandler {
             const styles = positionStyles[validPosition];
 
             document.querySelectorAll(this.imageSelector).forEach((img, index) => {
-              //console.log(index)
+                //console.log(index)
                 const btnId = `save-to-eagle-btn-${illustId}-${index}`;
                 if (document.getElementById(btnId)) return;
 
@@ -535,7 +535,10 @@ class OtherPagesHandler {
     async init() {
         this.addFolderSelect();
         this.addButtonsToThumbnails();
-        this.observeDomChange(() => this.addButtonsToThumbnails());
+        this.observeDomChange(() => {
+            this.addButtonsToThumbnails();
+            this.addFolderSelect();
+        });
     }
 
     /**
@@ -543,6 +546,7 @@ class OtherPagesHandler {
      * @param {string} [defaultPosition='right'] - 預設位置：'left' 或 'right'
      */
     async addFolderSelect(position = 'left') {
+        if(document.getElementById("eagle-folder-select")) return;
         if (!['left', 'right'].includes(position)) position = 'left'
 
         const select = document.createElement('select');
