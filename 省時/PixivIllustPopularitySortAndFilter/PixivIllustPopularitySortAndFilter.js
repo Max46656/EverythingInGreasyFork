@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/PixivIllustPopularitySortAndFilter
 // @license MPL2.0
 //
-// @version      1.10.16
+// @version      1.10.17
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -62,28 +62,28 @@ class userStrategy extends pageStrategy{
         return 'h2+div span:not([class])';
     }
 }
-
+//需注意FANBOX創作者需要第二組選擇器
 class tagsStrategy extends pageStrategy{
     getThumbnailClass() {
         return 'a[data-gtm-user-id] img'
     }
     getArtsClass() {
-        return 'section:not(:has(aside)) li:has(a[data-gtm-user-id])';
+        return 'section:not(:has(aside)) li:has(a[data-gtm-user-id]),div[width][height]';
     }
     getRenderArtWallClass() {
-        return 'section div~div:has(a[data-gtm-user-id]):not(:has(aside))';
+        return 'section div~div:has(a[data-gtm-user-id]):not(:has(aside)),div[data-ga4-label] div:has(div div div div a[href^="/artworks/"])';
     }
     getArtWallAlignLeftClass(){
         return 'iJEVBL';
     }
     getButtonAtClass() {
-        return 'div:nth-child(3) div:first-child div:first-child:has(div span+a+button)';
+        return 'div:nth-child(3) div:first-child div:first-child:has(div span+a+button),nav~div div div:has(nav)';
     }
     getAllButtonClass() {
         return ['kBpizq','kBgAgO','kIZwSN','kIZQyE','eeVGDc','efgaHs'];
     }
     getArtsCountClass(){
-        return 'h3+div span:not([class])';
+        return 'h3+div span:not([class]),div>div>div>div>span>span';
     }
 }
 
@@ -174,7 +174,7 @@ class artScraper {
         const endPage = this.targetPages + initPage;
         const nextButton = document.querySelector('a:has(polyline[points="1,2 5,6 9,2"]):last-of-type');
         let page = initPage;
-        for (let i = initPage; i < endPage; i++) {
+        for (let i = initPage; i <= endPage; i++) {
             const iterationStartTime = performance.now();
             page = Number(document.querySelector("nav button span").textContent);
             if(page && i > page){
@@ -185,8 +185,8 @@ class artScraper {
                 await this.delay(3000);
                 i--;
             }
+            console.log("呼叫getArtsInPage",i,page,endPage)
             await this.getArtsInPage(thumbnailClass, artsClass);
-
             let nextPageLink = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
             let retryCount = 0;
             if(nextPageLink[nextPageLink.length-1].hasAttribute("hidden")&& Number(new URL(nextPageLink[nextPageLink.length-1].href).searchParams.get('p')) === Number(document.querySelector('nav button span')?.textContent.trim())){
@@ -296,12 +296,8 @@ class artScraper {
             const artsArray = Array.from(arts);
             const allArtsSet = new Set(this.allArtsWithoutLike);
             const areFirstThreePresent = artsArray.slice(0, 3).every(art => allArtsSet.has(art));
-            const allPresent = artsArray.every(art => allArtsSet.has(art));
-            if (allPresent) {
-                console.log(`${GM_info.script.name} 本頁所有作品已處理完畢，結束蒐集`);
-                break;
-            }
-            if (areFirstThreePresent) {
+            const areAllPresent = artsArray.every(art => allArtsSet.has(art))
+            if (!areAllPresent && areFirstThreePresent) {
                 await this.delay(20);
                 window.scrollTo(0, 0);
                 await this.delay(30);
@@ -343,17 +339,15 @@ class artScraper {
     }
 
     toNextPage() {
-        let pageButtonsShape='a:has(polyline[points="1,2 5,6 9,2"])';
-        const pageButtons = document.querySelectorAll(pageButtonsShape);
-        let nextPageButton = pageButtons[pageButtons.length - 1];
+        let pageButtonsShape='a:has(polyline[points="1,2 5,6 9,2"]):last-of-type';
+        const nextPageButton = document.querySelector(pageButtonsShape);
         nextPageButton.click();
     }
 
     toPervPage() {
-        let pageButtonsClass='a:has(polyline[points="1,2 5,6 9,2"])';
-        const pageButtons = document.querySelectorAll(pageButtonsClass);
-        let nextPageButton = pageButtons[0];
-        nextPageButton.click();
+        let pageButtonsClass='a:has(polyline[points="1,2 5,6 9,2"]):first-of-type';
+        const pervPageButton = document.querySelectorAll(pageButtonsClass);
+        pervPageButton.click();
     }
 
     async fetchLikeCount(id) {
