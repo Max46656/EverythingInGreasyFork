@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.4.2
+// @version      1.5.0
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://coomer.st/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -31,15 +31,36 @@
 // ==/UserScript==
 
 class EagleClient {
-    async save(urlOrBase64, name, folderId = []) {
-        return new Promise(resolve => {
-            const data = {
-                url: urlOrBase64,
-                name,
-                folderId: Array.isArray(folderId) ? folderId : [folderId],
-                tags: [],
-                website: location.href,
-                headers: { referer: "https://kemono.cr/" }
+    /**
+     * 將圖片或檔案加入 Eagle
+     * @param {string} urlOrBase64 - 圖片網址或 base64 data URL
+     * @param {string} name - 檔案名稱
+     * @param {string|string[]} folderId - 目標資料夾 ID（可為單一字串或陣列）
+     * @param {number} [retryDelay=3000] - 重試間隔（毫秒）
+     * @returns {Promise<boolean>} 是否最終成功
+     */
+    async save(urlOrBase64, name, folderId = [], retryDelay = 3000) {
+        const PREFIX = `[${GM_info.script.name}]`;
+
+        const data = {
+            url: urlOrBase64,
+            name,
+            folderId: Array.isArray(folderId) ? folderId : [folderId],
+            tags: [],
+            website: location.href,
+            headers: { referer: "https://kemono.cr/" }
+        };
+
+        if (!this.originalTitle) this.originalTitle = document.title;
+
+        let success = false;
+
+        const sendRequest = () => new Promise((resolve) => {
+            if (!document || !document.title) {
+                console.warn(`${PREFIX} 分頁已關閉，停止 Eagle 儲存重試`);
+                this.#stopTitleBlink();
+                resolve(false);
+                return;
             }
 
             GM_xmlhttpRequest({
@@ -47,24 +68,76 @@ class EagleClient {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 data: JSON.stringify(data),
-                onload: r => {
+                timeout: 1000,
+
+                onload: (r) => {
                     if (r.status >= 200 && r.status < 300) {
-                        console.log("⭘ 已新增:", name)
+                        console.log(`${PREFIX} ⭘ 已新增: ${name}`);
+                        this.#stopTitleBlink();
+                        success = true;
+                        resolve(true);
                     } else {
-                        console.error("失敗:", r)
+                        console.warn(`${PREFIX} Eagle 回應非 2xx: ${r.status} ${r.statusText}`);
+                        this.#startTitleBlink();
+                        resolve(false);
                     }
-                    resolve()
                 },
-                onerror: e => {
-                    console.error(e)
-                    resolve()
+
+                onerror: (err) => {
+                    console.error(`${PREFIX} 網路錯誤:`, err);
+                    this.#startTitleBlink();
+                    resolve(false);
                 },
-                ontimeout: e => {
-                    console.error(e)
-                    resolve()
+
+                ontimeout: () => {
+                    console.warn(`${PREFIX} 請求超時`);
+                    this.#startTitleBlink();
+                    resolve(false);
                 }
-            })
-        })
+            });
+        });
+
+        while (!success) {
+            if (retryCount > 0) {
+                console.log(`${PREFIX} ${name} ...`);
+                await new Promise(r => setTimeout(r, retryDelay));
+            }
+
+            const ok = await sendRequest();
+            if (ok) {
+                success = true;
+                break;
+            }
+
+        }
+
+        return success;
+    }
+
+    #startTitleBlink() {
+        if (this.blinkInterval) return;
+
+        let showError = true;
+        this.blinkInterval = setInterval(() => {
+            if (!document || !document.title) {
+                this.#stopTitleBlink();
+                return;
+            }
+            document.title = showError ? 'Eagle 儲存失敗' : (this.originalTitle || document.title);
+            showError = !showError;
+        }, 1000);
+
+        window.addEventListener('unload', () => this.#stopTitleBlink(), { once: true });
+    }
+
+    #stopTitleBlink() {
+        if (this.blinkInterval) {
+            clearInterval(this.blinkInterval);
+            this.blinkInterval = null;
+        }
+        if (this.originalTitle && document && document.title) {
+            document.title = this.originalTitle;
+        }
     }
 
     async getFolderList() {
@@ -283,21 +356,25 @@ class KemonoEagleUI {
         try {
             const section = await this.waitForElement(this.buttonContainerSelector);
             if (document.getElementById(this.processedSelector)) return;
+
             const container = document.createElement("div");
             container.style.margin = "10px 0";
             container.style.display = "flex";
             container.style.alignItems = "center";
             container.style.gap = "8px";
+
             const folderLabel = document.createElement("label");
             folderLabel.textContent = this.i18n.get("Eagle 資料夾：");
             folderLabel.htmlFor = this.processedSelector;
             folderLabel.style.fontSize = "14px";
             folderLabel.style.fontWeight = "500";
             folderLabel.style.color = "#FFFFFF";
+
             const select = document.createElement("select");
             select.id = this.processedSelector;
             select.style.padding = "5px";
             select.style.fontSize = "14px";
+
             const timeoutWarning = document.createElement("div");
             timeoutWarning.id = "eagle-folder-timeout-warning";
             timeoutWarning.textContent = this.i18n.get("請檢查 Eagle 程式是否正常運行、沒有當機、已開啟「瀏覽器擴充功能支援」");
@@ -305,29 +382,48 @@ class KemonoEagleUI {
             timeoutWarning.style.fontSize = "13px";
             timeoutWarning.style.marginTop = "8px";
             timeoutWarning.style.display = "none";
+
             container.appendChild(folderLabel);
             container.appendChild(select);
-            //section.appendChild(container);
-            //section.appendChild(timeoutWarning);
-            section.after(container,timeoutWarning);
+
+            section.after(container, timeoutWarning);
+
             const lastFolderId = await GM.getValue("eagle_last_folder");
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("TIMEOUT")), 2000)
-            );
-            let folders;
-            try {
-                folders = await Promise.race([
-                    this.eagle.getFolderList(),
-                    timeoutPromise
-                ]);
-            } catch (err) {
-                if (err.message === "TIMEOUT") {
-                    timeoutWarning.style.display = "block";
-                    folders = await this.eagle.getFolderList();
-                } else {
-                    throw err;
+
+            const fetchFoldersWithRetry = async () => {
+                while (true) {
+                    const timeoutPromise = new Promise((_, reject) =>
+                                                       setTimeout(() => reject(new Error("TIMEOUT")), 2000)
+                                                      );
+
+                    try {
+                        const folders = await Promise.race([
+                            this.eagle.getFolderList(),
+                            timeoutPromise
+                        ]);
+
+                        timeoutWarning.style.display = "none";
+                        console.log(`[${GM_info.script.name}] Eagle 資料夾列表取得成功`);
+                        return folders;
+
+                    } catch (err) {
+                        if (err.message === "TIMEOUT") {
+                            timeoutWarning.style.display = "block";
+                            console.warn(`[${GM_info.script.name}] Eagle 資料夾請求超時，將於 3 秒後自動重試...`);
+                            await new Promise(r => setTimeout(r, 3000));
+                            continue;
+                        }
+
+                        console.error(`[${GM_info.script.name}] 取得資料夾列表發生錯誤:`, err);
+                        timeoutWarning.style.display = "block";
+                        await new Promise(r => setTimeout(r, 3000));
+                        continue;
+                    }
                 }
-            }
+            };
+
+            const folders = await fetchFoldersWithRetry();
+
             folders.forEach(f => {
                 const option = document.createElement("option");
                 option.value = f.id;
@@ -335,11 +431,13 @@ class KemonoEagleUI {
                 if (f.id === lastFolderId) option.selected = true;
                 select.appendChild(option);
             });
+
             select.addEventListener("change", async () => {
                 await GM.setValue("eagle_last_folder", select.value);
             });
+
         } catch (e) {
-            console.error("無法新增資料夾選擇器:", e);
+            console.error(`[${GM_info.script.name}] 無法新增資料夾選擇器:`, e);
         }
     }
 
