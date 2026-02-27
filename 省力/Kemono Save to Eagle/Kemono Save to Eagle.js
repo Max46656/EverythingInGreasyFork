@@ -12,7 +12,7 @@
 // @description:de  Speichert Kemono-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
-// @version      1.5.0
+// @version      1.5.1
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://coomer.st/*/user/*/post/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
@@ -32,10 +32,10 @@
 
 class EagleClient {
     /**
-     * 將圖片或檔案加入 Eagle
+     * 將圖片或檔案加入 Eagle（失敗時無限重試，每 retryDelay 毫秒一次）
      * @param {string} urlOrBase64 - 圖片網址或 base64 data URL
      * @param {string} name - 檔案名稱
-     * @param {string|string[]} folderId - 目標資料夾 ID（可為單一字串或陣列）
+     * @param {string|string[]} folderId - 目標資料夾 ID
      * @param {number} [retryDelay=3000] - 重試間隔（毫秒）
      * @returns {Promise<boolean>} 是否最終成功
      */
@@ -51,14 +51,13 @@ class EagleClient {
             headers: { referer: "https://kemono.cr/" }
         };
 
-        if (!this.originalTitle) this.originalTitle = document.title;
-
-        let success = false;
+        let originalTitle = document.title;
+        let blinkInterval = null;
 
         const sendRequest = () => new Promise((resolve) => {
             if (!document || !document.title) {
                 console.warn(`${PREFIX} 分頁已關閉，停止 Eagle 儲存重試`);
-                this.#stopTitleBlink();
+                this.#stopTitleBlink(originalTitle, blinkInterval);
                 resolve(false);
                 return;
             }
@@ -68,75 +67,69 @@ class EagleClient {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 data: JSON.stringify(data),
-                timeout: 1000,
+                timeout: 15000,
 
                 onload: (r) => {
                     if (r.status >= 200 && r.status < 300) {
                         console.log(`${PREFIX} ⭘ 已新增: ${name}`);
-                        this.#stopTitleBlink();
-                        success = true;
+                        this.#stopTitleBlink(originalTitle, blinkInterval);
                         resolve(true);
                     } else {
-                        console.warn(`${PREFIX} Eagle 回應非 2xx: ${r.status} ${r.statusText}`);
-                        this.#startTitleBlink();
+                        console.warn(`${PREFIX} Eagle 回應非 2xx: ${r.status} ${r.statusText || '無狀態文字'}`);
+                        this.#startTitleBlink(originalTitle, blinkInterval);
                         resolve(false);
                     }
                 },
 
                 onerror: (err) => {
                     console.error(`${PREFIX} 網路錯誤:`, err);
-                    this.#startTitleBlink();
+                    this.#startTitleBlink(originalTitle, blinkInterval);
                     resolve(false);
                 },
 
                 ontimeout: () => {
                     console.warn(`${PREFIX} 請求超時`);
-                    this.#startTitleBlink();
+                    this.#startTitleBlink(originalTitle, blinkInterval);
                     resolve(false);
                 }
             });
         });
 
-        while (!success) {
-            if (retryCount > 0) {
-                console.log(`${PREFIX} ${name} ...`);
-                await new Promise(r => setTimeout(r, retryDelay));
-            }
-
+        while (true) {
             const ok = await sendRequest();
-            if (ok) {
-                success = true;
-                break;
-            }
+            if (ok) break;
 
+            await new Promise(r => setTimeout(r, retryDelay));
         }
 
-        return success;
+        return true;
     }
 
-    #startTitleBlink() {
-        if (this.blinkInterval) return;
+    #startTitleBlink(originalTitle, blinkIntervalRef) {
+        if (blinkIntervalRef.value) return;
 
         let showError = true;
-        this.blinkInterval = setInterval(() => {
+        blinkIntervalRef.value = setInterval(() => {
             if (!document || !document.title) {
-                this.#stopTitleBlink();
+                this.#stopTitleBlink(originalTitle, blinkIntervalRef);
                 return;
             }
-            document.title = showError ? 'Eagle 儲存失敗' : (this.originalTitle || document.title);
+            document.title = showError ? 'Eagle 儲存失敗' : originalTitle;
             showError = !showError;
         }, 1000);
 
-        window.addEventListener('unload', () => this.#stopTitleBlink(), { once: true });
+        window.addEventListener('unload', () => {
+            this.#stopTitleBlink(originalTitle, blinkIntervalRef);
+        }, { once: true });
     }
 
-    #stopTitleBlink() {
-        if (this.blinkInterval) {
-            clearInterval(this.blinkInterval);
-            this.blinkInterval = null;
+    #stopTitleBlink(originalTitle, blinkIntervalRef) {
+        if (blinkIntervalRef.value) {
+            clearInterval(blinkIntervalRef.value);
+            blinkIntervalRef.value = null;
         }
-        if (this.originalTitle && document && document.title) {
-            document.title = this.originalTitle;
+        if (originalTitle && document && document.title) {
+            document.title = originalTitle;
         }
     }
 
