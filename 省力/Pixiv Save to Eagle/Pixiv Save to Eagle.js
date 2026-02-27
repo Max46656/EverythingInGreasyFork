@@ -12,7 +12,7 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.6.1
+// @version      1.7.0
 // @match        https://www.pixiv.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 // @grant        GM_registerMenuCommand
@@ -164,52 +164,102 @@ class JohnThePostcardSalesman {
 }
 
 class EagleAPI {
-    constructor(baseUrl = "http://localhost:41595") {
-        this.baseUrl = baseUrl;
+    constructor() {
+        this.baseUrl = "http://localhost:41595";
+        this.blinkTimer = null;
     }
 
-    async save(urlOrBase64, name, folderId = []) {
-        return new Promise(resolve => {
-            const data = {
-                url: urlOrBase64,
-                name,
-                folderId: Array.isArray(folderId) ? folderId : [folderId],
-                tags: [],
-                website: location.href,
-                headers: { referer: "https://www.pixiv.net/" }
-            };
+    async save(urlOrBase64, name, folderId = [], retryDelay = 3000) {
+        const PREFIX = `[${GM_info.script.name}]`;
+        const originalTitle = document?.title || "Pixiv";
+
+        const data = {
+            url: urlOrBase64,
+            name,
+            folderId: Array.isArray(folderId) ? folderId : [folderId],
+            tags: [],
+            website: location.href,
+            headers: { referer: "https://www.pixiv.net/" }
+        };
+
+        let retryCount = 0;
+        let success = false;
+
+        const sendRequest = () =>
+        new Promise((resolve) => {
+            if (!document || !document.title) {
+                console.warn(`${PREFIX} 分頁已關閉，停止 Eagle 儲存重試`);
+                this.#stopTitleBlink();
+                resolve(false);
+                return;
+            }
 
             GM_xmlhttpRequest({
                 url: `${this.baseUrl}/api/item/addFromURL`,
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 data: JSON.stringify(data),
-                onload: r => {
+                timeout: 1000,
+                onload: (r) => {
                     if (r.status >= 200 && r.status < 300) {
-                        console.log(I18n.t('addedSuccess'), name);
+                        console.log(`${PREFIX} 已新增至 Eagle: ${name}`);
+                        this.#stopTitleBlink();
+                        success = true;
+                        resolve(true);
                     } else {
-                        console.error("Failed:", r);
+                        //console.warn(`${PREFIX} Eagle 回應非 2xx: ${r.status}`);
+                        this.#startTitleBlink(originalTitle);
+                        resolve(false);
                     }
-                    resolve();
                 },
-                onerror: e => {
-                    console.error(e);
-                    resolve();
+                onerror: (err) => {
+                    //console.error(`${PREFIX} 網路錯誤:`, err);
+                    this.#startTitleBlink(originalTitle);
+                    resolve(false);
                 },
-                ontimeout: e => {
-                    console.error(e);
-                    resolve();
+                ontimeout: () => {
+                    console.warn(`${PREFIX} 請求超時`);
+                    this.#startTitleBlink(originalTitle);
+                    resolve(false);
                 }
             });
         });
+
+        while (!success) {
+            if (retryCount > 0) {
+                console.log(`${PREFIX} 重試第 ${retryCount} 次: ${name} (無限重試中...)`);
+                await new Promise(r => setTimeout(r, retryDelay));
+            }
+            const ok = await sendRequest();
+            if (ok) break;
+            retryCount++;
+        }
+
+        this.#stopTitleBlink();
+        return success;
     }
 
-    async getFolderList() {
-        return new Promise(resolve => {
+
+    async getFolderList(retryDelay = 3000) {
+        const PREFIX = `[${GM_info.script.name}]`;
+        const originalTitle = document?.title || "Pixiv";
+
+        let retryCount = 0;
+
+        const sendRequest = () =>
+        new Promise((resolve) => {
+            if (!document || !document.title) {
+                console.warn(`${PREFIX} 分頁已關閉，停止取得資料夾`);
+                this.#stopTitleBlink();
+                resolve([]);
+                return;
+            }
+
             GM_xmlhttpRequest({
                 url: `${this.baseUrl}/api/folder/list`,
                 method: "GET",
-                onload: res => {
+                timeout: 8000,
+                onload: (res) => {
                     try {
                         const folders = JSON.parse(res.responseText).data || [];
                         const list = [];
@@ -220,19 +270,78 @@ class EagleAPI {
                             }
                         };
                         folders.forEach(f => appendFolder(f));
+                        this.#stopTitleBlink();
                         resolve(list);
                     } catch (e) {
-                        console.error(I18n.t('parseFolderFailed'), e);
+                        console.error(`${PREFIX} 解析資料夾列表失敗`, e);
+                        this.#startTitleBlink(originalTitle);
                         resolve([]);
                     }
                 },
-                onerror: err => {
-                    console.error(err);
+                onerror: (err) => {
+                    console.error(`${PREFIX} 取得資料夾網路錯誤:`, err);
+                    this.#startTitleBlink(originalTitle);
+                    resolve([]);
+                },
+                ontimeout: () => {
+                    console.warn(`${PREFIX} 取得資料夾超時`);
+                    this.#startTitleBlink(originalTitle);
                     resolve([]);
                 }
             });
         });
+
+        while (true) {
+            if (retryCount > 0) {
+                console.log(`${PREFIX} 重試取得資料夾列表 第 ${retryCount} 次 (無限重試中...)`);
+                await new Promise(r => setTimeout(r, retryDelay));
+            }
+            const result = await sendRequest();
+            if (result.length > 0) {
+                this.#stopTitleBlink();
+                return result;
+            }
+            retryCount++;
+        }
     }
+
+    #startTitleBlink(originalTitle) {
+
+        if (this.blinkTimer) return;
+
+        let titleElement = document.querySelector('title[data-next-head]') || document.title;
+
+        if (!titleElement) {
+            console.warn("[EagleAPI] 找不到 <title> 元素，標題閃爍放棄");
+            return;
+        }
+
+        let showError = true;
+        const originalText = titleElement.textContent || originalTitle || "Pixiv";
+
+        const update = () => {
+            if (!document || !titleElement.isConnected) {
+                this.#stopTitleBlink();
+                return;
+            }
+            titleElement.textContent = showError ? "Eagle Error" : originalText;
+            showError = !showError;
+        };
+
+        this.blinkTimer = setInterval(update, 800);
+    }
+
+    #stopTitleBlink() {
+
+        if (this.blinkTimer) {
+            clearInterval(this.blinkTimer);
+            this.blinkTimer = null;
+
+            const titleElement = document.querySelector('title[data-next-head]') || document.title;
+            titleElement.textContent = document.title;
+        }
+    }
+
 }
 
 class PixivAPI {
