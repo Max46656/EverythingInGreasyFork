@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/PixivIllustPopularitySortAndFilter
 // @license MPL2.0
 //
-// @version      1.10.18
+// @version      1.10.19
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -864,31 +864,31 @@ class readingStand {
     }
 }
 
+//新增對網頁網址的檢查，以確保即便標題被其他程式修改，腳本仍能意識到是否在相同頁面
+let pageUrl = window.location.href;
 //網頁名稱不論載入或AJAX更換頁面都會在過程會觸發1次，hashchange與popstate在此無法正確處理，改使用自定事件
 let currentTitle = document.title;
-Object.defineProperty(document, 'title', {
+const titleDescriptor = {
     get: function() {
         return currentTitle;
     },
     set: function(newTitle) {
+        delete document.title;//避免無限遞迴
+        document.title = newTitle;
         currentTitle = newTitle;
+        Object.defineProperty(document, 'title', titleDescriptor);
         const event = new CustomEvent('titlechange', { detail: { newTitle: newTitle } });
         window.dispatchEvent(event);
     }
-});
+}
 
 window.addEventListener('titlechange', (e) => {
     readingStand.expandAllArtworks();
-    if (window.location.href === pageUrl) {
-        return;
-    }
+    if (window.location.href === pageUrl) return;
     pageUrl = window.location.href;
     let johnTheHornyOne = new artScraper(10, 50);
     johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
 });
-
-//新增對網頁網址的檢查，以確保即便標題被其他程式修改，腳本仍能意識到是否在相同頁面
-let pageUrl = window.location.href;
 
 //初始化
 let johnTheHornyOne = new artScraper(10, 50);
