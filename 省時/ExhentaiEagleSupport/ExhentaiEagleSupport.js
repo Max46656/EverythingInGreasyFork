@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.5.5
+// @version      1.6.0
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -562,26 +562,75 @@ class EagleImageAdder {
 
     addImageToEagle(imageData = null, closeAfter = false) {
         const data = imageData || this.getImageData();
-
         const folderId = GM_getValue('selectedFolderId', '');
-        if (folderId) {
-            data.folderId = [folderId];
-        }
+        if (folderId) data.folderId = [folderId];
 
-        GM_xmlhttpRequest({
-            url: this.EAGLE_IMPORT_API_URL,
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            data: JSON.stringify(data),
-            onload: (response) => {
-                console.log('[熊貓 Eagle 支援]', I18n.t('imageAdded'));
-                if (response.status >= 200 && response.status < 300 && closeAfter) {
-                    window.close();
+        if (!this.originalTitle) this.originalTitle = document.title;
+
+        let retryCount = 0;
+        const RETRY_DELAY = 3000
+
+        const sendRequest = () => {
+            if (!document || !document.title) {
+                console.warn('[熊貓 Eagle 支援] 分頁已關閉，停止重試');
+                return;
+            }
+
+            GM_xmlhttpRequest({
+                url: this.EAGLE_IMPORT_API_URL,
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                data: JSON.stringify(data),
+                onload: (response) => {
+                    console.log('[熊貓 Eagle 支援]', I18n.t('imageAdded'), `重試次數：${retryCount}`);
+
+                    if (this.blinkInterval) {
+                        clearInterval(this.blinkInterval);
+                        this.blinkInterval = null;
+                    }
+                    document.title = this.originalTitle;
+                    this.originalTitle = null;
+
+                    if (response.status >= 200 && response.status < 300 && closeAfter) {
+                        window.close();
+                    }
+                },
+                onerror: (err) => {
+                    retryCount++;
+                    console.error('[熊貓 Eagle 支援]', I18n.t('eagleError'), err, `第 ${retryCount} 次失敗`);
+
+                    this.startTitleBlink();
+
+                    setTimeout(sendRequest, RETRY_DELAY);
                 }
-            },
-            onerror: (err) => console.error('[熊貓 Eagle 支援]', I18n.t('eagleError'), err)
-        });
+            });
+        };
+
+        sendRequest();
     }
+
+    startTitleBlink() {
+      if (this.blinkInterval) return;
+
+      let showError = true;
+      this.blinkInterval = setInterval(() => {
+          if (!document || !document.title) {
+              clearInterval(this.blinkInterval);
+              this.blinkInterval = null;
+              return;
+          }
+
+          document.title = showError ? 'Eagle Error' : (this.originalTitle || document.title);
+          showError = !showError;
+      }, 1000);
+
+      window.addEventListener('unload', () => {
+          if (this.blinkInterval) {
+              clearInterval(this.blinkInterval);
+              this.blinkInterval = null;
+          }
+      }, { once: true });
+  }
 
     getImageData() {
         const url = window.location.href;
