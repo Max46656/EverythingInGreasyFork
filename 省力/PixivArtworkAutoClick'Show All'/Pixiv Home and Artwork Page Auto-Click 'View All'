@@ -11,33 +11,58 @@
 // @match       https://www.pixiv.net/users/*
 // @match       https://www.pixiv.net/en/artworks/*
 // @grant       none
-// @version     1.1.4
+// @version     1.1.5
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 
 // @author      Max
 // @namespace   https://github.com/Max46656
-// @supportURL  https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/PixivArtworkAutoClick'Show%20All'
-// @license     MPL2.0
-// @downloadURL https://update.greasyfork.org/scripts/542777/Pixiv%E4%BD%9C%E5%93%81%E8%87%AA%E5%8B%95%E9%BB%9E%E9%81%B8%E3%80%8C%E6%AA%A2%E8%A6%96%E5%85%A8%E9%83%A8%E3%80%8D.user.js
-// @updateURL https://update.greasyfork.org/scripts/542777/Pixiv%E4%BD%9C%E5%93%81%E8%87%AA%E5%8B%95%E9%BB%9E%E9%81%B8%E3%80%8C%E6%AA%A2%E8%A6%96%E5%85%A8%E9%83%A8%E3%80%8D.meta.js
+// @license MPL2.0
+// @downloadURL https://update.greasyfork.org/scripts/542777/Pixiv%E4%BD%9C%E5%93%81%E8%88%87%E9%A6%96%E9%A0%81%E4%B8%AD%E8%87%AA%E5%8B%95%E9%BB%9E%E9%81%B8%E3%80%8C%E6%AA%A2%E8%A6%96%E5%85%A8%E9%83%A8%E3%80%8D.user.js
+// @updateURL https://update.greasyfork.org/scripts/542777/Pixiv%E4%BD%9C%E5%93%81%E8%88%87%E9%A6%96%E9%A0%81%E4%B8%AD%E8%87%AA%E5%8B%95%E9%BB%9E%E9%81%B8%E3%80%8C%E6%AA%A2%E8%A6%96%E5%85%A8%E9%83%A8%E3%80%8D.meta.js
 // ==/UserScript==
 
 class ReadingStand {
     constructor() {
-        this.notMangaTexts = ['查看全部', '檢視全部', 'すべて見る', 'Show all', '모두 보기'];
-        this.setupUrlChangeListener();
+        this.setupTitleChangeListener();
         this.pageInit();
     }
 
-    expandArtwork() {
-        const viewAllButton = Array.from(document.querySelectorAll('button:not(:disabled)'))
-        .find(btn =>
-              window.getComputedStyle(btn).display !== 'none' &&
-              this.notMangaTexts.some(text => btn.textContent.includes(text))
-             );
-        if (viewAllButton) {
-            viewAllButton.click();
-        }
+    pageInit(){
+        this.expandArtwork();
+        this.expandGallery();
+    }
+
+    /*
+     * 展開所有作品的按鈕與作品容器共用父元素，
+     * 因此若該作品只有一張圖片，作品容器為only-child；
+     * 一個載入完成的頁面只能從其中兩個query中尋獲一個，
+     * 因此尋找不會假設頁面永遠處於未載入完成。
+     * */
+    async expandArtwork() {
+        const patterns = [
+            /\/artworks\/[0-9]*$/,
+            /\/en\/artworks\/[0-9]*$/
+        ];
+
+        const currentUrl = self.location.href;
+        if (!patterns.some(pattern => pattern.test(currentUrl))) return;
+
+        const loadEvent = async () => {
+            while (true) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                const viewAllButton = document.querySelector('section~[type="button"]');
+                const isOneArt = document.querySelector('section section:has(g[mask="url(#uid-mask-1)"]):only-child');
+
+                if (viewAllButton || isOneArt) {
+                    return { viewAllButton, isOneArt };
+                }
+            }
+        };
+
+        const { viewAllButton, isOneArt } = await loadEvent();
+
+        if (viewAllButton) viewAllButton.click();
     }
 
     expandGallery() {
@@ -49,13 +74,17 @@ class ReadingStand {
 
         const currentUrl = self.location.href;
         const hasExpanded = /\/artworks\?p=\d+$/.test(currentUrl);
-        if (!hasExpanded && patterns.some(pattern => pattern.test(currentUrl))) self.location.href = currentUrl + '/artworks?p=1';
+        if (!hasExpanded && patterns.some(pattern => pattern.test(currentUrl))) {
+            self.location.href = currentUrl + '/artworks?p=1';
+        }
     }
 
-    setupUrlChangeListener() {
-        //新增對網頁網址的檢查，以確保即便標題被其他程式修改，腳本仍能意識到是否在相同頁面
+    /*
+     * 網頁名稱不論載入或AJAX更換頁面都會在過程會觸發1次，hashchange與popstate在此無法正確處理，改使用自定事件
+     * 以網址進行二次檢查
+     * */
+    setupTitleChangeListener() {
         let pageUrl = window.location.href;
-        //網頁名稱不論載入或AJAX更換頁面都會在過程會觸發1次，hashchange與popstate在此無法正確處理，改使用自定事件
         let currentTitle = document.title;
         const titleDescriptor = {
             get: function() {
