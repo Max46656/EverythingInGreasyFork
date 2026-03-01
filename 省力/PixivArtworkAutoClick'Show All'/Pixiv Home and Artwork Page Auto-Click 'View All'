@@ -11,12 +11,13 @@
 // @match       https://www.pixiv.net/users/*
 // @match       https://www.pixiv.net/en/artworks/*
 // @grant       none
-// @version     1.1.2
+// @version     1.1.3
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
 
 // @author      Max
 // @namespace   https://github.com/Max46656
-// @license MPL2.0
+// @supportURL  https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/PixivArtworkAutoClick'Show%20All'
+// @license     MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/542777/Pixiv%E4%BD%9C%E5%93%81%E8%87%AA%E5%8B%95%E9%BB%9E%E9%81%B8%E3%80%8C%E6%AA%A2%E8%A6%96%E5%85%A8%E9%83%A8%E3%80%8D.user.js
 // @updateURL https://update.greasyfork.org/scripts/542777/Pixiv%E4%BD%9C%E5%93%81%E8%87%AA%E5%8B%95%E9%BB%9E%E9%81%B8%E3%80%8C%E6%AA%A2%E8%A6%96%E5%85%A8%E9%83%A8%E3%80%8D.meta.js
 // ==/UserScript==
