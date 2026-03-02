@@ -5,7 +5,6 @@
 // @name:de      E-Hentai Bild automatisch anpassen
 // @name:cs      E-Hentai Automatické přizpůsobení obrázků
 // @name:lt      E-Hentai Vaizdų automatinis prisitaikymas
-// @description         可將 E-Hentai / ExHentai 的圖片大小更改為適合視窗/適合高度/適合寬度與原始大小4種模式
 // @description:en      Allows changing E-Hentai / ExHentai image size to 4 modes: Fit Window / Fit Height / Fit Width / Original Size
 // @description:ja      E-Hentai / ExHentai の画像サイズを「ウィンドウに合わせる」「高さに合わせる」「幅に合わせる」「オリジナルサイズ」の4モードに変更可能
 // @description:de      Ermöglicht das Ändern der Bildgröße bei E-Hentai / ExHentai in 4 Modi: An Fenster anpassen / An Höhe anpassen / An Breite anpassen / Originalgröße
@@ -18,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.7.0
+// @version      1.7.1
 // @match        https://exhentai.org/s/*/*
 // @match        https://e-hentai.org/s/*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=e-hentai.org
@@ -28,7 +27,6 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // ==/UserScript==
-
 class ImageResizer {
     constructor() {
         this.currentModeId = GM_getValue('img_mode_id', 'fit-window');
@@ -37,9 +35,9 @@ class ImageResizer {
         this.focusedIndex = 0;
         this.shortcuts = GM_getValue('shortcuts', {
             modifier: 'CapsLock',
-            next: 'W',
-            prev: 'Q',
-            first: 'E'
+            next: 'w',
+            prev: 'q',
+            first: 'e'
         });
     }
 
@@ -56,19 +54,39 @@ class ImageResizer {
         this.applyBaseStyles();
         this.registerMenu();
         this.registerKeyboardShortcuts();
-
         const loadHandler = () => {
             this.injectUI();
             this.collectImages();
-
             if (this.imgElements.length > 0) {
                 this.focusedIndex = 0;
                 this.scrollToCurrent(false);
             }
         };
-
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('eh-resizer-select')) {
+                this.setModeById(e.target.value);
+            }
+        });
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadHandler);
         else loadHandler();
+    }
+
+    setModeById(modeId) {
+        this.currentModeId = modeId;
+        GM_setValue('img_mode_id', modeId);
+        this.updateCSSVariables();
+        const select = document.querySelector('.eh-resizer-select');
+        if (select) select.value = modeId;
+        this.registerMenu();
+    }
+
+    updateCSSVariables() {
+        const modeConfig = Object.values(this.MODES).find(m => m.id === this.currentModeId) || this.MODES['1'];
+        const root = document.documentElement;
+        root.style.setProperty('--eh-mw', modeConfig.mw);
+        root.style.setProperty('--eh-mh', modeConfig.mh);
+        root.style.setProperty('--eh-w', modeConfig.w);
+        root.style.setProperty('--eh-h', modeConfig.h);
     }
 
     applyBaseStyles() {
@@ -99,25 +117,7 @@ class ImageResizer {
                     vertical-align: middle;
                 }
             `);
-            this.updateCSSVariables();
-        }
-
-    updateCSSVariables() {
-        const modeConfig = Object.values(this.MODES).find(m => m.id === this.currentModeId) || this.MODES['1'];
-        const root = document.documentElement;
-        root.style.setProperty('--eh-mw', modeConfig.mw);
-        root.style.setProperty('--eh-mh', modeConfig.mh);
-        root.style.setProperty('--eh-w', modeConfig.w);
-        root.style.setProperty('--eh-h', modeConfig.h);
-    }
-
-    setModeById(modeId) {
-        this.currentModeId = modeId;
-        GM_setValue('img_mode_id', modeId);
         this.updateCSSVariables();
-        const select = document.querySelector('.eh-resizer-select');
-        if (select) select.value = modeId;
-        this.registerMenu();
     }
 
     registerMenu() {
@@ -149,12 +149,7 @@ class ImageResizer {
             if (config.id === this.currentModeId) opt.selected = true;
             select.appendChild(opt);
         });
-        select.addEventListener('change', (e) => this.setModeById(e.target.value));
         target.appendChild(select);
-    }
-
-    collectImages() {
-        this.imgElements = Array.from(document.querySelectorAll('#img'));
     }
 
     scrollToCurrent(center = true) {
@@ -165,6 +160,10 @@ class ImageResizer {
             });
             // console.log(`[${GM_info.script.name}] Focused image #${this.focusedIndex + 1} of ${this.imgElements.length}`);
         }
+    }
+
+    collectImages() {
+        this.imgElements = Array.from(document.querySelectorAll('#img'));
     }
 
     switchImage(direction) {
@@ -179,9 +178,7 @@ class ImageResizer {
         document.addEventListener('keydown', (e) => {
             console.log(e.getModifierState,e.key)
             if (!e.getModifierState(this.shortcuts.modifier)) return;
-
             const key = e.key.toLowerCase();
-
             if (key === this.shortcuts.next.toLowerCase()) {
                 e.preventDefault();
                 this.switchImage(1);
