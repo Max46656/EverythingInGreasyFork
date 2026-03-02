@@ -36,9 +36,10 @@ body:
     attributes:
       label: 使用的瀏覽器 / Browser
       options:
-        - Chrome / 谷歌瀏覽器
-        - Microsoft Edge
-        - Firefox / 火狐瀏覽器
+        - Vivaldi
+        - Brave
+        - Chrome
+        - Firefox
         - 其他（請在下方補充） / Other (please specify below)
     validations:
       required: true
@@ -78,11 +79,6 @@ body:
       label: 重現步驟 / Steps to Reproduce
       description: 請盡量詳細列出您是如何遇到這個問題的 / List the steps as detailed as possible
       placeholder: |
-        1. 
-        2. 
-        3. 
-        4. 
-
         1. 
         2. 
         3. 
