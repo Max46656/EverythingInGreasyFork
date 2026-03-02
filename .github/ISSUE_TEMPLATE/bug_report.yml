@@ -1,0 +1,142 @@
+name: Bug Report / 錯誤回報
+description: 回報使用者腳本中的錯誤 / Report a bug in the userscript
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 感謝您的回報！ / Thank you for reporting!
+
+        為了讓我們能快速定位並修復問題，請盡量提供詳細資訊。  
+        越完整的描述與截圖/錯誤訊息，越能幫助我們在短時間內解決問題。  
+        To help us fix the issue quickly, please provide as much detail as possible.  
+        The more complete the description, screenshots and console logs, the faster we can resolve it.
+
+  - type: input
+    id: script-name-version
+    attributes:
+      label: 受影響腳本名稱與版本 / Affected Script Name & Version
+      description: 請填寫腳本名稱與目前版本（可在腳本管理器中查看） / Script name and current version (check in your userscript manager)
+      placeholder: 腳本名稱 vX.Y.Z
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: 問題發生時的完整網址 / Full URL where the issue occurs
+      description: 包含所有參數與路徑，最好直接複製網址列 / Include all parameters and path, preferably copy directly from address bar
+      placeholder: https://...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: 使用的瀏覽器 / Browser
+      options:
+        - Chrome / 谷歌瀏覽器
+        - Microsoft Edge
+        - Firefox / 火狐瀏覽器
+        - 其他（請在下方補充） / Other (please specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: browser-version
+    attributes:
+      label: 瀏覽器版本 / Browser Version
+      placeholder: 例如：128.0.6613.114
+
+  - type: dropdown
+    id: userscript-manager
+    attributes:
+      label: 使用者腳本管理器 / Userscript Manager
+      options:
+        - Violentmonkey
+        - Tampermonkey
+        - Greasemonkey
+        - 其他 / Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: 錯誤描述 / What happened?
+      description: 請清楚描述問題 / Please describe the problem
+      placeholder: |
+        請描述您遇到的具體問題...
+        Please describe the specific issue you are encountering...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce-steps
+    attributes:
+      label: 重現步驟 / Steps to Reproduce
+      description: 請盡量詳細列出您是如何遇到這個問題的 / List the steps as detailed as possible
+      placeholder: |
+        1. 
+        2. 
+        3. 
+        4. 
+
+        1. 
+        2. 
+        3. 
+        4. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-vs-actual
+    attributes:
+      label: 預期行為 vs 實際行為 / Expected vs Actual Behavior
+      description: 您原本期望發生什麼？實際又發生了什麼？ / What did you expect to happen? What actually happened?
+      placeholder: |
+        預期：
+        實際：
+
+        Expected:
+        Actual:
+    validations:
+      required: false
+
+  - type: textarea
+    id: console-errors
+    attributes:
+      label: 瀏覽器主控台錯誤訊息（重要！） / Console Error Messages (Very Important!)
+      description: |
+        請按 F12（或右鍵→檢查）開啟開發者工具 → Console 標籤  
+        複製所有紅色錯誤訊息，最好包含腳本名稱前綴（如 [腳本名稱] 開頭的訊息）  
+        Paste ALL red error messages here, especially those starting with [Script Name]
+      placeholder: |
+        [腳本名稱] 錯誤: ...
+        Uncaught TypeError: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 螢幕截圖 / Screenshots
+      description: 如果有視覺上的問題，請拖曳或上傳相關截圖（包含主控台錯誤畫面更好） / Drag & drop screenshots here if the issue is visual (console screenshot is very helpful)
+
+  - type: checkboxes
+    id: basic-checks
+    attributes:
+      label: 基本確認（請勾選您已經檢查過的項目） / Basic Checks (please mark what you already verified)
+      options:
+        - label: 腳本在腳本管理器中是「已啟用」狀態 / Script is enabled in the manager
+        - label: 問題網址符合腳本的 @match 規則 / The URL matches the script's @match pattern
+        - label: 重新整理頁面（F5）或重新開啟分頁後問題仍然存在 / Problem persists after refresh / reopen tab
+        - label: 我已經關閉其他可能衝突的腳本/擴充功能後再測試 / I disabled other conflicting scripts/extensions and re-tested
+        - label: 問題在無痕模式（Incognito）中也會發生 / Issue also occurs in Incognito/Private mode
+
+  - type: textarea
+    id: extra-info
+    attributes:
+      label: 其他補充資訊 / Additional Context
+      description: 任何您認為有幫助的細節（例如：網站最近有沒有更新、問題什麼時候開始出現、發生頻率、您嘗試過的解決方法等） / Any other details you think might help (recent site update? when did it start? frequency? what have you tried?)
