@@ -13,8 +13,8 @@
 // @description:uk      Дозволяє змінювати розмір зображень E-Hentai / ExHentai на 4 режими: Підігнати під вікно / Підігнати під висоту / Підігнати під ширину / Оригінальний розмір
 //
 // @author       Max
-// @namespace    https://github.com/Max46656
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%BE%8E%E8%A7%80/E-Hentai%20%E5%9C%96%E7%89%87%E8%87%AA%E9%81%A9%E6%87%89%E8%AA%BF%E6%95%B4
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BE-Hentai%20%E5%9C%96%E7%89%87%E8%87%AA%E9%81%A9%E6%87%89%E8%AA%BF%E6%95%B4%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
 // @version      1.7.1
