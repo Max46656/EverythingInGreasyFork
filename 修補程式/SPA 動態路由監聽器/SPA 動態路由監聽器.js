@@ -71,7 +71,6 @@ class DynamicRouteHandler {
             ? (...args) => console.log('[DynamicRouteHandler]', ...args)
         : () => {};
 
-        // 在 constructor 內綁定所有私有方法（箭頭函數確保 this 指向正確）
         this.#onUrlChange = () => {
             this.lastUrl = location.href;
             this.#checkAndTrigger();
