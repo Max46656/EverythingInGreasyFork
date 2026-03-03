@@ -20,7 +20,7 @@
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 //
-// @version      1.3.0
+// @version      1.3.1
 // @match        https://www.youtube.com/shorts/*
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -30,7 +30,7 @@
 class ShortsAutoPlayer {
     constructor() {
         this.progressSelector = 'yt-progress-bar [role="slider"]';
-        this.clickSelector    = 'div.yt-spec-touch-feedback-shape__fill';
+        this.clickSelector    = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
         this.buttonbarSelector   = '#button-bar';
 
         this.highThreshold = 95;
@@ -178,11 +178,9 @@ class ShortsAutoPlayer {
     }
 
     clickToNext() {
-        const button = document.querySelectorAll(this.clickSelector);
-        if (button.length === 0) return console.warn(`${GM_info.script.name} 找不到「下一部影片」按鈕`);
-
-        const last = button[button.length - 1];
-        last.click();
+        const button = document.querySelector(this.clickSelector);
+        if (!button) return console.warn(`${GM_info.script.name} 找不到「下一部影片」按鈕`);
+        button.click();
         //console.log(`${GM_info.script.name} 已點選下一個影片`);
     }
 
