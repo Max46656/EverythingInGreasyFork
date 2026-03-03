@@ -5,7 +5,7 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.2.10
+// @version     2.3.0
 // @author      Max
 // @namespace   none
 // @match       https://twitter.com/*
@@ -296,7 +296,9 @@ const TMD = (function () {
                 let tasks = medias.length;
                 let tasks_result = [];
                 medias.forEach((media, i) => {
+                    console.log(media)
                     info.url = media.type == 'photo' ? media.media_url_https + ':orig' : media.video_info.variants.filter(n => n.content_type == 'video/mp4').sort((a, b) => b.bitrate - a.bitrate)[0].url;
+                    info.website = media.expanded_url;
                     info.file = info.url.split('/').pop().split(/[:?]/).shift();
                     info['file-name'] = info.file.split('.').shift();
                     info['file-ext'] = info.file.split('.').pop();
@@ -304,6 +306,7 @@ const TMD = (function () {
                     info.out = (out.replace(/\.?{file-ext}/, '') + ((medias.length > 1 || index) && !out.match('{file-name}') ? '-' + (index ? index - 1 : i) : '') + '.{file-ext}').replace(/{([^{}:]+)(:[^{}]+)?}/g, (match, name) => info[name]);
                     this.downloader.add({
                         url: info.url,
+                        website: info.website,
                         name: info.out,
                         onload: () => {
                             tasks -= 1;
@@ -550,10 +553,10 @@ const TMD = (function () {
                         const imageData = {
                             url: task.url,
                             name: task.name,
+                            website: task.website,
                             folderId: folderId,
                             tags: [],
-                            website: task.url, // 可選項，指定來源網站名稱
-                            headers: {} // 可選項，指定額外的 HTTP 標頭
+                            headers: {}
                         };
 
                         GM_xmlhttpRequest({
