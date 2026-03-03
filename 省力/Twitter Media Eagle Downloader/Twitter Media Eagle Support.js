@@ -5,9 +5,13 @@
 // @description    Save Video/Photo to Ealge by One-Click.
 // @description:ja ワンクリックでビデオ/写真をEalgeに保存します。
 // @description:zh-tw 一鍵保存影片/圖片到Eagle
-// @version     2.3.0
+//
 // @author      Max
-// @namespace   none
+// @license     MIT
+// @namespace   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Media%20Eagle%20Downloader
+// @supportURL  https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Twitter 媒體Eagle保存] 問題回報-v2.3.0
+//
+// @version     2.3.1
 // @match       https://twitter.com/*
 // @match       https://x.com/*
 // @match       https://mobile.twitter.com/*
@@ -17,7 +21,7 @@
 // @grant       GM_xmlhttpRequest
 // @compatible  Chrome
 // @compatible  Firefox
-// @license     MIT
+// @icon        https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://tw.eagle.cool&size=64
 // @downloadURL https://update.greasyfork.org/scripts/503722/Twitter%20Media%20Eagle%20Support.user.js
 // @updateURL https://update.greasyfork.org/scripts/503722/Twitter%20Media%20Eagle%20Support.meta.js
 // ==/UserScript==
@@ -553,9 +557,9 @@ const TMD = (function () {
                         const imageData = {
                             url: task.url,
                             name: task.name,
-                            website: task.website,
                             folderId: folderId,
                             tags: [],
+                            website: task.website,
                             headers: {}
                         };
 
