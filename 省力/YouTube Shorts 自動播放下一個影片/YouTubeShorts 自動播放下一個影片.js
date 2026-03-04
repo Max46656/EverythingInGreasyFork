@@ -20,7 +20,7 @@
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 //
-// @version      1.3.2
+// @version      1.3.3
 // @match        https://www.youtube.com/shorts/*
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -33,7 +33,7 @@ class ShortsAutoPlayer {
         this.clickSelector = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
         this.buttonbarSelector = '#button-bar';
 
-        this.highThreshold = 90;
+        this.highThreshold = 50;
         this.lowThreshold = 0;
         this.lastProgress = 0;
 
