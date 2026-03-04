@@ -22,7 +22,7 @@
 //
 // @license      MPL2.0
 //
-// @version      1.4.2
+// @version      1.4.3
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @grant        GM_getValue
@@ -192,7 +192,7 @@ class ShortsAutoPlayer {
     }
 
     clickToNext() {
-        const button = document.querySelector(this.clickSelector);
+        const button = document.querySelector(this.nextBtnSelector);
         if (!button) return console.warn(`${GM_info.script.name} 找不到「下一部影片」按鈕`);
         //this.lastProgress = 0;
         button.click();
