@@ -17,10 +17,11 @@
 // @description:lt  Automatiškai groja kitą Short po dabartinio pabaigos, su perjungimo mygtuku vaizdo įrašo įrankių juostoje
 //
 // @author       Max
-// @namespace    https://github.com/Max46656
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/YouTube%20Shorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87
+//
 // @license      MPL2.0
 //
-// @version      1.4.0
+// @version      1.4.1
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @grant        GM_getValue
@@ -31,7 +32,7 @@
 class ShortsAutoPlayer {
     constructor() {
         this.progressSelector = 'yt-progress-bar [role="slider"]';
-        this.clickSelector = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
+        this.nextBtnSelector = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
         this.buttonbarSelector = '#button-bar';
 
         this.highThreshold = 50;
@@ -39,7 +40,7 @@ class ShortsAutoPlayer {
         this.lastProgress = 0;
 
         this.enabled = GM_getValue('shortsAutoNextEnabled', true);
-        this.titleObserver = null;
+        this.nextBtnClickListener = null;
         this.progressObserver = null;
         this.toggleButton = null;
 
@@ -49,52 +50,51 @@ class ShortsAutoPlayer {
     async init() {
         await this.addAutoNextToggle();
         await this.observeProgress();
-        this.observeTitle();
+        this.observeNext();
     }
 
-    async observeTitle() {
-        const titleEl = await this.waitForElement('title', 10000);
-        if (!titleEl) return;
-
-        let lastTitle = document.title;
-
-        this.titleObserver = new MutationObserver(async () => {
-            if (document.title === lastTitle) return;
-            lastTitle = document.title;
-
-            //console.log(`[${GM_info.script.name}] 標題變更`);
-
-            try {
-                await this.waitForElement('ytd-reel-video-renderer', 8000);
-                console.info(`[${GM_info.script.name}] 新 Shorts 容器已出現`);
-                await this.delay(400);
-                this.observeProgress();
-                this.addAutoNextToggle();
-            } catch {
-                console.warn(`[${GM_info.script.name}] 等不到新 Shorts 容器`);
+    async listenNextClick() {
+        try {
+            if (this.nextBtnClickListener) {
+                const oldBtn = document.querySelector(this.nextBtnSelector);
+                if (oldBtn) oldBtn.removeEventListener('click', this.nextBtnClickListener);
+                this.nextBtnClickListener = null;
             }
-        });
 
-        this.titleObserver.observe(titleEl, { childList: true, subtree: true });
+            const nextBtn = await this.waitForElement(this.nextBtnSelector, 500);
+            if (!nextBtn) throw new Error(nextBtn);
+
+            console.info(`${GM_info.script.name} 找到下一部按鈕，已綁定 click 監聽`);
+
+            this.nextBtnClickListener = () => {
+                this.lastProgress = 0;
+                console.info(`${GM_info.script.name} 下一部影片按鈕被點選`);
+                setTimeout(() => { this.observeProgress(); }, 400);
+            };
+
+            nextBtn.addEventListener('click', this.nextBtnClickListener);
+
+        } catch (err) {
+            console.warn(`${GM_info.script.name} 監聽下一部按鈕失敗`, err);
+            setTimeout(() => this.observeNext(), 100);
+        }
     }
 
     async observeProgress() {
         if (!this.enabled) return;
-
+        this.lastProgress = 0;
         try {
             if (this.progressObserver) {
                 this.progressObserver.disconnect();
                 this.progressObserver = null;
-                this.lastProgress = 0;
                 //console.log(`${GM_info.script.name} 重置監聽器 ${this.progressObserver}`);
             }
-
             const progressEl = await this.waitForElement(this.progressSelector, 5000);
             this.progressObserver = new MutationObserver((mutation) => {
                 const val = Number(mutation[0].target.getAttribute('aria-valuenow'));
                 //console.log(`${GM_info.script.name} 監聽進度條 ${typeof val}${val} ${typeof this.lastProgress}${this.lastProgress}`);
                 if (this.lastProgress >= this.highThreshold && val === this.lowThreshold) {
-                    //console.log(`${GM_info.script.name} 偵測結束`);
+                    //console.log(`${GM_info.script.name}`);
                     this.clickToNext();
                 }
                 this.lastProgress = val;
@@ -193,12 +193,9 @@ class ShortsAutoPlayer {
     clickToNext() {
         const button = document.querySelector(this.clickSelector);
         if (!button) return console.warn(`${GM_info.script.name} 找不到「下一部影片」按鈕`);
+        //this.lastProgress = 0;
         button.click();
-        //console.info(`${GM_info.script.name} 已點選下一個影片`);
-    }
-
-    async delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms))
+        console.info(`${GM_info.script.name} 已點選下一個影片 ${this.lastProgress}`);
     }
 
     waitForElement(selector, timeout = 15000) {
@@ -225,20 +222,34 @@ class ShortsAutoPlayer {
     }
 
     destroy() {
-        console.info(`${GM_info.script.name} 銷毀實例`);
+        console.info(`${GM_info.script.name} 開始銷毀實例`);
 
-        [this.titleObserver, this.progressObserver]
-            .filter(obs => obs)
-            .forEach(obs => obs.disconnect());
-
-        if (this.toggleButton?.parentElement) {
-            this.toggleButton.closest('#autoNextToggle')?.remove();
+        if (this.progressObserver) {
+            this.progressObserver.disconnect();
+            this.progressObserver = null;
+            console.info(`${GM_info.script.name} 已斷開進度條 MutationObserver`);
         }
 
-        this.titleObserver = this.progressObserver = this.toggleButton = this.statusSpan = null;
-        this.lastProgress = 0;
+        if (this.nextBtnClickListener) {
+            const nextBtn = document.querySelector(this.nextBtnSelector);
+            if (nextBtn) {
+                nextBtn.removeEventListener('click', this.nextBtnClickListener);
+                console.info(`${GM_info.script.name} 已移除下一部按鈕的 click 監聽器`);
+            }
+            this.nextBtnClickListener = null;
+        }
 
-        console.info(`${GM_info.script.name} 銷毀完成`);
+        if (this.toggleButton?.parentElement) {
+            const wrapper = this.toggleButton.closest('#autoNextToggle');
+            if (wrapper && wrapper.parentElement) {
+                wrapper.remove();
+                console.info(`${GM_info.script.name} 已移除自訂自動播放切換器`);
+            }
+            this.toggleButton = null;
+            this.statusSpan = null;
+        }
+
+        console.info(`${GM_info.script.name} 銷毀完成，所有監聽器與 DOM 修改已清理`);
     }
 }
 
