@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.6.0
+// @version      1.7.0
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -150,43 +150,70 @@ class AlbumPageManager {
         console.log('[AlbumPageManager]', I18n.t('startTracking'));
     }
 
+    /**
+ * 取得 Eagle 資料夾列表，支持無限重試以應對Eagle未開啟或當掉的狀況
+ * @returns {Promise<Array<{id: string, name: string}>>}
+ */
     async getFolderList() {
-        return new Promise(resolve => {
-            GM_xmlhttpRequest({
-                url: "http://localhost:41595/api/folder/list",
-                method: "GET",
-                onload: res => {
-                    try {
-                        const folders = JSON.parse(res.responseText).data || [];
-                        const list = [];
-                        const appendFolder = (f, prefix = "") => {
-                            list.push({ id: f.id, name: prefix + f.name });
-                            if (f.children && f.children.length) {
-                                f.children.forEach(c => appendFolder(c, "　" + prefix + "└─ "));
-                            }
-                        };
-                        folders.forEach(f => appendFolder(f));
-                        resolve(list);
-                    } catch (e) {
-                        console.error("解析資料夾列表失敗", e);
-                        resolve([]);
+        return new Promise((resolve) => {
+            let retryCount = 0;
+            const RETRY_DELAY = 1000;
+
+            const fetchFolders = () => {
+                GM_xmlhttpRequest({
+                    url: "http://localhost:41595/api/folder/list",
+                    method: "GET",
+                    timeout: 3000,
+                    onload: (res) => {
+                        try {
+                            const folders = JSON.parse(res.responseText).data || [];
+                            const list = [];
+                            const appendFolder = (f, prefix = "") => {
+                                list.push({ id: f.id, name: prefix + f.name });
+                                if (f.children && f.children.length) {
+                                    f.children.forEach(c => appendFolder(c, "　" + prefix + "└─ "));
+                                }
+                            };
+                            folders.forEach(f => appendFolder(f));
+
+                            console.log(`[AlbumPageManager] 成功取得資料夾列表（重試次數：${retryCount}）`);
+                            resolve(list);
+                        } catch (e) {
+                            console.error('[AlbumPageManager] 解析資料夾列表失敗', e);
+                            retry();
+                        }
+                    },
+                    onerror: (err) => {
+                        console.error('[AlbumPageManager] 取得資料夾列表失敗', err);
+                        retry();
+                    },
+                    ontimeout: () => {
+                        console.warn('[AlbumPageManager] 取得資料夾列表超時');
+                        retry();
                     }
-                },
-                onerror: () => resolve([])
-            });
+                });
+            };
+
+            const retry = () => {
+                retryCount++;
+                console.warn(`[AlbumPageManager] 取得資料夾列表失敗，第 ${retryCount} 次重試，將於 ${RETRY_DELAY/1000} 秒後重試...`);
+                setTimeout(fetchFolders, RETRY_DELAY);
+            };
+
+            fetchFolders();
         });
     }
 
     /**
-     * 新增資料夾選擇器
-     * - 原位置：#taglist 內（inline）
-     * - 額外浮動版：固定在左下或右下角，避免與批次按鈕重疊
-     * @param {string} [position='right'] - 浮動選單的位置：'left' 或 'right'
-     */
+ * 新增資料夾選擇器
+ * - 原位置：#taglist 內（inline）
+ * - 額外浮動版：固定在左下或右下角
+ * @param {string} [position='right'] - 浮動選單的位置：'left' 或 'right'
+ */
     async addFolderSelector(position = 'left') {
+        // ── 原位置的選擇器（inline） ──
         const container = document.querySelector('#taglist');
         if (container && !document.querySelector('#eagleFolderSelector-inline')) {
-            const folders = await this.getFolderList();
             const select = document.createElement('select');
             select.id = 'eagleFolderSelector-inline';
             select.style.margin = '4px';
@@ -197,87 +224,124 @@ class AlbumPageManager {
             select.style.border = '1px solid #ccc';
             select.style.fontSize = '14px';
 
-            const defaultOpt = document.createElement('option');
-            defaultOpt.value = '';
-            defaultOpt.textContent = '─ 選擇儲存資料夾 ─';
-            select.appendChild(defaultOpt);
-
-            folders.forEach(f => {
-                const opt = document.createElement('option');
-                opt.value = f.id;
-                opt.textContent = f.name;
-                if (f.id === this.selectedFolderId) opt.selected = true;
-                select.appendChild(opt);
-            });
-
-            select.addEventListener('change', (e) => {
-                this.selectedFolderId = e.target.value;
-                GM_setValue('selectedFolderId', this.selectedFolderId);
-                const floatingSelect = document.querySelector('#eagleFolderSelector-floating');
-                if (floatingSelect) floatingSelect.value = this.selectedFolderId;
-                console.log('[AlbumPageManager] 已更新預設資料夾 ID:', this.selectedFolderId);
-            });
+            const loadingOpt = document.createElement('option');
+            loadingOpt.value = '';
+            loadingOpt.textContent = I18n.t('loadingFolders');
+            loadingOpt.disabled = true;
+            select.appendChild(loadingOpt);
+            select.value = '';
 
             container.appendChild(select);
+
+            this.loadFoldersIntoSelect(select);
         }
 
         // ── 浮動版選擇器（fixed 定位） ──
         if (document.querySelector('#eagleFolderSelector-floating')) return;
 
-        const folders = await this.getFolderList();
-        const select = document.createElement('select');
-        select.id = 'eagleFolderSelector-floating';
+        const floatingSelect = document.createElement('select');
+        floatingSelect.id = 'eagleFolderSelector-floating';
 
-        Object.assign(select.style, {
+        Object.assign(floatingSelect.style, {
             position: 'fixed',
             bottom: '50px',
             [position]: '20px',
             zIndex: '10000',
-            padding: '8px 12px',
+            padding: '3px 5px',
             backgroundColor: 'rgb(79, 83, 91)',
             color: 'white',
             border: '1px solid #ccc',
-            borderRadius: '8px',
+            borderRadius: '5px',
             cursor: 'pointer',
             fontSize: '14px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
             outline: 'none',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
         });
 
-        select.addEventListener('mouseenter', () => {
-            select.style.backgroundColor = 'rgb(99, 103, 111)';
-            select.style.boxShadow = '0 6px 16px rgba(0,0,0,0.5)';
+        floatingSelect.addEventListener('mouseenter', () => {
+            floatingSelect.style.backgroundColor = 'rgb(99, 103, 111)';
+            floatingSelect.style.boxShadow = '0 6px 16px rgba(0,0,0,0.5)';
         });
-        select.addEventListener('mouseleave', () => {
-            select.style.backgroundColor = 'rgb(79, 83, 91)';
-            select.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+        floatingSelect.addEventListener('mouseleave', () => {
+            floatingSelect.style.backgroundColor = 'rgb(79, 83, 91)';
+            floatingSelect.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
         });
 
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '';
-        defaultOpt.textContent = '─ 選擇儲存資料夾 ─';
-        select.appendChild(defaultOpt);
+        const loadingOpt = document.createElement('option');
+        loadingOpt.value = '';
+        loadingOpt.textContent = I18n.t('loadingFolders');
+        loadingOpt.disabled = true;
+        floatingSelect.appendChild(loadingOpt);
+        floatingSelect.value = '';
 
-        folders.forEach(f => {
-            const opt = document.createElement('option');
-            opt.value = f.id;
-            opt.textContent = f.name;
-            if (f.id === this.selectedFolderId) opt.selected = true;
-            select.appendChild(opt);
-        });
+        document.body.appendChild(floatingSelect);
+
+        this.loadFoldersIntoSelect(floatingSelect);
+    }
+
+    /**
+ * 共用方法：將資料夾載入到指定的 <select> 中（支持無限重試 + 錯誤顯示）
+ * @param {HTMLSelectElement} select - 要填入資料的 select 元素
+ */
+    async loadFoldersIntoSelect(select) {
+        select.innerHTML = '';
+
+        const errorOpt = document.createElement('option');
+        errorOpt.value = '';
+        errorOpt.textContent = I18n.t('eagleError');
+        errorOpt.disabled = true;
+        select.appendChild(errorOpt);
+        select.value = '';
+
+        const tryLoad = async () => {
+            try {
+                const folders = await this.getFolderList();
+
+                select.innerHTML = '';
+
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = I18n.t('selectFolder');
+                select.appendChild(defaultOpt);
+
+                folders.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.id;
+                    opt.textContent = f.name;
+                    if (f.id === this.selectedFolderId) opt.selected = true;
+                    select.appendChild(opt);
+                });
+
+                select.value = this.selectedFolderId || '';
+
+                console.log('[AlbumPageManager] 資料夾選擇器載入完成');
+
+            } catch (err) {
+                console.error('[AlbumPageManager] 資料夾載入最終失敗', err);
+                select.innerHTML = '';
+                const errOpt = document.createElement('option');
+                errOpt.value = '';
+                errOpt.textContent = I18n.t('folderLoadFailed');
+                errOpt.disabled = true;
+                select.appendChild(errOpt);
+            }
+        };
+
+        tryLoad();
 
         select.addEventListener('change', (e) => {
             this.selectedFolderId = e.target.value;
             GM_setValue('selectedFolderId', this.selectedFolderId);
-            const inlineSelect = document.querySelector('#eagleFolderSelector-inline');
-            if (inlineSelect) inlineSelect.value = this.selectedFolderId;
+
+            const otherId = select.id === 'eagleFolderSelector-inline'
+            ? '#eagleFolderSelector-floating'
+            : '#eagleFolderSelector-inline';
+            const otherSelect = document.querySelector(otherId);
+            if (otherSelect) otherSelect.value = this.selectedFolderId;
+
             console.log('[AlbumPageManager] 已更新預設資料夾 ID:', this.selectedFolderId);
         });
-
-        document.body.appendChild(select);
-
-        console.log(`[AlbumPageManager] 已新增浮動資料夾選擇器，位置：${position}`);
     }
 
     addAutoButton() {
@@ -560,7 +624,7 @@ class EagleImageAdder {
         this.EAGLE_IMPORT_API_URL = `${this.EAGLE_SERVER_URL}/api/item/addFromURL`;
     }
 
-    addImageToEagle(imageData = null, closeAfter = false) {
+    addImageToEagle(imageData = null, closeAfter = true) {
         const data = imageData || this.getImageData();
         const folderId = GM_getValue('selectedFolderId', '');
         if (folderId) data.folderId = [folderId];
@@ -610,27 +674,27 @@ class EagleImageAdder {
     }
 
     startTitleBlink() {
-      if (this.blinkInterval) return;
+        if (this.blinkInterval) return;
 
-      let showError = true;
-      this.blinkInterval = setInterval(() => {
-          if (!document || !document.title) {
-              clearInterval(this.blinkInterval);
-              this.blinkInterval = null;
-              return;
-          }
+        let showError = true;
+        this.blinkInterval = setInterval(() => {
+            if (!document || !document.title) {
+                clearInterval(this.blinkInterval);
+                this.blinkInterval = null;
+                return;
+            }
 
-          document.title = showError ? 'Eagle Error' : (this.originalTitle || document.title);
-          showError = !showError;
-      }, 1000);
+            document.title = showError ? 'Eagle Error' : (this.originalTitle || document.title);
+            showError = !showError;
+        }, 1000);
 
-      window.addEventListener('unload', () => {
-          if (this.blinkInterval) {
-              clearInterval(this.blinkInterval);
-              this.blinkInterval = null;
-          }
-      }, { once: true });
-  }
+        window.addEventListener('unload', () => {
+            if (this.blinkInterval) {
+                clearInterval(this.blinkInterval);
+                this.blinkInterval = null;
+            }
+        }, { once: true });
+    }
 
     getImageData() {
         const url = window.location.href;
@@ -691,7 +755,11 @@ class I18n {
             cleaned: '已清除舊資料',
             cleanMenu: '清除舊資料',
             selectFolder: '─ 選擇儲存資料夾 ─',
-            folderUpdated: (id) => `儲存資料夾已更新，ID: ${id}`
+            loadingFolders: '載入資料夾中...',
+            eagleError: 'Eagle 錯誤',
+            folderLoadFailed: '資料夾載入失敗',
+            folderUpdated: (id) => `儲存資料夾已更新，ID: ${id}`,
+
         },
 
         en: {
@@ -712,6 +780,9 @@ class I18n {
             cleaned: 'Old data cleaned',
             cleanMenu: 'Clean Old Data',
             selectFolder: '─ Select Folder ─',
+            loadingFolders: 'Loading folders...',
+            eagleError: 'Eagle Error',
+            folderLoadFailed: 'Failed to load folders',
             folderUpdated: (id) => `Target folder updated, ID: ${id}`
         },
 
@@ -733,6 +804,9 @@ class I18n {
             cleaned: '古いデータを削除しました',
             cleanMenu: '古いデータを削除',
             selectFolder: '─ 保存先フォルダを選択 ─',
+            loadingFolders: 'フォルダ読み込み中...',
+            eagleError: 'Eagle エラー',
+            folderLoadFailed: 'フォルダの読み込みに失敗',
             folderUpdated: (id) => `保存先フォルダを更新しました、ID: ${id}`
         }
     };
