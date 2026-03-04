@@ -17,11 +17,12 @@
 // @description:lt  Automatiškai groja kitą Short po dabartinio pabaigos, su perjungimo mygtuku vaizdo įrašo įrankių juostoje
 //
 // @author       Max
-// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/YouTube%20Shorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/省力/YouTube Shorts 自動播放下一個影片
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.2
 //
 // @license      MPL2.0
 //
-// @version      1.4.1
+// @version      1.4.2
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @grant        GM_getValue
