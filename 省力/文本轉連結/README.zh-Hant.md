@@ -1,4 +1,4 @@
-[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/%E6%96%87%E6%9C%AC%E8%BD%89%E9%80%A3%E7%B5%90/README.md) | 中文
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%9C%81%E5%8A%9B/%E6%96%87%E6%9C%AC%E8%BD%89%E9%80%A3%E7%B5%90/README.md) | 中文
 
 # 文本轉連結 / Text Linkify
 
