@@ -19,11 +19,11 @@
 // @description:cs Přidávat obrázky Exhentai hromadně do Eagle. Změnit otevírání originálních obrázků Exhentai na jejich přidávání do Eagle.
 //
 // @author       Max
-// @namespace    https://github.com/Max46656
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/ExhentaiEagleSupport
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[熊貓 Eagle 支援] 問題回報-V1.7.1
 // @license      MPL2.0
 //
-// @version      1.7.0
+// @version      1.7.1
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
