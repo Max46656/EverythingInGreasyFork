@@ -24,7 +24,7 @@
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 //
-// @version      1.2.1
+// @version      1.2.2
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
