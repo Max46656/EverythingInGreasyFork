@@ -24,7 +24,7 @@
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
 //
-// @version      1.2.0
+// @version      1.2.1
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
@@ -387,7 +387,7 @@ class LinkHandler {
 
             const rule = this.findMatchingRule(a.href);
 
-            if (!rule || rule.isBlacklist) return;
+            if (!rule || rule.isBlacklist || rule.openMethod === "default") return;
             event.preventDefault();
             event.stopImmediatePropagation();
 
