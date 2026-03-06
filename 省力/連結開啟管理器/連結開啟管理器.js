@@ -21,10 +21,11 @@
 // @description:lt Vartotojai gali rašyti taisykles, kad nustatytų skirtingus elgsenas spustelėjus nuorodas tam tikrame domene pagal paskirtį. Jei nėra taisyklių apribojimų, numatytasis elgsena yra visada atidaryti tos pačios domeno nuorodas naujame puslapyje, o naujas puslapis yra neaktyvus skirtukas.
 //
 // @author       Max
-// @namespace    https://github.com/Max46656
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/省力/連結開啟管理器
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[連結開啟管理器] 問題回報
 // @license      MPL2.0
 //
-// @version      1.2.2
+// @version      1.2.3
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
