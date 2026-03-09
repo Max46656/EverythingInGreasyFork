@@ -14,10 +14,10 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Kemono%20Save%20to%20Eagle
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Kemono 儲存至 Eagle] 問題回報-V1.5.3
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Kemono%20儲存至%20Eagle]%20問題回報-V1.5.3
 // @license      MPL2.0
 //
-// @version      1.5.3
+// @version      1.5.4
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://coomer.st/*/user/*/post/*
 // @icon         https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://tw.eagle.cool&size=64
@@ -260,25 +260,12 @@ class KemonoEagleUI {
         })
     }
 
-    async waitForElement(selector, timeout = 10000) {
-        return new Promise((resolve, reject) => {
-            const el = document.querySelector(selector)
-            if (el) return resolve(el)
-            const obs = new MutationObserver(() => {
-                const e = document.querySelector(selector)
-                if (e) {
-                    obs.disconnect()
-                    resolve(e)
-                }
-            })
-            obs.observe(document.body, { childList: true, subtree: true })
-            if (timeout) {
-                setTimeout(() => {
-                    obs.disconnect()
-                    reject(new Error("Timeout:" + selector))
-                }, timeout)
-            }
-        })
+    async waitForElement(selector) {
+        while (true) {
+            const el = document.querySelector(selector);
+            if (el) return el;
+            await new Promise(r => setTimeout(r, 200));
+        }
     }
 
     registerPositionMenu() {
