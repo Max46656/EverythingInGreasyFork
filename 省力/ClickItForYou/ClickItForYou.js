@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.1.0
+// @version      1.1.1
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -537,7 +537,7 @@ class ClickTaskManager {
     // 執行所有符合規則的自動點選
     runAutoClicks() {
         this.ruleManager.clickRules.rules.forEach((rule, index) => {
-            if (rule.enabled && rule.urlPattern && rule.selector && !this.intervalIds[index]) {
+            if (rule.enabled && rule.selector && new RegExp(rule.urlPattern).test(window.location.href) && !this.intervalIds[index]) {
                 console.info(`${GM_info.script.name}：Rule Enabled↓`);
                 console.table({"ruleName":rule.ruleName,"clickDelay":rule.clickDelay,"urlPattern":rule.urlPattern,"selector":rule.selector,"nthElement":rule.nthElement,"keepClicking":rule.keepClicking,"ifLinkOpen":rule.ifLinkOpen});
                 const intervalId = setInterval(() => {
@@ -549,7 +549,7 @@ class ClickTaskManager {
                 }, rule.clickDelay || 200);
                 this.intervalIds[index] = intervalId;
             } else if (!rule.urlPattern || !rule.selector) {
-                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 無效（索引 ${index}）：缺少 urlPattern 或 selector`);
+                console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 無效（索引 ${index}）：缺少正確的 urlPattern 或 selector`);
             }
         });
     }
