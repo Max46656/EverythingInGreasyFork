@@ -10,10 +10,11 @@
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/FavoritesNewArtUpdateOfKemono
 // @license      MPL2.0
 //
-// @version      2.0.0
+// @version      2.0.2
 // @match        *://kemono.cr/*
 // @match        *://coomer.st/*
 // @require      https://update.greasyfork.org/scripts/569411/1772731/SPA%20動態路由監聽器.js#v1.0.3
+// @grant        none
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
 // @downloadURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.user.js
 // @updateURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.meta.js
@@ -29,32 +30,37 @@ class ArtistUpdateCatcher {
 
     init() {
         this.loadArtistCards();
-        this.setupMutationObserver();
     }
 
-    loadArtistCards() {
-        this.artistCards = Array.from(document.querySelectorAll('a.user-card'));
-
-        const invalidCards = this.artistCards.filter(card => !card.href);
-
-        if (invalidCards.length > 0) {
-            console.warn(`${invalidCards.length}項作者卡尚未載入完成，重試中`);
-            setTimeout(() => this.loadArtistCards(), 1000);
+    loadArtistCards(attempt = 0, maxAttempts = 20) {
+        const container = document.querySelector('div.card-list__items');
+        if (!container) {
+            if (attempt >= maxAttempts) {
+                console.warn(`${GM_info.script.name} 等待 container 超過 ${maxAttempts} 次，放棄`);
+                return;
+            }
+            console.debug(`${GM_info.script.name} container 尚未出現，第 ${attempt + 1} 次重試`);
+            setTimeout(() => this.loadArtistCards(attempt + 1, maxAttempts), 500);
             return;
         }
 
-        this.queue = Array.from(this.artistCards);
-        if (this.queue.length > 0 &&invalidCards.length == 0) {
-            this.processQueue();
-        }
-    }
+        const cards = Array.from(document.querySelectorAll('a.user-card'));
+        const validCards = cards.filter(card => card.href && card.href.trim() !== '');
 
-    setupMutationObserver() {
-        const observer = new MutationObserver(() => {
-            this.loadArtistCards();
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-        this.observer = observer;
+        if (validCards.length === 0) {
+            if (attempt >= maxAttempts) {
+                console.warn(`${GM_info.script.name} 有效卡片數量一直為 0，已達最大重試次數`);
+                return;
+            }
+            console.debug(`${GM_info.script.name} 找到 ${cards.length} 張卡，但無有效 href，第 ${attempt + 1} 次`);
+            setTimeout(() => this.loadArtistCards(attempt + 1, maxAttempts), 1000);
+            return;
+        }
+
+        console.log(`${GM_info.script.name} 找到 ${validCards.length} 張有效藝術家卡，開始處理`);
+        this.artistCards = validCards;
+        this.queue = [...validCards];
+        this.processQueue();
     }
 
     async fetchUpdateArticles(url) {
@@ -65,7 +71,7 @@ class ArtistUpdateCatcher {
         if(isKemono){
             creatorPostsApi ='https://kemono.cr/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://kemono.cr/api/v1' + cleanUrl + '/profile';
-          //console.log(creatorPostsApi)
+            //console.log(creatorPostsApi)
         }else{
             creatorPostsApi ='https://coomer.st/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://coomer.st/api/v1' + cleanUrl + '/profile';
@@ -276,8 +282,8 @@ class PageIndicatorObserver {
         });
 
         const observerOptions = {
-          subtree: true,
-          characterData: true,
+            subtree: true,
+            characterData: true,
         };
 
         this.observer.observe(this.pageIndicator, observerOptions);
@@ -296,15 +302,23 @@ class PageIndicatorObserver {
     }
 }
 
- const handler = new DynamicRouteHandler({
-    matchPatterns: [/.*\/favorites\/artists/],
-    onEnter: () => {
-      console.log("進入 favorites");
-      new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
-      new PageIndicatorObserver("#paginator-top", 500);
-    },
-    onLeave: () => console.log("離開 Shorts"),
-    debug: true
-  });
+let johnTheLibrarian;
+let johnThePageTurner;
 
-  handler.start();
+const routeHandler = new window.DynamicRouteHandler({
+    matchPatterns: [/.*\/favorites\/artists/],
+    debug: true,
+    onEnter: () => {
+        console.log("進入 favorites");
+        johnTheLibrarian = new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
+        johnThePageTurner = new PageIndicatorObserver("#paginator-top", 500);
+    },
+    onLeave: () => {
+        console.info("離開 favorites → 清理");
+        johnThePageTurner.stop();
+        johnThePageTurner = null;
+        johnTheLibrarian = null;
+    }
+});
+
+routeHandler.start();
