@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.2.0
+// @version      1.3.0
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -92,7 +92,7 @@ class WebElementHandler {
                 urlPattern: '網址正則表達式：',
                 selectorType: '選擇器類型：',
                 selector: '選擇器：',
-                nthElement: '第幾個元素（1開始，-1為最後一個）：',
+                nthElement: '第幾個元素（1=第一個，-1=最後一個，0=全部）：',
                 clickDelay: '點選延遲（毫秒）：',
                 keepClicking: '持續點選元素：',
                 ifLinkOpen: '若為連結則開啟（否則維持預設）：',
@@ -115,7 +115,7 @@ class WebElementHandler {
                 urlPattern: 'URL Pattern (Regex):',
                 selectorType: 'Selector Type:',
                 selector: 'Selector:',
-                nthElement: 'Nth Element (1-based or -1 for last):',
+                nthElement: 'Nth Element (1=first, -1=last, 0=all):',
                 clickDelay: 'Click Delay (ms):',
                 keepClicking: 'Keep Clicking Element:',
                 ifLinkOpen: 'If it is a link (Otherwise keep default):',
@@ -138,7 +138,7 @@ class WebElementHandler {
                 urlPattern: 'URLパターン（正規表現）：',
                 selectorType: 'セレクタタイプ：',
                 selector: 'セレクタ：',
-                nthElement: '何番目の要素（1から、または-1で最後から）：',
+                nthElement: '何番目の要素（1=最初、-1=最後、0=すべて）：',
                 clickDelay: 'クリック遅延（ミリ秒）：',
                 keepClicking: '要素を継続的にクリック：',
                 ifLinkOpen: 'リンクの場合（それ以外の場合はデフォルトを維持）：',
@@ -161,7 +161,7 @@ class WebElementHandler {
                 urlPattern: 'URL-Muster (Regulärer Ausdruck):',
                 selectorType: 'Selektortyp:',
                 selector: 'Selektor:',
-                nthElement: 'N-tes Element (ab 1 oder -1 für letztes):',
+                nthElement: 'N-tes Element (1=erstes, -1=letztes, 0=alle):',
                 clickDelay: 'Klickverzögerung (ms):',
                 keepClicking: 'Element weiter klicken:',
                 ifLinkOpen: 'Wenn es ein Link ist (Andernfalls Standard beibehalten):',
@@ -184,7 +184,7 @@ class WebElementHandler {
                 urlPattern: 'Patrón de URL (Regex):',
                 selectorType: 'Tipo de Selector:',
                 selector: 'Selector:',
-                nthElement: 'N-ésimo Elemento (desde 1 o -1 para el último):',
+                nthElement: 'N-ésimo Elemento (1=primero, -1=último, 0=todos):',
                 clickDelay: 'Retraso de Clic (ms):',
                 keepClicking: 'Seguir haciendo clic en el Elemento:',
                 ifLinkOpen: 'Si es un enlace (De lo contrario, mantener la configuración predeterminada):',
@@ -256,7 +256,7 @@ class WebElementHandler {
                     <label>${i18n.selector}</label>
                     <input type="text" id="updateSelector${ruleIndex}" value="${rule.selector}">
                     <label>${i18n.nthElement}</label>
-                    <input type="number" id="updateNthElement${ruleIndex}" min="1" value="${rule.nthElement}">
+                    <input type="number" id="updateNthElement${ruleIndex}" value="${rule.nthElement}">
                     <label>${i18n.clickDelay}</label>
                     <input type="number" id="updateClickDelay${ruleIndex}" min="100" value="${rule.clickDelay || 200}">
                     <div class="checkbox-container">
@@ -371,7 +371,7 @@ class WebElementHandler {
                     <label>${i18n.selector}</label>
                     <input type="text" id="selector" placeholder="${i18n.selectorPlaceholder}">
                     <label>${i18n.nthElement}</label>
-                    <input type="number" id="nthElement" min="1" value="1">
+                    <input type="number" id="nthElement" value="1">
                     <label>${i18n.clickDelay}</label>
                     <input type="number" id="clickDelay" min="50" value="1000">
                     <div class="checkbox-container">
@@ -564,7 +564,7 @@ class ClickTaskManager {
                 return false;
             }
 
-            if (rule.nthElement === 0 || Math.abs(rule.nthElement) > elements.length) {
+            if (Math.abs(rule.nthElement) > elements.length) {
                 console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 的 nthElement 無效：${rule.nthElement}，找到 ${elements.length} 個元素`);
                 return false;
             }
@@ -573,6 +573,8 @@ class ClickTaskManager {
                 targetElement = elements[rule.nthElement - 1];
             }else if (rule.nthElement < 0) {
                 targetElement = elements[elements.length + rule.nthElement];
+            }else if (rule.nthElement === 0) {
+                targetElement = [...elements];
             }
 
             if (targetElement) {
@@ -581,7 +583,8 @@ class ClickTaskManager {
                     console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 開啟網頁`);
                     window.location.href = targetElement.href;
                 }else{
-                    targetElement.click();
+                    if(targetElement.length) targetElement.forEach(ele => ele.click());
+                    else targetElement.click();
                 }
                 return true;
             } else {
