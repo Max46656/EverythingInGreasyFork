@@ -7,7 +7,7 @@ Automatically clicks buttons you don’t want to click yourself.
 * Rules can be customized with URLs (accepts regular expressions) to distinguish between general domains, specific pages, or even across domains.
 * Supports CSS and XPath selectors.
 * Customizable delay for retrying element searches (in milliseconds), ensuring compatibility with dynamically loaded pages, even with long wait times.
-* Specify which matching element to click (defaults to the 1st).
+* You can specify which matching element to click (default is 1,negative numbers to represent starting from the last of the search; 0 to represent all matching elements).
 * The menu displays all rules matching the current URL, with rules collapsible/expandable to view details.
 * A scrollbar automatically appears when there are many rules.
 * Supports custom rule names.
