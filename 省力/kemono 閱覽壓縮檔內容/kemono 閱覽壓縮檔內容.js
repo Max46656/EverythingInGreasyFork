@@ -14,10 +14,10 @@
 //
 // @author Max
 // @namespace https://github.com/Max46656
-// @supportURL https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/kemono%20%E9%96%B1%E8%A6%BD%E5%A3%93%E7%B8%AE%E6%AA%94%E5%85%A7%E5%AE%B9
+// @supportURL https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license MPL2.0
 //
-// @version 1.4.0
+// @version 1.5.0
 // @match https://kemono.cr/*/user/*/post/*
 // @require https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
 // @grant GM_xmlhttpRequest
@@ -264,6 +264,7 @@ async unzipArchive(cache, btn, container, url) {
       }
     } finally {
       await reader.close();
+      this.sortMediaByTitle();
     }
   }
 
@@ -359,6 +360,80 @@ async unzipArchive(cache, btn, container, url) {
     div.appendChild(audio);
     container.appendChild(div);
   }
+
+/**
+ * 根據 blob: 元素的 title 屬性（通常為檔名）對 .post__files 內的媒體元素進行排序
+ * 支援正確的數字排序
+ * 使用 fragment 重新插入（效能較好，且不會閃動）
+ * @param {string} [order='asc'] - 'asc'（升序）或 'desc'（降序）
+ */
+sortMediaByTitle(order = 'asc') {
+  const container = document.querySelector('.post__files');
+  if (!container) {
+    console.warn(`${this.CONFIG.LOG_PREFIX} 找不到 .post__files 容器`);
+    return;
+  }
+
+  const mediaElements = Array.from(
+    container.querySelectorAll('div.post__thumbnail')
+  );
+
+  if (mediaElements.length <= 1) {
+    return;
+  }
+
+  const naturalCompare = (a, b) => {
+    const strA = (a.querySelector('[src^="blob:"]')?.title || '').trim().toLowerCase();
+    const strB = (b.querySelector('[src^="blob:"]')?.title || '').trim().toLowerCase();
+
+    if (strA === strB) return 0;
+
+    // "img10a.jpg" → ["img", 10, "a", ".", "jpg"]
+    const chunkify = str => {
+      return str.match(/(\d+|\D+)/g) || [];
+    };
+
+    const chunksA = chunkify(strA);
+    const chunksB = chunkify(strB);
+
+    const len = Math.min(chunksA.length, chunksB.length);
+
+    for (let i = 0; i < len; i++) {
+      const chunkA = chunksA[i];
+      const chunkB = chunksB[i];
+
+      if (!isNaN(chunkA) && !isNaN(chunkB)) {
+        const numA = Number(chunkA);
+        const numB = Number(chunkB);
+        if (numA !== numB) {
+          return numA - numB;
+        }
+        continue;
+      }
+
+      const cmp = chunkA.localeCompare(chunkB);
+      if (cmp !== 0) {
+        return cmp;
+      }
+    }
+
+    return chunksA.length - chunksB.length;
+  };
+
+  mediaElements.sort((a, b) => {
+    const diff = naturalCompare(a, b);
+    return order === 'desc' ? -diff : diff;
+  });
+
+  const fragment = document.createDocumentFragment();
+  mediaElements.forEach(el => fragment.appendChild(el));
+  container.innerHTML = '';
+  container.appendChild(fragment);
+
+  console.log(
+    `${this.CONFIG.LOG_PREFIX} 已根據檔名進行自然排序 (${order})，共 ${mediaElements.length} 個媒體`
+  );
+}
 
   /**
    * 更新按鈕狀態
