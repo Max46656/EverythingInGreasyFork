@@ -10,7 +10,7 @@
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/FavoritesNewArtUpdateOfKemono
 // @license      MPL2.0
 //
-// @version      2.0.4
+// @version      2.1.0
 // @match        *://kemono.cr/*
 // @match        *://coomer.st/*
 // @require      https://update.greasyfork.org/scripts/569411/1772731/SPA%20動態路由監聽器.js#v1.0.3
@@ -55,6 +55,8 @@ class ArtistUpdateCatcher {
         }
 
         console.log(`${GM_info.script.name} 找到 ${cards.length} 張有效藝術家卡，開始處理`);
+        //const notDiscord = cards.filter(card => !card.href.includes('discord'));
+        //this.queue = [...notDiscord];
         this.queue = [...cards];
         this.processQueue();
     }
@@ -64,9 +66,9 @@ class ArtistUpdateCatcher {
         const isKemono = url.includes('kemono');
         const isDiscord = url.includes('discord');
         let cleanUrl = url.replace(/^.*(?=\/[^\/]+\/user\/[^\/]+)/, "");
-        console.log(url,cleanUrl);
         let creatorPostsApi,creatorInfoApi;
-        if(isDiscord){
+        if (isDiscord) {
+            return await this.getDiscordMessages(url);
         }else if(isKemono){
             creatorPostsApi ='https://kemono.cr/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://kemono.cr/api/v1' + cleanUrl + '/profile';
@@ -85,17 +87,16 @@ class ArtistUpdateCatcher {
                 return this.fetchUpdateArticles(url);
             }
             const posts = await postsResponse.json();
-            console.log(posts);
             if (posts.length === 0) {
                 return articles;
             }
 
-            const firstPostTime = new Date(posts[0].published || posts[0].added).getTime();
-            const seventyTwoHoursLater = firstPostTime - this.timeRange;
+            const lastPostTime = new Date(posts[0].published || posts[0].added).getTime();
+            const beforeTimeRange = lastPostTime - this.timeRange;
 
             const newerPosts = posts.filter(post => {
                 const postTime = new Date(post.published || post.added).getTime();
-                return postTime >= seventyTwoHoursLater;
+                return postTime >= beforeTimeRange;
             });
 
             const infoResponse = await fetch(creatorInfoApi, {
@@ -148,8 +149,126 @@ class ArtistUpdateCatcher {
                 articles.push(articleElement);
             }
         } catch (error) {
-            console.error(`獲取字作品 ${url} 失敗:`, error);
+            console.error(`獲取作品 ${url} 失敗:`, error);
         }
+        return articles;
+    }
+
+    async getDiscordMessages(url){
+        const articles = [];
+        const cleanUrl = url.replace(/^.*\/discord\/server\/(?=[0-9]+)/, "");
+        const lookupApi = `https://kemono.cr/api/v1/discord/channel/lookup/${cleanUrl}`;
+
+        //console.log(`${GM_info.script.name} 查詢伺服器頻道列表：${lookupApi}`);
+
+        const channelsRes = await fetch(lookupApi, {
+            method: 'GET',
+            headers: {
+                'Accept': 'text/css'
+            },
+        });
+
+        if (!channelsRes.ok) {
+            throw new Error(`頻道查詢失敗：${channelsRes.status} ${channelsRes.statusText}`);
+        }
+
+        const channels = await channelsRes.json();
+
+        if (!Array.isArray(channels) || channels.length === 0) {
+            console.warn(`${GM_info.script.name} 該伺服器沒有可見頻道`);
+            return articles;
+        }
+
+        //console.log(`${GM_info.script.name} 找到 ${channels.length} 個頻道`);
+
+        const allMessages = [];
+
+        for (const channel of channels) {
+            const channelId = channel.id;
+            const postsApi = `https://kemono.cr/api/v1/discord/channel/${channelId}`;
+
+            //console.log(`${GM_info.script.name} 正在抓取頻道 ${channelId} 的貼文`);
+
+            const postsRes = await fetch(postsApi, {
+                headers: {
+                    'Accept': 'text/css'
+                }
+            });
+
+            if (!postsRes.ok) {
+                console.warn(`${GM_info.script.name} 頻道 ${channelId} 請求失敗：${postsRes.status}`);
+                continue;
+            }
+
+            const messages = await postsRes.json();
+
+            allMessages.push(...messages);
+        }
+
+        if (allMessages.length === 0) {
+            console.warn(`${GM_info.script.name} 所有頻道均無訊息`);
+            return articles;
+        }
+
+        allMessages.sort((a, b) => {
+            const timeA = new Date(a.published || a.added || 0).getTime();
+            const timeB = new Date(b.published || b.added || 0).getTime();
+            return timeB - timeA;
+        });
+
+        console.log(`${GM_info.script.name} 共收集到 ${allMessages.length} 筆訊息`);
+        console.table(allMessages);
+        console.table(allMessages[0]);
+        const latestMessage = allMessages[0];
+        const lastMessageTime = new Date(latestMessage.published || latestMessage.added).getTime();
+        const beforeTimeRange = lastMessageTime - this.timeRange;
+
+        //假設使用Discord的創作者都是繪師沒有作家
+        const newerMessages = allMessages.filter(message => {
+            const messageTime = new Date(message.added || message.published).getTime();
+            return message.attachments?.length > 0 && messageTime >= beforeTimeRange;
+        });
+
+        console.log(`${GM_info.script.name} 篩選出 ${newerMessages.length} 筆近期有附件的訊息`);
+        console.table(newerMessages);
+        for (const message of newerMessages) {
+            const articleId = message.id;
+            const service = 'Discord';
+            const user = message.author.username || message.global_name;
+            const title = message.content?.slice(0, 60) || message.attachments[0].name ||'';
+            const timestamp = message.added || message.published;
+            const attachments = message.attachments || [];
+            const attachmentsCount = attachments.length;
+            console.table(attachments);
+            const filePath = attachments[0]?.path;
+
+            const articleHtml = `
+                    <article class="post-card post-card--preview" data-id="${articleId}" data-service="${service}" style="position: relative; overflow: hidden; border-radius: 2%; font-size: larger;">
+                      <a class="fancy-link fancy-link--kemono" href="${url}">
+                          <header class="post-card__header">${message.author.username || message.author.global_name}</header>
+                          <div class="post-card__image-container">
+                              ${filePath ? `<img class="post-card__image" src="${filePath}" alt="attachment">` : '<div class="no-image">無預覽圖</div>'}
+                          </div>
+                          <footer class="post-card__footer">
+                              <div style="display: flex; align-items: center; gap: 8px;">
+                                  <div style="width: 24px; display: flex; align-items: center; gap: 4px;">
+                                      ${attachmentsCount}
+                                      <svg viewBox="0 0 10 10" style="width: 100%; height: 100%; fill: white;">...</svg>
+                                  </div>
+                                  <div>${title}</div>
+                              </div>
+                          </footer>
+                      </a>
+                      <time class="timestamp" datetime="${timestamp}"></time>
+                    </article>`;
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(articleHtml, 'text/html');
+            const articleElement = doc.body.firstChild;
+
+            articles.push(articleElement);
+        }
+
         return articles;
     }
 
