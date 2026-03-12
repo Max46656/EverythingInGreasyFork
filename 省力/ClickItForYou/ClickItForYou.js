@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.0.7
+// @version      1.0.8
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -27,8 +27,6 @@
 // ==/UserScript==
 
 class RuleManager {
-    clickRules;
-
     constructor() {
         this.clickRules = GM_getValue('clickRules', { rules: [] });
     }
@@ -371,7 +369,7 @@ class WebElementHandler {
                 nthElement: parseInt(document.getElementById('nthElement').value) || 1,
                 clickDelay: parseInt(document.getElementById('clickDelay').value) || 200,
                 keepClicking: document.getElementById('keepClicking').checked || false,
-                ifLinkOpen:Boolean(document.getElementById('ifLinkOpen').value) || false
+                ifLinkOpen:Boolean(document.getElementById('ifLinkOpen').checked) || false
             };
             if (!this.validateRule(newRule)) return;
             this.ruleManager.addRule(newRule);
@@ -384,7 +382,7 @@ class WebElementHandler {
             document.getElementById('nthElement').value = '1';
             document.getElementById('clickDelay').value = '200';
             document.getElementById('keepClicking').checked = false;
-            document.getElementById('ifLinkOpen').value = "false"
+            document.getElementById('ifLinkOpen').checked = false
         });
 
         document.getElementById('closeMenu').addEventListener('click', () => {
@@ -423,64 +421,64 @@ class WebElementHandler {
             });
 
             document.getElementById(`updateRule${ruleIndex}`).addEventListener('click', () => {
-                console.log("document.getElementById(`updateKeepSearching${ruleIndex}`).checked",document.getElementById(`updateKeepSearching${ruleIndex}`).checked)
-                console.log("Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value)",Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value))
+                            console.log("document.getElementById(`updateKeepSearching${ruleIndex}`).checked",document.getElementById(`updateKeepSearching${ruleIndex}`).checked)
+                                          console.log("Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value)",Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value))
 
-                const updatedRule = {
-                    ruleName: document.getElementById(`updateRuleName${ruleIndex}`).value || `規則 ${ruleIndex + 1}`,
-                    urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
-                    selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
-                    selector: document.getElementById(`updateSelector${ruleIndex}`).value,
-                    nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
-                    clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 1000,
-                    keepClicking: document.getElementById(`updateKeepSearching${ruleIndex}`).checked || false,
-                    ifLinkOpen: Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value) || false
-                };
-                console.log("updatedRule2",updatedRule)
-                if (!this.validateRule(updatedRule)) return;
-                this.ruleManager.updateRule(ruleIndex, updatedRule);
-                this.updateRulesElement();
-                this.clickTaskManager.clearAutoClicks();
-                this.clickTaskManager.runAutoClicks();
-            });
-
-
-            document.getElementById(`deleteRule${ruleIndex}`).addEventListener('click', () => {
-                this.ruleManager.deleteRule(ruleIndex);
-                this.updateRulesElement();
-                this.clickTaskManager.clearAutoClicks();
-                this.clickTaskManager.runAutoClicks();
-            });
-        });
-    }
-
-    // 設置 URL 變更監聽器
-    setupUrlChangeListener() {
-        const oldPushState = history.pushState;
-        history.pushState = function pushState() {
-            const result = oldPushState.apply(this, arguments);
-            window.dispatchEvent(new Event('pushstate'));
-            window.dispatchEvent(new Event('locationchange'));
-            return result;
-        };
-
-        const oldReplaceState = history.replaceState;
-        history.replaceState = function replaceState() {
-            const result = oldReplaceState.apply(this, arguments);
-            window.dispatchEvent(new Event('replacestate'));
-            window.dispatchEvent(new Event('locationchange'));
-            return result;
-        };
-
-        window.addEventListener('popstate', () => {
-            window.dispatchEvent(new Event('locationchange'));
-        });
-
-        window.addEventListener('locationchange', () => {
+              const updatedRule = {
+                  ruleName: document.getElementById(`updateRuleName${ruleIndex}`).value || `規則 ${ruleIndex + 1}`,
+                  urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
+                  selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
+                  selector: document.getElementById(`updateSelector${ruleIndex}`).value,
+                  nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
+                  clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 1000,
+                  keepClicking: document.getElementById(`updateKeepSearching${ruleIndex}`).checked || false,
+                  ifLinkOpen: Boolean(document.getElementById(`updateIfLink${ruleIndex}`).checked) || false
+              };
+              console.log("updatedRule2",updatedRule)
+              if (!this.validateRule(updatedRule)) return;
+            this.ruleManager.updateRule(ruleIndex, updatedRule);
+            this.updateRulesElement();
             this.clickTaskManager.clearAutoClicks();
             this.clickTaskManager.runAutoClicks();
         });
-    }
+
+
+        document.getElementById(`deleteRule${ruleIndex}`).addEventListener('click', () => {
+            this.ruleManager.deleteRule(ruleIndex);
+            this.updateRulesElement();
+            this.clickTaskManager.clearAutoClicks();
+            this.clickTaskManager.runAutoClicks();
+        });
+    });
+}
+
+// 設置 URL 變更監聽器
+setupUrlChangeListener() {
+    const oldPushState = history.pushState;
+    history.pushState = function pushState() {
+        const result = oldPushState.apply(this, arguments);
+        window.dispatchEvent(new Event('pushstate'));
+        window.dispatchEvent(new Event('locationchange'));
+        return result;
+    };
+
+    const oldReplaceState = history.replaceState;
+    history.replaceState = function replaceState() {
+        const result = oldReplaceState.apply(this, arguments);
+        window.dispatchEvent(new Event('replacestate'));
+        window.dispatchEvent(new Event('locationchange'));
+        return result;
+    };
+
+    window.addEventListener('popstate', () => {
+        window.dispatchEvent(new Event('locationchange'));
+    });
+
+    window.addEventListener('locationchange', () => {
+        this.clickTaskManager.clearAutoClicks();
+        this.clickTaskManager.runAutoClicks();
+    });
+}
 }
 
 class ClickTaskManager {
@@ -541,6 +539,7 @@ class ClickTaskManager {
             if (targetElement) {
                 console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 成功點選元素：`, targetElement);
                 if (rule.ifLinkOpen && targetElement.tagName === "A" && targetElement.href) {
+                    console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 開啟網頁`);
                     window.location.href = targetElement.href;
                 }else{
                     targetElement.click();
