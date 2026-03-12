@@ -17,14 +17,14 @@
 // @description:lt  Automatiškai groja kitą Short po dabartinio pabaigos, su perjungimo mygtuku vaizdo įrašo įrankių juostoje
 //
 // @author       Max
-// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/省力/YouTube Shorts 自動播放下一個影片
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.2
-//
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/省力/YouTube%20Shorts%20自動播放下一個影片
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.4
 // @license      MPL2.0
 //
-// @version      1.4.3
+// @version      1.4.4
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
+// @require      https://update.greasyfork.org/scripts/569411/1772717/SPA%20動態路由監聽器.js#v1.0.2
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @run-at       document-idle
@@ -253,150 +253,6 @@ class ShortsAutoPlayer {
         console.info(`${GM_info.script.name} 銷毀完成，所有監聽器與 DOM 修改已清理`);
     }
 }
-
-/**
- * Dynamic Route Handler v1.0.2
- * 用於解決使用者腳本在 SPA 網站無法因網址變化重新執行的問題
- *
- * 使用範例：
- *
- * const handler = new DynamicRouteHandler({
- *   matchPatterns: [/^https?:\/\/(www\.)?youtube\.com\/shorts\/.+/],
- *   onEnter: () => console.info("進入 Shorts"),
- *   onLeave: () => console.info("離開 Shorts"),
- *   debug: true
- * });
- *
- * handler.start();
- */
-
-if (window.DynamicRouteHandler) {
-    console.warn('[DynamicRouteHandler] 已經存在，跳過重複載入');
-    return;
-}
-
-/**
-   * @class DynamicRouteHandler
-   * @description 動態路由變化監聽器
-   */
-class DynamicRouteHandler {
-    #onUrlChange;
-    #checkAndTrigger;
-    #patchHistoryMethod;
-
-    /**
-     * @param {Object} options
-     * @param {RegExp[]} options.matchPatterns - 要符合的網址正則陣列（必填）
-     * @param {Function} [options.onEnter] - 進入符合頁面時呼叫
-     * @param {Function} [options.onLeave] - 離開符合頁面時呼叫
-     * @param {number} [options.checkInterval=800] - 備用定時檢查間隔（ms）
-     * @param {boolean} [options.debug=false] - 是否輸出除錯訊息
-     */
-    constructor(options = {}) {
-        if (!options.matchPatterns || !Array.isArray(options.matchPatterns) || options.matchPatterns.length === 0) {
-            throw new Error('DynamicRouteHandler: 必須提供至少一個 matchPatterns (RegExp 陣列)');
-        }
-
-        this.options = {
-            matchPatterns: options.matchPatterns,
-            onEnter: options.onEnter || (() => {}),
-            onLeave: options.onLeave || (() => {}),
-            checkInterval: options.checkInterval ?? 800,
-            debug: !!options.debug,
-        };
-
-        this.isListening = false;
-        this.isActive = false;
-        this.lastUrl = location.href;
-        this.intervalId = null;
-
-        this._log = this.options.debug
-            ? (...args) => console.info('[DynamicRouteHandler]', ...args)
-        : () => {};
-
-        this.#onUrlChange = () => {
-            this.lastUrl = location.href;
-            this.#checkAndTrigger();
-        };
-
-        this.#checkAndTrigger = () => {
-            const currentUrl = location.href;
-            const isMatch = this.options.matchPatterns.some(pattern => pattern.test(currentUrl));
-
-            if (isMatch && !this.isActive) {
-                this.isActive = true;
-                this.options.onEnter();
-                this._log('進入符合頁面', currentUrl);
-            } else if (!isMatch && this.isActive) {
-                this.isActive = false;
-                this.options.onLeave();
-                this._log('離開符合頁面', currentUrl);
-            }
-        };
-
-        this.#patchHistoryMethod = (method) => {
-            const original = history[method];
-            if (!original) return;
-
-            history[method] = (...args) => {
-                const result = original.apply(history, args);
-                this.#onUrlChange();
-                return result;
-            };
-            history[method].original = original;
-        };
-    }
-
-    /**
-     * 開始監聽路由變化
-     */
-    start() {
-        if (this.isListening) return;
-        this.isListening = true;
-
-        window.addEventListener('popstate', this.#onUrlChange);
-
-        this.#patchHistoryMethod('pushState');
-        this.#patchHistoryMethod('replaceState');
-
-        this.intervalId = setInterval(() => {
-            if (location.href !== this.lastUrl) {
-                this.#onUrlChange();
-            }
-        }, this.options.checkInterval);
-
-        this.#checkAndTrigger();
-
-        this._log('監聽已啟動');
-    }
-
-    /**
-     * 停止監聽並清理資源
-     */
-    stop() {
-        if (!this.isListening) return;
-        this.isListening = false;
-
-        window.removeEventListener('popstate', this.#onUrlChange);
-
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
-            this.intervalId = null;
-        }
-
-        this._log('監聽已停止');
-    }
-
-    /**
-     * 手動觸發一次檢查
-     */
-    forceCheck() {
-        this.#checkAndTrigger();
-    }
-}
-
-window.DynamicRouteHandler = DynamicRouteHandler;
-if(window.DynamicRouteHandler) console.info('[DynamicRouteHandler] v1.0.2 已載入');
 
 let shortsAutoPlayer = null;
 
