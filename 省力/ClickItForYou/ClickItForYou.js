@@ -5,24 +5,29 @@
 // @name:en      click it for you
 // @name:de      Für dich klicken
 // @name:es      Clic automático para ti
+// @name:hi      आपके लिए स्वचालित क्लिक
+// @name:cs      Klikněte za vás
+// @name:lt      Spustelėk už tave
 // @description  在符合正則表達式的網址上自動點選指定的元素。
 // @description:zh-TW 在符合正則表達式的網址上自動點選指定的元素。
 // @description:ja 正規表現に一致するURLで指定された要素を自動的にクリックします。
 // @description:en Automatically clicks specified elements on URLs matching a regular expression.
 // @description:de Klickt automatisch auf angegebene Elemente auf URLs, die mit einem regulären Ausdruck übereinstimmen.
 // @description:es Hace clic automáticamente en elementos especificados en URLs que coinciden con una expresión regular.
-//
-// @author       Max
-// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/ClickItForYou
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5B為你自動點選%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
-// @license      MPL2.0
+// @description:hi नियमित अभिव्यक्ति से मेल खाने वाले URL पर निर्दिष्ट तत्वों पर स्वचालित रूप से क्लिक करता है।
+// @description:cs Automaticky kliká na zadané prvky na URL, které odpovídají regulárnímu výrazu.
+// @description:lt Automatiškai spusteli nurodytus elementus URL adresuose, atitinkančiuose reguliariąją išraišką.
 //
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.3.1
+// @version      1.3.2
+//
+// @author       Max
+// @namespace    https://github.com/Max46656
+// @license      MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.user.js
 // @updateURL https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.meta.js
 // ==/UserScript==
@@ -198,6 +203,75 @@ class WebElementHandler {
                 selectorPlaceholder: 'Ejemplo: button.submit o //button[@class="submit"]',
                 invalidRegex: 'Expresión regular inválida',
                 invalidSelector: 'Selector inválido'
+            },
+            'hi': {
+                title: 'ऑटो क्लिक सेटिंग्स',
+                matchingRules: 'मिलान करने वाले नियम',
+                noMatchingRules: 'वर्तमान URL से कोई नियम मेल नहीं खाता।',
+                addRuleSection: 'नया नियम जोड़ें',
+                ruleName: 'नियम का नाम:',
+                urlPattern: 'URL पैटर्न (रेगुलर एक्सप्रेशन):',
+                selectorType: 'सेलेक्टर प्रकार:',
+                selector: 'सेलेक्टर:',
+                nthElement: 'एन्थ एलिमेंट (1=पहला, -1=आखिरी, 0=सभी):',
+                clickDelay: 'क्लिक विलंब (मिलीसेकंड):',
+                keepClicking: 'एलिमेंट पर लगातार क्लिक करें:',
+                ifLinkOpen: 'यदि लिंक है तो खोलें (अन्यथा डिफ़ॉल्ट रखें):',
+                Enabled: 'इस नियम को सक्षम करें:',
+                addRule: 'नियम जोड़ें',
+                save: 'सहेजें',
+                delete: 'हटाएं',
+                ruleNamePlaceholder: 'उदाहरण: मेरा नियम',
+                urlPatternPlaceholder: 'उदाहरण: https://example\\.com/.*',
+                selectorPlaceholder: 'उदाहरण: button.submit या //button[@class="submit"]',
+                invalidRegex: 'अमान्य रेगुलर एक्सप्रेशन',
+                invalidSelector: 'अमान्य सेलेक्टर'
+            },
+            'cs': {
+                title: 'Nastavení automatického kliknutí',
+                matchingRules: 'Odpovídající pravidla',
+                noMatchingRules: 'Žádná pravidla neodpovídají aktuální URL.',
+                addRuleSection: 'Přidat nové pravidlo',
+                ruleName: 'Název pravidla:',
+                urlPattern: 'Vzorec URL (regulární výraz):',
+                selectorType: 'Typ selektoru:',
+                selector: 'Selektor:',
+                nthElement: 'N-tý prvek (1=první, -1=poslední, 0=všechny):',
+                clickDelay: 'Zpoždění kliknutí (ms):',
+                keepClicking: 'Pokračovat v klikání na prvek:',
+                ifLinkOpen: 'Pokud je to odkaz, otevřít (jinak zachovat výchozí):',
+                Enabled: 'Povolit toto pravidlo:',
+                addRule: 'Přidat pravidlo',
+                save: 'Uložit',
+                delete: 'Smazat',
+                ruleNamePlaceholder: 'např. Moje pravidlo',
+                urlPatternPlaceholder: 'např. https://example\\.com/.*',
+                selectorPlaceholder: 'např. button.submit nebo //button[@class="submit"]',
+                invalidRegex: 'Neplatný regulární výraz',
+                invalidSelector: 'Neplatný selektor'
+            },
+            'lt': {
+                title: 'Automatinio spustelėjimo nustatymai',
+                matchingRules: 'Atitinkantys taisyklės',
+                noMatchingRules: 'Nėra taisyklių, atitinkančių dabartinį URL.',
+                addRuleSection: 'Pridėti naują taisyklę',
+                ruleName: 'Taisyklės pavadinimas:',
+                urlPattern: 'URL šablonas (reguliarusis reiškinys):',
+                selectorType: 'Selektoriaus tipas:',
+                selector: 'Selektorius:',
+                nthElement: 'N-tas elementas (1=pirmas, -1=paskutinis, 0=visi):',
+                clickDelay: 'Spustelėjimo delsa (ms):',
+                keepClicking: 'Tęsti spustelėjimą ant elemento:',
+                ifLinkOpen: 'Jei tai nuoroda, atidaryti (kitaip išlaikyti numatytąjį):',
+                Enabled: 'Įjungti šią taisyklę:',
+                addRule: 'Pridėti taisyklę',
+                save: 'Išsaugoti',
+                delete: 'Ištrinti',
+                ruleNamePlaceholder: 'pvz., Mano taisyklė',
+                urlPatternPlaceholder: 'pvz., https://example\\.com/.*',
+                selectorPlaceholder: 'pvz., button.submit arba //button[@class="submit"]',
+                invalidRegex: 'Netinkamas reguliarusis reiškinys',
+                invalidSelector: 'Netinkamas selektorius'
             }
         };
     }
@@ -208,11 +282,14 @@ class WebElementHandler {
 
     // 獲取當前語言
     getLanguage() {
-        const lang = navigator.language || navigator.userLanguage;
+        const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
         if (lang.startsWith('zh')) return 'zh-TW';
         if (lang.startsWith('ja')) return 'ja';
         if (lang.startsWith('de')) return 'de';
         if (lang.startsWith('es')) return 'es';
+        if (lang.startsWith('hi')) return 'hi';
+        if (lang.startsWith('cs')) return 'cs';
+        if (lang.startsWith('lt')) return 'lt';
         return 'en';
     }
 
