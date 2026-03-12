@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.1.1
+// @version      1.2.0
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -81,7 +81,7 @@ class WebElementHandler {
         this.setupUrlChangeListener();
     }
 
-    get i18n(){
+    get i18n() {
         return {
             'zh-TW': {
                 title: '自動點選設定',
@@ -92,7 +92,7 @@ class WebElementHandler {
                 urlPattern: '網址正則表達式：',
                 selectorType: '選擇器類型：',
                 selector: '選擇器：',
-                nthElement: '第幾個元素（從 1 開始）：',
+                nthElement: '第幾個元素（1開始，-1為最後一個）：',
                 clickDelay: '點選延遲（毫秒）：',
                 keepClicking: '持續點選元素：',
                 ifLinkOpen: '若為連結則開啟（否則維持預設）：',
@@ -106,7 +106,6 @@ class WebElementHandler {
                 invalidRegex: '無效的正則表達式',
                 invalidSelector: '無效的選擇器'
             },
-
             'en': {
                 title: 'Auto Click Settings',
                 matchingRules: 'Matching Rules',
@@ -116,7 +115,7 @@ class WebElementHandler {
                 urlPattern: 'URL Pattern (Regex):',
                 selectorType: 'Selector Type:',
                 selector: 'Selector:',
-                nthElement: 'Nth Element (1-based):',
+                nthElement: 'Nth Element (1-based or -1 for last):',
                 clickDelay: 'Click Delay (ms):',
                 keepClicking: 'Keep Clicking Element:',
                 ifLinkOpen: 'If it is a link (Otherwise keep default):',
@@ -130,7 +129,6 @@ class WebElementHandler {
                 invalidRegex: 'Invalid regular expression',
                 invalidSelector: 'Invalid selector'
             },
-
             'ja': {
                 title: '自動クリック設定',
                 matchingRules: '一致するルール',
@@ -140,7 +138,7 @@ class WebElementHandler {
                 urlPattern: 'URLパターン（正規表現）：',
                 selectorType: 'セレクタタイプ：',
                 selector: 'セレクタ：',
-                nthElement: '何番目の要素（1から）：',
+                nthElement: '何番目の要素（1から、または-1で最後から）：',
                 clickDelay: 'クリック遅延（ミリ秒）：',
                 keepClicking: '要素を継続的にクリック：',
                 ifLinkOpen: 'リンクの場合（それ以外の場合はデフォルトを維持）：',
@@ -154,7 +152,6 @@ class WebElementHandler {
                 invalidRegex: '無効な正規表現',
                 invalidSelector: '無効なセレクター'
             },
-
             'de': {
                 title: 'Automatische Klick-Einstellungen',
                 matchingRules: 'Passende Regeln',
@@ -164,7 +161,7 @@ class WebElementHandler {
                 urlPattern: 'URL-Muster (Regulärer Ausdruck):',
                 selectorType: 'Selektortyp:',
                 selector: 'Selektor:',
-                nthElement: 'N-tes Element (ab 1):',
+                nthElement: 'N-tes Element (ab 1 oder -1 für letztes):',
                 clickDelay: 'Klickverzögerung (ms):',
                 keepClicking: 'Element weiter klicken:',
                 ifLinkOpen: 'Wenn es ein Link ist (Andernfalls Standard beibehalten):',
@@ -178,7 +175,6 @@ class WebElementHandler {
                 invalidRegex: 'Ungültiger regulärer Ausdruck',
                 invalidSelector: 'Ungültiger Selektor'
             },
-
             'es': {
                 title: 'Configuración de Clic Automático',
                 matchingRules: 'Reglas Coincidentes',
@@ -188,7 +184,7 @@ class WebElementHandler {
                 urlPattern: 'Patrón de URL (Regex):',
                 selectorType: 'Tipo de Selector:',
                 selector: 'Selector:',
-                nthElement: 'N-ésimo Elemento (desde 1):',
+                nthElement: 'N-ésimo Elemento (desde 1 o -1 para el último):',
                 clickDelay: 'Retraso de Clic (ms):',
                 keepClicking: 'Seguir haciendo clic en el Elemento:',
                 ifLinkOpen: 'Si es un enlace (De lo contrario, mantener la configuración predeterminada):',
@@ -568,12 +564,17 @@ class ClickTaskManager {
                 return false;
             }
 
-            if (rule.nthElement < 1 || rule.nthElement > elements.length) {
+            if (rule.nthElement === 0 || Math.abs(rule.nthElement) > elements.length) {
                 console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 的 nthElement 無效：${rule.nthElement}，找到 ${elements.length} 個元素`);
                 return false;
             }
+            let targetElement;
+            if (rule.nthElement > 0) {
+                targetElement = elements[rule.nthElement - 1];
+            }else if (rule.nthElement < 0) {
+                targetElement = elements[elements.length + rule.nthElement];
+            }
 
-            const targetElement = elements[rule.nthElement - 1];
             if (targetElement) {
                 console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 成功點選元素：`, targetElement);
                 if (rule.ifLinkOpen && targetElement.tagName === "A" && targetElement.href) {
