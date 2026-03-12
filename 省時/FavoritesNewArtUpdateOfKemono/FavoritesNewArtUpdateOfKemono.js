@@ -10,7 +10,7 @@
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/FavoritesNewArtUpdateOfKemono
 // @license      MPL2.0
 //
-// @version      2.0.3
+// @version      2.0.4
 // @match        *://kemono.cr/*
 // @match        *://coomer.st/*
 // @require      https://update.greasyfork.org/scripts/569411/1772731/SPA%20動態路由監聽器.js#v1.0.3
@@ -30,9 +30,8 @@ class ArtistUpdateCatcher {
         this.loadArtistCards();
     }
 
-    loadArtistCards(attempt = 0, maxAttempts = 20) {
-        const container = document.querySelector('div.card-list__items');
-        if (!container) {
+    loadArtistCards(attempt = 0, maxAttempts = 200,cards = null) {
+        if (cards === null && !document.querySelector('div.card-list__items')) {
             if (attempt >= maxAttempts) {
                 console.warn(`${GM_info.script.name} 等待 container 超過 ${maxAttempts} 次，放棄`);
                 return;
@@ -42,34 +41,35 @@ class ArtistUpdateCatcher {
             return;
         }
 
-        const cards = Array.from(document.querySelectorAll('a.user-card'));
-        const validCards = cards.filter(card => card.href && card.href.trim() !== '');
+        cards = Array.from(document.querySelectorAll('a.user-card'));
+        const invalidCards = cards.filter(card => !card.href);
 
-        if (validCards.length === 0) {
+        if (invalidCards.length > 0) {
             if (attempt >= maxAttempts) {
                 console.warn(`${GM_info.script.name} 有效卡片數量一直為 0，已達最大重試次數`);
                 return;
             }
-            console.debug(`${GM_info.script.name} 找到 ${cards.length} 張卡，但無有效 href，第 ${attempt + 1} 次`);
+            console.debug(`${GM_info.script.name} 找到 ${cards.length} 張卡，但有無效${invalidCards}，第 ${attempt + 1} 次`);
             setTimeout(() => this.loadArtistCards(attempt + 1, maxAttempts), 1000);
             return;
         }
 
-        console.log(`${GM_info.script.name} 找到 ${validCards.length} 張有效藝術家卡，開始處理`);
-        this.artistCards = validCards;
-        this.queue = [...validCards];
+        console.log(`${GM_info.script.name} 找到 ${cards.length} 張有效藝術家卡，開始處理`);
+        this.queue = [...cards];
         this.processQueue();
     }
 
     async fetchUpdateArticles(url) {
         const articles = [];
         const isKemono = url.includes('kemono');
+        const isDiscord = url.includes('discord');
         let cleanUrl = url.replace(/^.*(?=\/[^\/]+\/user\/[^\/]+)/, "");
+        console.log(url,cleanUrl);
         let creatorPostsApi,creatorInfoApi;
-        if(isKemono){
+        if(isDiscord){
+        }else if(isKemono){
             creatorPostsApi ='https://kemono.cr/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://kemono.cr/api/v1' + cleanUrl + '/profile';
-            //console.log(creatorPostsApi)
         }else{
             creatorPostsApi ='https://coomer.st/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://coomer.st/api/v1' + cleanUrl + '/profile';
@@ -85,7 +85,7 @@ class ArtistUpdateCatcher {
                 return this.fetchUpdateArticles(url);
             }
             const posts = await postsResponse.json();
-            //console.log(posts);
+            console.log(posts);
             if (posts.length === 0) {
                 return articles;
             }
@@ -148,11 +148,10 @@ class ArtistUpdateCatcher {
                 articles.push(articleElement);
             }
         } catch (error) {
-            //console.error(`獲取字作品 ${url} 失敗:`, error);
+            console.error(`獲取字作品 ${url} 失敗:`, error);
         }
         return articles;
     }
-
 
     async replaceArtistCard(artistCard, articles) {
         const parentElement = document.querySelector('div.card-list__items');
@@ -199,18 +198,22 @@ class ArtistUpdateCatcher {
     }
 
     sortArticlesByDatetime() {
-        const articles = Array.from(document.querySelectorAll('article'));
-        articles.sort((a, b) => {
-            const timeA = a.querySelector('time') ? a.querySelector('time').getAttribute('datetime') : '';
-            const timeB = b.querySelector('time') ? b.querySelector('time').getAttribute('datetime') : '';
+        try{
+            const articles = Array.from(document.querySelectorAll('article'));
+            articles.sort((a, b) => {
+                const timeA = a.querySelector('time') ? a.querySelector('time').getAttribute('datetime') : '';
+                const timeB = b.querySelector('time') ? b.querySelector('time').getAttribute('datetime') : '';
 
-            return new Date(timeB) - new Date(timeA);
-        });
-        //console.log(articles);
-        const container = articles[0].parentElement;
-        articles.forEach(article => {
-            container.appendChild(article);
-        });
+                return new Date(timeB) - new Date(timeA);
+            });
+            //console.log(articles);
+            const container = articles[0].parentElement;
+            articles.forEach(article => {
+                container.appendChild(article);
+            });
+        }catch(err){
+            console.error(err);
+        }
     }
 
     async processQueue(){
@@ -269,8 +272,7 @@ class PageIndicatorObserver {
     }
 
     setupObserver() {
-        if (!this.pageIndicator)
-            return;
+        if (!this.pageIndicator) return;
 
         console.log("pageIndicator:", this.pageIndicator);
 
