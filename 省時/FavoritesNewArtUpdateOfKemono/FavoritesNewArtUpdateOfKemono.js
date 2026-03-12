@@ -10,7 +10,7 @@
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/FavoritesNewArtUpdateOfKemono
 // @license      MPL2.0
 //
-// @version      2.0.2
+// @version      2.0.3
 // @match        *://kemono.cr/*
 // @match        *://coomer.st/*
 // @require      https://update.greasyfork.org/scripts/569411/1772731/SPA%20動態路由監聽器.js#v1.0.3
@@ -21,14 +21,12 @@
 // ==/UserScript==
 
 class ArtistUpdateCatcher {
+    timeRange;
+    queue = [];
+    observer = null;
+
     constructor(timeRange) {
         this.timeRange = timeRange;
-        this.queue = [];
-        this.observer = null;
-        this.init();
-    }
-
-    init() {
         this.loadArtistCards();
     }
 
@@ -246,12 +244,15 @@ class ArtistUpdateCatcher {
 }
 
 class PageIndicatorObserver {
+    selector;
+    checkInterval;
+    pageIndicator = null;
+    retryInterval = null;
+    observer = null;
+
     constructor(selector, checkInterval = 1000) {
         this.selector = selector;
         this.checkInterval = checkInterval;
-        this.pageIndicator = null;
-        this.retryInterval = null;
-        this.observer = null;
         this.init();
     }
 
