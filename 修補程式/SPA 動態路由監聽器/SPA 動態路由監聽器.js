@@ -2,8 +2,8 @@
 // @name         SPA 動態路由監聽器
 // @description  監聽 SPA 網站的動態路由變化，在進入/離開特定頁面時觸發回調
 //
-// @namespace    https://github.com/userscripts
-// @version      1.0.2
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/edit/main/修補程式/SPA%20動態路由監聽器/SPA%20動態路由監聽器.js
+// @version      1.0.3
 // @author       Max
 //
 // @match        *://*/*
