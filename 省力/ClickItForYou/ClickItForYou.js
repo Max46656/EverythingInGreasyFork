@@ -18,16 +18,17 @@
 // @description:cs Automaticky kliká na zadané prvky na URL, které odpovídají regulárnímu výrazu.
 // @description:lt Automatiškai spusteli nurodytus elementus URL adresuose, atitinkančiuose reguliariąją išraišką.
 //
+// @author       Max
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/ClickItForYou
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5B為你自動點選%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
+// @license      MPL2.0
+//
+// @version      1.3.2
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.3.2
-//
-// @author       Max
-// @namespace    https://github.com/Max46656
-// @license      MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.user.js
 // @updateURL https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.meta.js
 // ==/UserScript==
