@@ -5,18 +5,18 @@
 // @description  為何要一個一個點選進入追蹤的作者頁面才能看到最新的更新？讓這個腳本為你代勞。支援Kemono/Coomer。
 // @description:ja それぞれのフォローアーティストのページに一つずつクリックして最新の更新を見る必要がありますか？このスクリプトに任せてください。Kemono/Coomerに対応しています。
 // @description:en Why click into each followed artist's page one by one to see the latest updates? Let this script do it for you. Suppper Kemono/Coomer.
-
-// @match        *://kemono.cr/account/favorites/artists*
-// @match        *://*.kemono.cr/account/favorites/artists*
-// @match        *://coomer.st/account/favorites/artists*
-// @match        *://*.coomer.st/account/favorites/artists*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
-// @version      1.1.6
-
+//
 // @author       Max
-// @namespace    https://greasyfork.org/zh-TW/users/1021017-max46656
-// @license MPL2.0
-
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E6%99%82/FavoritesNewArtUpdateOfKemono
+// @license      MPL2.0
+//
+// @version      2.0.0
+// @match        *://kemono.cr/*
+// @match        *://coomer.st/*
+// @require      https://update.greasyfork.org/scripts/569411/1772731/SPA%20動態路由監聽器.js#v1.0.3
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
+// @downloadURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.user.js
+// @updateURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.meta.js
 // ==/UserScript==
 
 class ArtistUpdateCatcher {
@@ -296,6 +296,15 @@ class PageIndicatorObserver {
     }
 }
 
-new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
+ const handler = new DynamicRouteHandler({
+    matchPatterns: [/.*\/favorites\/artists/],
+    onEnter: () => {
+      console.log("進入 favorites");
+      new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
+      new PageIndicatorObserver("#paginator-top", 500);
+    },
+    onLeave: () => console.log("離開 Shorts"),
+    debug: true
+  });
 
-new PageIndicatorObserver("#paginator-top", 500);
+  handler.start();
