@@ -17,7 +17,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @version      1.0.8
+// @version      1.1.0
 
 // @author       Max
 // @namespace    https://github.com/Max46656
@@ -27,8 +27,9 @@
 // ==/UserScript==
 
 class RuleManager {
+    clickRules = GM_getValue('clickRules', { rules: [] });
     constructor() {
-        this.clickRules = GM_getValue('clickRules', { rules: [] });
+        this.rulesVersionMigration();
     }
 
     addRule(newRule) {
@@ -49,123 +50,30 @@ class RuleManager {
     updateRules() {
         GM_setValue('clickRules', this.clickRules);
     }
+
+    rulesVersionMigration() {
+        let clickRules = GM_getValue('clickRules', { rules: [] });
+        let currentVersion = GM_getValue('rulesVersion', 0);
+
+        if(currentVersion < 1){
+            GM_setValue('rulesVersion', 1);
+        }
+
+        if (currentVersion < 2) {
+            clickRules.rules = clickRules.rules.map(rule => ({
+                ...rule,
+                enabled: rule.enabled !== false
+            }));
+
+            GM_setValue('clickRules', clickRules);
+            GM_setValue('rulesVersion', 2);
+        }
+    }
 }
 
 class WebElementHandler {
     ruleManager;
     clickTaskManager;
-    i18n = {
-        'zh-TW': {
-            title: '自動點選設定',
-            matchingRules: '符合的規則',
-            noMatchingRules: '當前網頁無符合的規則。',
-            addRuleSection: '新增規則',
-            ruleName: '規則名稱：',
-            urlPattern: '網址正則表達式：',
-            selectorType: '選擇器類型：',
-            selector: '選擇器：',
-            nthElement: '第幾個元素（從 1 開始）：',
-            clickDelay: '點選延遲（毫秒）：',
-            keepClicking: '持續點選元素：',
-            ifLinkOpen: '若為連結則開啟（否則維持預設）：',
-            addRule: '新增規則',
-            save: '儲存',
-            delete: '刪除',
-            ruleNamePlaceholder: '例如：我的規則',
-            urlPatternPlaceholder: '例如：https://example.com/.*',
-            selectorPlaceholder: '例如：button.submit 或 //button[@class="submit"]',
-            invalidRegex: '無效的正則表達式',
-            invalidSelector: '無效的選擇器'
-        } ,
-        'en': {
-            title: 'Auto Click 配置',
-            matchingRules: 'Matching Rules',
-            noMatchingRules: 'No rules match the current URL.',
-            addRuleSection: 'Add New Rule',
-            ruleName: 'Rule Name:',
-            urlPattern: 'URL Pattern (Regex):',
-            selectorType: 'Selector Type',
-            selector: 'Selector:',
-            nthElement: 'Nth Element (1-based)',
-            clickDelay: 'Click Delay (ms):',
-            keepClicking: 'Keep Clicking Element:',
-            ifLinkOpen: 'If it is a link(Otherwise keep the default):',
-            addRule: 'Add Rule',
-            save: 'Save',
-            delete: 'Delete',
-            ruleNamePlaceholder: 'e.g., My Rule',
-            urlPatternPlaceholder: 'e.g., https://example\\.com/.*',
-            selectorPlaceholder: 'e.g., button.submit or //button[@class="submit"]',
-            invalidRegex: 'Invalid regular expression',
-            invalidSelector: 'Invalid selector'
-        },
-        'ja': {
-            title: '自動クリック設定',
-            matchingRules: '一致するルール',
-            noMatchingRules: '現在のURLに一致するルールはありません。',
-            addRuleSection: '新しいルールを追加',
-            ruleName: 'ルール名：',
-            urlPattern: 'URLパターン（正規表現）：',
-            selectorType: 'セレクタタイプ：',
-            selector: 'セレクタ：',
-            nthElement: '何番目の要素（1から）：',
-            clickDelay: 'クリック遅延（ミリ秒）：',
-            keepClicking: '要素を継続的にクリック：',
-            ifLinkOpen: 'リンクの場合（それ以外の場合はデフォルトを維持）：',
-            addRule: 'ルールを追加',
-            save: '保存',
-            delete: '削除',
-            ruleNamePlaceholder: '例：マイルール',
-            urlPatternPlaceholder: '例：https://example\\.com/.*',
-            selectorPlaceholder: '例：button.submit または //button[@class="submit"]',
-            invalidRegex: '無効な正規表現',
-            invalidSelector: '無効なセレクター'
-        },
-        'de': {
-            title: 'Automatische Klick-Einstellungen',
-            matchingRules: 'Passende Regeln',
-            noMatchingRules: 'Keine Regeln passen zur aktuellen URL.',
-            addRuleSection: 'Neue Regel hinzufügen',
-            ruleName: 'Regelname:',
-            urlPattern: 'URL-Muster (Regulärer Ausdruck):',
-            selectorType: 'Selektortyp:',
-            selector: 'Selektor:',
-            nthElement: 'N-tes Element (ab 1):',
-            clickDelay: 'Klickverzögerung (ms):',
-            keepClicking: 'Element weiter klicken:',
-            ifLinkOpen: 'Wenn es ein Link ist(Andernfalls Standard beibehalten): ',
-            addRule: 'Regel hinzufügen',
-            save: 'Speichern',
-            delete: 'Löschen',
-            ruleNamePlaceholder: 'Beispiel: Meine Regel',
-            urlPatternPlaceholder: 'Beispiel: https://example\\.com/.*',
-            selectorPlaceholder: 'Beispiel: button.submit oder //button[@class="submit"]',
-            invalidRegex: 'Ungültiger regulärer Ausdruck',
-            invalidSelector: 'Ungültiger Selektor'
-        },
-        'es': {
-            title: 'Configuración de Clic Automático',
-            matchingRules: 'Reglas Coincidentes',
-            noMatchingRules: 'No hay reglas que coincidan con la URL actual.',
-            addRuleSection: 'Agregar Nueva Regla',
-            ruleName: 'Nombre de la Regla:',
-            urlPattern: 'Patrón de URL (Regex):',
-            selectorType: 'Tipo de Selector:',
-            selector: 'Selector:',
-            nthElement: 'N-ésimo Elemento (desde 1):',
-            clickDelay: 'Retraso de Clic (ms):',
-            keepClicking: 'Seguir haciendo clic en el Elemento:',
-            ifLinkOpen: 'Si es un enlace(De lo contrario, mantener la configuración predeterminada):',
-            addRule: 'Agregar Regla',
-            save: 'Guardar',
-            delete: 'Eliminar',
-            ruleNamePlaceholder: 'Ejemplo: Mi Regla',
-            urlPatternPlaceholder: 'Ejemplo: https://example\\.com/.*',
-            selectorPlaceholder: 'Ejemplo: button.submit o //button[@class="submit"]',
-            invalidRegex: 'Expresión regular inválida',
-            invalidSelector: 'Selector inválido'
-        }
-    };
 
     constructor(ruleManager, clickTaskManager) {
         this.ruleManager = ruleManager;
@@ -173,7 +81,130 @@ class WebElementHandler {
         this.setupUrlChangeListener();
     }
 
-    // 獲取選單標題（用於 registerMenu）
+    get i18n(){
+        return {
+            'zh-TW': {
+                title: '自動點選設定',
+                matchingRules: '符合的規則',
+                noMatchingRules: '當前網頁無符合的規則。',
+                addRuleSection: '新增規則',
+                ruleName: '規則名稱：',
+                urlPattern: '網址正則表達式：',
+                selectorType: '選擇器類型：',
+                selector: '選擇器：',
+                nthElement: '第幾個元素（從 1 開始）：',
+                clickDelay: '點選延遲（毫秒）：',
+                keepClicking: '持續點選元素：',
+                ifLinkOpen: '若為連結則開啟（否則維持預設）：',
+                Enabled: '啟動此規則：',
+                addRule: '新增規則',
+                save: '儲存',
+                delete: '刪除',
+                ruleNamePlaceholder: '例如：我的規則',
+                urlPatternPlaceholder: '例如：https://example.com/.*',
+                selectorPlaceholder: '例如：button.submit 或 //button[@class="submit"]',
+                invalidRegex: '無效的正則表達式',
+                invalidSelector: '無效的選擇器'
+            },
+
+            'en': {
+                title: 'Auto Click Settings',
+                matchingRules: 'Matching Rules',
+                noMatchingRules: 'No rules match the current URL.',
+                addRuleSection: 'Add New Rule',
+                ruleName: 'Rule Name:',
+                urlPattern: 'URL Pattern (Regex):',
+                selectorType: 'Selector Type:',
+                selector: 'Selector:',
+                nthElement: 'Nth Element (1-based):',
+                clickDelay: 'Click Delay (ms):',
+                keepClicking: 'Keep Clicking Element:',
+                ifLinkOpen: 'If it is a link (Otherwise keep default):',
+                Enabled: 'Enable this rule:',
+                addRule: 'Add Rule',
+                save: 'Save',
+                delete: 'Delete',
+                ruleNamePlaceholder: 'e.g., My Rule',
+                urlPatternPlaceholder: 'e.g., https://example\\.com/.*',
+                selectorPlaceholder: 'e.g., button.submit or //button[@class="submit"]',
+                invalidRegex: 'Invalid regular expression',
+                invalidSelector: 'Invalid selector'
+            },
+
+            'ja': {
+                title: '自動クリック設定',
+                matchingRules: '一致するルール',
+                noMatchingRules: '現在のURLに一致するルールはありません。',
+                addRuleSection: '新しいルールを追加',
+                ruleName: 'ルール名：',
+                urlPattern: 'URLパターン（正規表現）：',
+                selectorType: 'セレクタタイプ：',
+                selector: 'セレクタ：',
+                nthElement: '何番目の要素（1から）：',
+                clickDelay: 'クリック遅延（ミリ秒）：',
+                keepClicking: '要素を継続的にクリック：',
+                ifLinkOpen: 'リンクの場合（それ以外の場合はデフォルトを維持）：',
+                Enabled: 'このルールを有効化：',
+                addRule: 'ルールを追加',
+                save: '儲存',
+                delete: '削除',
+                ruleNamePlaceholder: '例：マイルール',
+                urlPatternPlaceholder: '例：https://example\\.com/.*',
+                selectorPlaceholder: '例：button.submit または //button[@class="submit"]',
+                invalidRegex: '無効な正規表現',
+                invalidSelector: '無効なセレクター'
+            },
+
+            'de': {
+                title: 'Automatische Klick-Einstellungen',
+                matchingRules: 'Passende Regeln',
+                noMatchingRules: 'Keine Regeln passen zur aktuellen URL.',
+                addRuleSection: 'Neue Regel hinzufügen',
+                ruleName: 'Regelname:',
+                urlPattern: 'URL-Muster (Regulärer Ausdruck):',
+                selectorType: 'Selektortyp:',
+                selector: 'Selektor:',
+                nthElement: 'N-tes Element (ab 1):',
+                clickDelay: 'Klickverzögerung (ms):',
+                keepClicking: 'Element weiter klicken:',
+                ifLinkOpen: 'Wenn es ein Link ist (Andernfalls Standard beibehalten):',
+                Enabled: 'Regel aktivieren:',
+                addRule: 'Regel hinzufügen',
+                save: 'Speichern',
+                delete: 'Löschen',
+                ruleNamePlaceholder: 'Beispiel: Meine Regel',
+                urlPatternPlaceholder: 'Beispiel: https://example\\.com/.*',
+                selectorPlaceholder: 'Beispiel: button.submit oder //button[@class="submit"]',
+                invalidRegex: 'Ungültiger regulärer Ausdruck',
+                invalidSelector: 'Ungültiger Selektor'
+            },
+
+            'es': {
+                title: 'Configuración de Clic Automático',
+                matchingRules: 'Reglas Coincidentes',
+                noMatchingRules: 'No hay reglas que coincidan con la URL actual.',
+                addRuleSection: 'Agregar Nueva Regla',
+                ruleName: 'Nombre de la Regla:',
+                urlPattern: 'Patrón de URL (Regex):',
+                selectorType: 'Tipo de Selector:',
+                selector: 'Selector:',
+                nthElement: 'N-ésimo Elemento (desde 1):',
+                clickDelay: 'Retraso de Clic (ms):',
+                keepClicking: 'Seguir haciendo clic en el Elemento:',
+                ifLinkOpen: 'Si es un enlace (De lo contrario, mantener la configuración predeterminada):',
+                Enabled: 'Activar esta regla:',
+                addRule: 'Agregar Regla',
+                save: 'Guardar',
+                delete: 'Eliminar',
+                ruleNamePlaceholder: 'Ejemplo: Mi Regla',
+                urlPatternPlaceholder: 'Ejemplo: https://example\\.com/.*',
+                selectorPlaceholder: 'Ejemplo: button.submit o //button[@class="submit"]',
+                invalidRegex: 'Expresión regular inválida',
+                invalidSelector: 'Selector inválido'
+            }
+        };
+    }
+
     getMenuTitle() {
         return this.i18n[this.getLanguage()].title;
     }
@@ -215,6 +246,10 @@ class WebElementHandler {
                 <div class="readRule" id="readRule${ruleIndex}" style="display: none;">
                     <label>${i18n.ruleName}</label>
                     <input type="text" id="updateRuleName${ruleIndex}" value="${rule.ruleName || ''}">
+                    <div class="checkbox-container">
+                        <label>${i18n.Enabled}</label>
+                        <input type="checkbox" id="updateEnabled${ruleIndex}" ${rule.enabled ? 'checked' : ''}>
+                    </div>
                     <label>${i18n.urlPattern}</label>
                     <input type="text" id="updateUrlPattern${ruleIndex}" value="${rule.urlPattern}">
                     <label>${i18n.selectorType}</label>
@@ -229,14 +264,13 @@ class WebElementHandler {
                     <label>${i18n.clickDelay}</label>
                     <input type="number" id="updateClickDelay${ruleIndex}" min="100" value="${rule.clickDelay || 200}">
                     <div class="checkbox-container">
-                    <label>${i18n.keepClicking}</label>
-                    <input type="checkbox" id="updateKeepSearching${ruleIndex}" ${rule.keepClicking ? 'checked' : ''}>
-                </div>
+                      <label>${i18n.keepClicking}</label>
+                      <input type="checkbox" id="updateKeepSearching${ruleIndex}" ${rule.keepClicking ? 'checked' : ''}>
+                    </div>
                 <div class="checkbox-container">
                     <label>${i18n.ifLinkOpen}</label>
                     <input type="checkbox" id="updateIfLink${ruleIndex}" ${rule.ifLinkOpen ? 'checked' : ''}>
                 </div>
-
                     <button id="updateRule${ruleIndex}">${i18n.save}</button>
                     <button id="deleteRule${ruleIndex}">${i18n.delete}</button>
                 </div>
@@ -352,7 +386,6 @@ class WebElementHandler {
                     <label>${i18n.ifLinkOpen}</label>
                     <input type="checkbox" id="ifLinkOpen">
                 </div>
-
                     <button id="addRule" style="margin-top: 10px;">${i18n.addRule}</button>
                 </div>
             `;
@@ -369,7 +402,8 @@ class WebElementHandler {
                 nthElement: parseInt(document.getElementById('nthElement').value) || 1,
                 clickDelay: parseInt(document.getElementById('clickDelay').value) || 200,
                 keepClicking: document.getElementById('keepClicking').checked || false,
-                ifLinkOpen:Boolean(document.getElementById('ifLinkOpen').checked) || false
+                ifLinkOpen:Boolean(document.getElementById('ifLinkOpen').checked) || false,
+                enabled: true
             };
             if (!this.validateRule(newRule)) return;
             this.ruleManager.addRule(newRule);
@@ -382,7 +416,8 @@ class WebElementHandler {
             document.getElementById('nthElement').value = '1';
             document.getElementById('clickDelay').value = '200';
             document.getElementById('keepClicking').checked = false;
-            document.getElementById('ifLinkOpen').checked = false
+            document.getElementById('ifLinkOpen').checked = false;
+            document.getElementById(`Enabled`).checked = true;
         });
 
         document.getElementById('closeMenu').addEventListener('click', () => {
@@ -421,69 +456,70 @@ class WebElementHandler {
             });
 
             document.getElementById(`updateRule${ruleIndex}`).addEventListener('click', () => {
-                            console.log("document.getElementById(`updateKeepSearching${ruleIndex}`).checked",document.getElementById(`updateKeepSearching${ruleIndex}`).checked)
-                                          console.log("Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value)",Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value))
+                console.log("document.getElementById(`updateKeepSearching${ruleIndex}`).checked",document.getElementById(`updateKeepSearching${ruleIndex}`).checked)
+                console.log("Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value)",Boolean(document.getElementById(`updateIfLink${ruleIndex}`).value))
 
-              const updatedRule = {
-                  ruleName: document.getElementById(`updateRuleName${ruleIndex}`).value || `規則 ${ruleIndex + 1}`,
-                  urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
-                  selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
-                  selector: document.getElementById(`updateSelector${ruleIndex}`).value,
-                  nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
-                  clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 1000,
-                  keepClicking: document.getElementById(`updateKeepSearching${ruleIndex}`).checked || false,
-                  ifLinkOpen: Boolean(document.getElementById(`updateIfLink${ruleIndex}`).checked) || false
-              };
-              console.log("updatedRule2",updatedRule)
-              if (!this.validateRule(updatedRule)) return;
-            this.ruleManager.updateRule(ruleIndex, updatedRule);
-            this.updateRulesElement();
+                const updatedRule = {
+                    ruleName: document.getElementById(`updateRuleName${ruleIndex}`).value || `規則 ${ruleIndex + 1}`,
+                    urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
+                    selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
+                    selector: document.getElementById(`updateSelector${ruleIndex}`).value,
+                    nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
+                    clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 1000,
+                    keepClicking: document.getElementById(`updateKeepSearching${ruleIndex}`).checked || false,
+                    ifLinkOpen: Boolean(document.getElementById(`updateIfLink${ruleIndex}`).checked) || false,
+                    enabled: Boolean(document.getElementById(`updateEnabled${ruleIndex}`).checked) || true
+                };
+                console.log("updatedRule2",updatedRule)
+                if (!this.validateRule(updatedRule)) return;
+                this.ruleManager.updateRule(ruleIndex, updatedRule);
+                this.updateRulesElement();
+                this.clickTaskManager.clearAutoClicks();
+                this.clickTaskManager.runAutoClicks();
+            });
+
+
+            document.getElementById(`deleteRule${ruleIndex}`).addEventListener('click', () => {
+                this.ruleManager.deleteRule(ruleIndex);
+                this.updateRulesElement();
+                this.clickTaskManager.clearAutoClicks();
+                this.clickTaskManager.runAutoClicks();
+            });
+        });
+    }
+
+    // 設置 URL 變更監聽器
+    setupUrlChangeListener() {
+        const oldPushState = history.pushState;
+        history.pushState = function pushState() {
+            const result = oldPushState.apply(this, arguments);
+            window.dispatchEvent(new Event('pushstate'));
+            window.dispatchEvent(new Event('locationchange'));
+            return result;
+        };
+
+        const oldReplaceState = history.replaceState;
+        history.replaceState = function replaceState() {
+            const result = oldReplaceState.apply(this, arguments);
+            window.dispatchEvent(new Event('replacestate'));
+            window.dispatchEvent(new Event('locationchange'));
+            return result;
+        };
+
+        window.addEventListener('popstate', () => {
+            window.dispatchEvent(new Event('locationchange'));
+        });
+
+        window.addEventListener('locationchange', () => {
             this.clickTaskManager.clearAutoClicks();
             this.clickTaskManager.runAutoClicks();
         });
-
-
-        document.getElementById(`deleteRule${ruleIndex}`).addEventListener('click', () => {
-            this.ruleManager.deleteRule(ruleIndex);
-            this.updateRulesElement();
-            this.clickTaskManager.clearAutoClicks();
-            this.clickTaskManager.runAutoClicks();
-        });
-    });
-}
-
-// 設置 URL 變更監聽器
-setupUrlChangeListener() {
-    const oldPushState = history.pushState;
-    history.pushState = function pushState() {
-        const result = oldPushState.apply(this, arguments);
-        window.dispatchEvent(new Event('pushstate'));
-        window.dispatchEvent(new Event('locationchange'));
-        return result;
-    };
-
-    const oldReplaceState = history.replaceState;
-    history.replaceState = function replaceState() {
-        const result = oldReplaceState.apply(this, arguments);
-        window.dispatchEvent(new Event('replacestate'));
-        window.dispatchEvent(new Event('locationchange'));
-        return result;
-    };
-
-    window.addEventListener('popstate', () => {
-        window.dispatchEvent(new Event('locationchange'));
-    });
-
-    window.addEventListener('locationchange', () => {
-        this.clickTaskManager.clearAutoClicks();
-        this.clickTaskManager.runAutoClicks();
-    });
-}
+    }
 }
 
 class ClickTaskManager {
-    ruleManager;
     intervalIds = {};
+    ruleManager;
 
     constructor(ruleManager) {
         this.ruleManager = ruleManager;
@@ -501,7 +537,9 @@ class ClickTaskManager {
     // 執行所有符合規則的自動點選
     runAutoClicks() {
         this.ruleManager.clickRules.rules.forEach((rule, index) => {
-            if (rule.urlPattern && rule.selector && !this.intervalIds[index]) {
+            if (rule.enabled && rule.urlPattern && rule.selector && !this.intervalIds[index]) {
+                console.info(`${GM_info.script.name}：Rule Enabled↓`);
+                console.table({"ruleName":rule.ruleName,"clickDelay":rule.clickDelay,"urlPattern":rule.urlPattern,"selector":rule.selector,"nthElement":rule.nthElement,"keepClicking":rule.keepClicking,"ifLinkOpen":rule.ifLinkOpen});
                 const intervalId = setInterval(() => {
                     const clicked = this.autoClick(rule, index);
                     if (clicked && !rule.keepClicking) {
