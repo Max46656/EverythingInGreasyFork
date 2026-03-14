@@ -21,7 +21,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.4
 // @license      MPL2.0
 //
-// @version      1.4.4
+// @version      1.4.5
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @require      https://update.greasyfork.org/scripts/569411/1772717/SPA%20動態路由監聽器.js#v1.0.2
@@ -50,8 +50,8 @@ class ShortsAutoPlayer {
 
     async init() {
         await this.addAutoNextToggle();
+        await this.listenNextClick();
         await this.observeProgress();
-        this.observeNext();
     }
 
     async listenNextClick() {
@@ -97,6 +97,7 @@ class ShortsAutoPlayer {
                 if (this.lastProgress >= this.highThreshold && val === this.lowThreshold) {
                     //console.log(`${GM_info.script.name}`);
                     this.clickToNext();
+                    setTimeout(() => { this.listenNextClick(); }, 400);
                 }
                 this.lastProgress = val;
                 //console.log(mutation,mutation[0].target,mutation[0].oldValue)
