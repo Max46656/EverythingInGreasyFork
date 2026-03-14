@@ -18,7 +18,7 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/省力/YouTube%20Shorts%20自動播放下一個影片
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.4
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報
 // @license      MPL2.0
 //
 // @version      1.4.5
@@ -31,24 +31,24 @@
 // ==/UserScript==
 
 class ShortsAutoPlayer {
+    progressSelector = 'yt-progress-bar [role="slider"]';
+    nextBtnSelector = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
+    buttonbarSelector = '#button-bar';
+
+    highThreshold = 50;
+    lowThreshold = 0;
+    lastProgress = 0;
+
+    enabled = GM_getValue('shortsAutoNextEnabled', true);
+    nextBtnClickListener = null;
+    progressObserver = null;
+    toggleButton = null;
+
     constructor() {
-        this.progressSelector = 'yt-progress-bar [role="slider"]';
-        this.nextBtnSelector = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
-        this.buttonbarSelector = '#button-bar';
-
-        this.highThreshold = 50;
-        this.lowThreshold = 0;
-        this.lastProgress = 0;
-
-        this.enabled = GM_getValue('shortsAutoNextEnabled', true);
-        this.nextBtnClickListener = null;
-        this.progressObserver = null;
-        this.toggleButton = null;
-
-        this.init();
+        this.#init();
     }
 
-    async init() {
+    async #init() {
         await this.addAutoNextToggle();
         await this.listenNextClick();
         await this.observeProgress();
@@ -175,7 +175,7 @@ class ShortsAutoPlayer {
         try{
             this.enabled = !this.enabled;
             GM_setValue('shortsAutoNextEnabled', this.enabled);
-            //console.info(`${GM_info.script.name} 自動播放已${this.enabled ? '啟用' : '停用'}`);
+            console.info(`${GM_info.script.name} 自動播放已${this.enabled ? '啟用' : '停用'}`);
 
             if (this.toggleButton) {
                 this.toggleButton.setAttribute('aria-checked', this.enabled ? 'true' : 'false');
