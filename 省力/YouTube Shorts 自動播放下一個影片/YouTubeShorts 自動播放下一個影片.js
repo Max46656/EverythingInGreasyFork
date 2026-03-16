@@ -18,10 +18,10 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/省力/YouTube%20Shorts%20自動播放下一個影片
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.4
 // @license      MPL2.0
 //
-// @version      1.4.5
+// @version      1.4.6
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @require      https://update.greasyfork.org/scripts/569411/1772717/SPA%20動態路由監聽器.js#v1.0.2
@@ -43,7 +43,6 @@ class ShortsAutoPlayer {
     nextBtnClickListener = null;
     progressObserver = null;
     toggleButton = null;
-
     constructor() {
         this.#init();
     }
@@ -62,19 +61,17 @@ class ShortsAutoPlayer {
                 this.nextBtnClickListener = null;
             }
 
-            const nextBtn = await this.waitForElement(this.nextBtnSelector, 500);
+            const nextBtn = await this.waitForElement(this.nextBtnSelector, 20000);
             if (!nextBtn) throw new Error(nextBtn);
-
-            console.info(`${GM_info.script.name} 找到下一部按鈕，已綁定 click 監聽`);
 
             this.nextBtnClickListener = () => {
                 this.lastProgress = 0;
                 console.info(`${GM_info.script.name} 下一部影片按鈕被點選`);
-                setTimeout(() => { this.observeProgress(); }, 400);
+                setTimeout(() => { this.observeProgress() }, 1000);
             };
 
             nextBtn.addEventListener('click', this.nextBtnClickListener);
-
+            console.info(`${GM_info.script.name} 找到下一部按鈕，已綁定 click 監聽`);
         } catch (err) {
             console.warn(`${GM_info.script.name} 監聽下一部按鈕失敗`, err);
             setTimeout(() => this.observeNext(), 100);
@@ -88,20 +85,28 @@ class ShortsAutoPlayer {
             if (this.progressObserver) {
                 this.progressObserver.disconnect();
                 this.progressObserver = null;
-                //console.log(`${GM_info.script.name} 重置監聽器 ${this.progressObserver}`);
+                console.log(`${GM_info.script.name} 重置監聽器 ${this.progressObserver}`);
             }
+
             const progressEl = await this.waitForElement(this.progressSelector, 5000);
+            console.log(`${GM_info.script.name} 找到進度條` ,progressEl);
+
             this.progressObserver = new MutationObserver((mutation) => {
-                const val = Number(mutation[0].target.getAttribute('aria-valuenow'));
-                //console.log(`${GM_info.script.name} 監聽進度條 ${typeof val}${val} ${typeof this.lastProgress}${this.lastProgress}`);
-                if (this.lastProgress >= this.highThreshold && val === this.lowThreshold) {
-                    //console.log(`${GM_info.script.name}`);
-                    this.clickToNext();
-                    setTimeout(() => { this.listenNextClick(); }, 400);
+                try{
+                    const val = Number(mutation[0].target.getAttribute('aria-valuenow'));
+                    console.log(`${GM_info.script.name} 監聽進度條 ${typeof val}${val} ${typeof this.lastProgress}${this.lastProgress}`);
+                    if (this.lastProgress >= this.highThreshold && val === this.lowThreshold) {
+                        console.log(`${GM_info.script.name} 影片重播`);
+                        this.clickToNext();
+                        setTimeout(() => { this.listenNextClick() }, 400);
+                    }
+                    this.lastProgress = val;
+                    //console.log(mutation,mutation[0].target,mutation[0].oldValue)
+                }catch(err){
+                    console.error(err)
                 }
-                this.lastProgress = val;
-                //console.log(mutation,mutation[0].target,mutation[0].oldValue)
             });
+
             this.progressObserver.observe(progressEl, {
                 attributes: true,
                 attributeOldValue: true,
