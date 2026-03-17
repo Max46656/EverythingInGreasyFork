@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      1.11.3
+// @version      1.11.4
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -206,13 +206,17 @@ class artScraper {
         let page = initPage;
         for (let i = initPage; i <= endPage; i++) {
             const iterationStartTime = performance.now();
-            page = Number(document.querySelector("nav button span").textContent);
+            page = Number(document.querySelector("nav button span")?.textContent);
             if(page && i > page){
                 i--;
             }else if(!page || page == 0){
                 console.error(this.getAPIMessageLocalization("pageZeroError"));
-                this.toPervPage();
-                await this.delay(3000);
+                try{
+                  this.toPervPage();
+                } catch(err){
+                  await window.history.back();
+                }
+                await this.delay(500);
                 i--;
             }
             await this.getArtsInPage(thumbnailClass, artsClass);
@@ -338,9 +342,8 @@ class artScraper {
     }
 
     async appendLikeElementToAllArts() {
-        this.allArtsWithoutLike = this.allArtsWithoutLike.filter(art => art !== undefined);
-        const ids = this.allArtsWithoutLike.filter(art => art.getElementsByTagName('a')[0] !== undefined)
-        .map(art => {
+        this.allArtsWithoutLike = this.allArtsWithoutLike.filter(art => art !== undefined && art.getElementsByTagName('a')[0] !== undefined);
+        const ids = this.allArtsWithoutLike.map(art => {
             const href = art.getElementsByTagName('a')[0].getAttribute('href');
             return href.match(/\/(\d+)/)[1];
         });
