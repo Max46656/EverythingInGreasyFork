@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.0.0
+// @version      2.0.1
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -232,10 +232,10 @@ class artScraper {
                     console.error(this.getAPIMessageLocalization("pageZeroError"));
                 }
             }
-            console.log("this.allArtsWithoutLike.size",this.allArtsWithoutLike.size)
+            //console.log("this.allArtsWithoutLike.size",this.allArtsWithoutLike.size)
             if(this.allArtsWithoutLike.size >= 300){
                 while(this.allArtsWithoutLike.size > 0){
-                    console.log("this.allArtsWithoutLike.size",this.allArtsWithoutLike.size);
+                    //console.log("this.allArtsWithoutLike.size",this.allArtsWithoutLike.size);
                     try{
                         await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
                     }catch (e){
