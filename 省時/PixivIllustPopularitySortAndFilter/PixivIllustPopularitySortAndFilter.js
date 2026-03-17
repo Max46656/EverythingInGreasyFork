@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      1.11.2
+// @version      1.11.3
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -311,7 +311,7 @@ class artScraper {
                     window.scrollBy(0, window.innerHeight);
                     await this.delay(100);
                     // 滑到頁面底部
-                    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight) {
+                    if (window.innerHeight + window.scrollY >= document.body.scrollHeight) {
                         window.scrollTo(0, 0);
                         pageStandard = await this.getElementListBySelector(artsClass);
                         pageStandard = pageStandard.length - 1;
