@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      1.11.4
+// @version      2.0.0
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -116,7 +116,7 @@ class artScraper {
     constructor(targetPages,likesMinLimit) {
         this.domain = 'https://www.pixiv.net';
         this.allArts = [];
-        this.allArtsWithoutLike = [];
+        this.allArtsWithoutLike = new Map(); // id → element
         this.targetPages = GM_getValue("targetPages", 10) || targetPages;
         this.likesMinLimit = GM_getValue("likesMinLimit", 50) || likesMinLimit;
         this.discardLikesMinLimit = GM_getValue("discardLikesMinLimit",false);
@@ -180,7 +180,7 @@ class artScraper {
         if (minutes > 0) timeStr += `${minutes}:`;
         timeStr += `${seconds}`;
 
-        console.log(`${GM_info.script.name} 總耗時: ${totalSeconds} 秒 (${timeStr})`);
+        console.info(`${GM_info.script.name} 總耗時: ${totalSeconds} 秒 (${timeStr})`);
 
         const message = this.getAPIMessageLocalization("sortCompleted", { waitTime: timeStr });
 
@@ -196,25 +196,22 @@ class artScraper {
     }
 
     async readingPages(thumbnailClass, artsClass) {
-        const startTime = performance.now();
-
         const allArtCount = this.getMaxPage();
         const artInPage = this.getElementListBySelector(artsClass).length - 1;
         const initPage = Number(document.querySelector("nav button span").textContent) - 1;
         const endPage = this.targetPages + initPage;
         const nextButton = document.querySelector('a:has(polyline[points="1,2 5,6 9,2"]):last-of-type');
         let page = initPage;
-        for (let i = initPage; i <= endPage; i++) {
-            const iterationStartTime = performance.now();
+        for (let i = initPage; i < endPage; i++) {
             page = Number(document.querySelector("nav button span")?.textContent);
             if(page && i > page){
                 i--;
             }else if(!page || page == 0){
                 console.error(this.getAPIMessageLocalization("pageZeroError"));
                 try{
-                  this.toPervPage();
+                    this.toPervPage();
                 } catch(err){
-                  await window.history.back();
+                    await window.history.back();
                 }
                 await this.delay(500);
                 i--;
@@ -223,7 +220,7 @@ class artScraper {
             let nextPageLink = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
             let retryCount = 0;
             if(nextPageLink[nextPageLink.length-1].hasAttribute("hidden")&& Number(new URL(nextPageLink[nextPageLink.length-1].href).searchParams.get('p')) === Number(document.querySelector('nav button span')?.textContent.trim())){
-                console.log(this.getAPIMessageLocalization("lastPageReached"));
+                console.info(this.getAPIMessageLocalization("lastPageReached"));
                 break;
             }else{
                 while(nextPageLink[nextPageLink.length-1].hasAttribute("hidden") && retryCount < 2000) {
@@ -235,43 +232,13 @@ class artScraper {
                     console.error(this.getAPIMessageLocalization("pageZeroError"));
                 }
             }
-
-            /*let checkInterval = Math.floor(Math.random() * 10) + 30;
-            let cooldown = Math.floor(Math.random() * 3000) + 2000;
-
-            if(i - initPage > 150 && (i - initPage) % (checkInterval * 10) == 0){
-                const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
-                console.log(cooldownMessage);
-                const sorterContainer = document.getElementById("SorterBtnContainer");
-                const messageElement = document.createElement("span");
-                messageElement.textContent = cooldownMessage;
-                sorterContainer.appendChild(messageElement);
-                await this.delay(cooldown * 10);
-                sorterContainer.removeChild(messageElement);
-            }else if(i - initPage > 40 && (i - initPage) % checkInterval == 0){
-                const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
-                console.log(cooldownMessage);
-                const sorterContainer = document.getElementById("SorterBtnContainer");
-                const messageElement = document.createElement("span");
-                messageElement.textContent = cooldownMessage;
-                sorterContainer.appendChild(messageElement);
-                await this.delay(cooldown);
-                sorterContainer.removeChild(messageElement);
-            }*/
-
-            if(this.allArtsWithoutLike.length >= 800){
-                while(this.allArtsWithoutLike.length != 0){
+            console.log("this.allArtsWithoutLike.size",this.allArtsWithoutLike.size)
+            if(this.allArtsWithoutLike.size >= 300){
+                while(this.allArtsWithoutLike.size > 0){
+                    console.log("this.allArtsWithoutLike.size",this.allArtsWithoutLike.size);
                     try{
                         await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
                     }catch (e){
-                        /*const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
-                        console.log(`${GM_info.script.name} `+cooldownMessage);
-                        const sorterContainer = document.getElementById("SorterBtnContainer");
-                        const messageElement = document.createElement("span");
-                        messageElement.textContent = cooldownMessage;
-                        sorterContainer.appendChild(messageElement);
-                        await this.delay(cooldown);
-                        sorterContainer.removeChild(messageElement);*/
                     }
                 }
             }
@@ -280,22 +247,11 @@ class artScraper {
                 //if((endPage - i) % 15 ===0) await this.delay(Math.random() * 2000 + 1000);
                 this.toNextPage();
             }
-
-            const iterationEndTime = performance.now();
         }
-
-        while(this.allArtsWithoutLike.length != 0){
+        while(this.allArtsWithoutLike.size > 0){
             try{
                 await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
             }catch (e){
-                /*const cooldownMessage = this.getAPIMessageLocalization("apiCooldown", { waitTime: cooldown });
-                console.log(`${GM_info.script.name} `+cooldownMessage);
-                const sorterContainer = document.getElementById("SorterBtnContainer");
-                const messageElement = document.createElement("span");
-                messageElement.textContent = cooldownMessage;
-                sorterContainer.appendChild(messageElement);
-                await this.delay(cooldown);
-                sorterContainer.removeChild(messageElement);*/
             }
         }
     }
@@ -311,75 +267,54 @@ class artScraper {
                 const thumbnails = await this.getElementListBySelector(thumbnailClass);
                 thumbnailCount = thumbnails.length;
                 if (thumbnailCount < pageStandard) {
-                    console.log(`${GM_info.script.name}: 缺少${pageStandard - thumbnailCount}張圖片，請保持本分頁為本瀏覽器視窗的唯一分頁以確保所有圖片都載入`);
+                    console.info(`${GM_info.script.name}: 缺少${pageStandard - thumbnailCount}張圖片，嘗試滾動載入...`);
                     window.scrollBy(0, window.innerHeight);
-                    await this.delay(100);
-                    // 滑到頁面底部
+                    await this.delay(200);
+
                     if (window.innerHeight + window.scrollY >= document.body.scrollHeight) {
                         window.scrollTo(0, 0);
-                        pageStandard = await this.getElementListBySelector(artsClass);
-                        pageStandard = pageStandard.length - 1;
+                        let currentArts = await this.getElementListBySelector(artsClass);
+                        pageStandard = currentArts.length;
                     }
                 }
             }
-            const arts = await this.getElementListBySelector(artsClass);
-            //console.info(pageStandard,thumbnailCount,arts)
-            //console.log(`找到${arts.length}張圖片，開始抓取圖片`);
 
-            const artsArray = Array.from(arts);
-            const allArtsSet = new Set(this.allArtsWithoutLike);
-            const areFirstThreePresent = artsArray.slice(0, 3).every(art => allArtsSet.has(art));
-            const areAllPresent = artsArray.every(art => allArtsSet.has(art))
-            if (!areAllPresent && areFirstThreePresent) {
-                await this.delay(20);
-                window.scrollTo(0, 0);
-                await this.delay(30);
+            const arts = await this.getElementListBySelector(artsClass);
+            let hasNewArt = false;
+
+            for (let art of arts) {
+                const link = art.querySelector('a');
+                if (!link) continue;
+
+                const match = link.getAttribute('href')?.match(/\/(\d+)/);
+                if (!match) continue;
+
+                const id = match[1];
+
+                if (!this.allArtsWithoutLike.has(id)) {
+                    this.allArtsWithoutLike.set(id, art);
+                    hasNewArt = true;
+                }
+            }
+
+            if (!hasNewArt) {
+                window.scrollBy(0, window.innerHeight);
+                await this.delay(50);
                 continue;
             }
-            for (let art of arts) this.allArtsWithoutLike.push(art);
             break;
         }
     }
 
     async appendLikeElementToAllArts() {
         this.allArtsWithoutLike = this.allArtsWithoutLike.filter(art => art !== undefined && art.getElementsByTagName('a')[0] !== undefined);
-        const ids = this.allArtsWithoutLike.map(art => {
-            const href = art.getElementsByTagName('a')[0].getAttribute('href');
-            return href.match(/\/(\d+)/)[1];
-        });
-        const MAX_RETRIES = 10;
-        const BASE_DELAY = 50;
+        const entries = Array.from(this.allArtsWithoutLike.entries());
+        //console.table(entries);
+        const ids = entries.map(([id]) => id);
         const likeCounts = await Promise.all(ids.map(id => this.fetchLikeCount(id))); //429
-        /*const likeCounts = await ids.reduce((promiseChain, id, index) => {
-            return promiseChain.then(async results => {
-                let retries = 0;
-                let likeCount = 0;
-                while (retries <= MAX_RETRIES) {
-                    try {
-                        likeCount = await this.fetchLikeCount(id);
-                        break;
-                    } catch (error) {
-                        retries++;
-                        console.warn(`${GM_info.script.name} 取得 like 失敗 (id: ${id}, 重試 ${retries}/${MAX_RETRIES}):`, error);
-
-                        if (retries > MAX_RETRIES) {
-                            console.error(`${GM_info.script.name} id ${id} 超過重試次數，like 設為 0`);
-                            break;
-                        }
-
-                        const retryDelay = BASE_DELAY * Math.pow(2, retries - 1) + Math.random() * 1000;
-                        console.log(`${GM_info.script.name} id ${id} 將於 ${retryDelay/1000} 秒後重試`);
-                        await this.delay(retryDelay);
-                    }
-                }
-
-                results.push(likeCount);
-                return results;
-            });
-        }, Promise.resolve([]));*/
 
         likeCounts.forEach((likeCount, index) => {
-            const art = this.allArtsWithoutLike[index];
+            const [id, art] = entries[index];
             if (!art.getElementsByClassName('likes').length) {
                 if (this.discardLikesMinLimit && likeCount < this.likesMinLimit) return;
                 const referenceElement = art.getElementsByTagName('div')[0];
@@ -393,20 +328,23 @@ class artScraper {
                 }
                 this.allArts.push({ art, likeCount });
             }
+            this.allArtsWithoutLike.delete(id);
         });
-        //console.info(this.allArtsWithoutLike.length,this.allArts.length);
-        this.allArtsWithoutLike = [];
+        //console.info(this.allArtsWithoutLike.size,this.allArts.length);
+        /*entries.forEach(([id]) => {
+            this.allArtsWithoutLike.delete(id);
+        });*/
+        //console.table("this.allArts",this.allArts);
+        this.allArtsWithoutLike = new Map();
     }
 
     toNextPage() {
-        let pageButtonsShape='a:has(polyline[points="1,2 5,6 9,2"]):last-of-type';
-        const nextPageButton = document.querySelector(pageButtonsShape);
+        const nextPageButton = document.querySelector('a:has(polyline[points="1,2 5,6 9,2"]):last-of-type');
         nextPageButton.click();
     }
 
     toPervPage() {
-        let pageButtonsClass='a:has(polyline[points="1,2 5,6 9,2"]):first-of-type';
-        const pervPageButton = document.querySelectorAll(pageButtonsClass);
+        const pervPageButton = document.querySelector('a:has(polyline[points="1,2 5,6 9,2"]):first-of-type');
         pervPageButton.click();
     }
 
@@ -430,7 +368,7 @@ class artScraper {
             }
         });
 
-        this.allArts = Array.from(artMap.values());
+        this.allArts = Array.from(new Set(artMap.values()));
     }
 
 
@@ -488,83 +426,6 @@ class artScraper {
         parentElement.appendChild(fragment);
         this.currentArtCount = artCount;
     }
-
-    // 縮圖換原圖，以其他腳本獨立解決
-    /*async changeThumbToOriginal() {
-        for (const element of this.allArts) {
-            const img = element.getElementsByTagName('img')[0];
-            if (img) {
-                const originalSrc = img.src.replace(/\/c\/\d+x\d+_\d+/, '')
-                .replace('/img-master/', '/img-original/')
-                .replace('/custom-thumb/', '/img-original/')
-                .replace(/_square1200/, '')
-                .replace(/_custom1200/, '');
-
-                //console.log(originalSrc);
-                const newSrc = await this.testImageSrc(originalSrc);
-                img.src = newSrc;
-                //console.log(img.src);
-            }
-        }
-    }
-    async testImageSrc(src) {
-        return new Promise(resolve => {
-            const img = new Image();
-            img.onload = function() {
-                resolve(src);
-            };
-            img.onerror = function() {
-                resolve(src.replace('.jpg', '.png'));
-            };
-            img.src = src;
-        });
-    }*/
-
-    //     搜尋樣式
-    /*     async addStartButton() {
-        let startButtonParentClass = '.sc-s8zj3z-5.eyagzq';
-        let startButtonClass = 'lkjHVk';
-        const parentElement = document.querySelector(startButtonParentClass);
-        if (!parentElement) {
-            await this.delay(50);
-            await this.addStartButton();
-            return;
-        }
-
-        const buttonsorterContainer = document.createElement('div');
-        buttonsorterContainer.style.display = 'flex';
-        buttonsorterContainer.style.alignItems = 'center';
-        buttonsorterContainer.className = 'startButton';
-        buttonsorterContainer.innerHTML= '<div class="hxckiU"><form class="ahao-search"><div class="hjxNtZ"><div class="bbSVxZ"></div><div class="dlaIss"><div class="lclerM"><svg viewBox="0 0 16 16" size="16" class="fiLugu"><path d="M8.25739 9.1716C7.46696 9.69512 6.51908 10 5.5 10C2.73858 10 0.5 7.76142 0.5 5C0.5 2.23858 2.73858 0 5.5 0C8.26142 0 10.5 2.23858 10.5 5C10.5 6.01908 10.1951 6.96696 9.67161 7.75739L11.7071 9.79288C12.0976 10.1834 12.0976 10.8166 11.7071 11.2071C11.3166 11.5976 10.6834 11.5976 10.2929 11.2071L8.25739 9.1716ZM8.5 5C8.5 6.65685 7.15685 8 5.5 8C3.84315 8 2.5 6.65685 2.5 5C2.5 3.34315 3.84315 2 5.5 2C7.15685 2 8.5 3.34315 8.5 5Z" transform="translate(3 3)" fill-rule="evenodd" clip-rule="evenodd"></path></svg></div></div></div></form><div class="kFcBON"></div></div>';
-
-        const inputField = document.createElement('input');
-        inputField.type = 'text';
-        inputField.value = this.targetPages;
-        inputField.className = 'gSIBXG';
-        inputField.addEventListener('input', (event) => {
-            this.targetPages = event.target.value;
-        });
-
-        const start = document.createElement('button');
-        start.textContent = 'Sort';
-        start.style.marginRight = '-10px';
-        start.className = startButtonClass;
-        start.addEventListener('click', async () => {
-            await this.eatAllArts();
-        });
-        const startButton = document.createElement('button');
-        startButton.textContent = 'Page Go';
-        startButton.className = startButtonClass;
-        startButton.addEventListener('click', async () => {
-            await this.eatAllArts();
-        });
-
-        buttonsorterContainer.appendChild(start);
-        buttonsorterContainer.appendChild(inputField);
-        buttonsorterContainer.appendChild(startButton);
-
-        parentElement.appendChild(buttonsorterContainer);
-    } */
 
     // 拉桿樣式
     async addStartButton(ParentClass,buttonClass) {
@@ -814,7 +675,7 @@ class artScraper {
         const startTime = performance.now();
         await fn();
         const endTime = performance.now();
-        console.log(`${GM_info.script.name} ${label} 花費時間: ${(endTime - startTime) / 1000} 秒`);
+        console.info(`${GM_info.script.name} ${label} 花費時間: ${(endTime - startTime) / 1000} 秒`);
     }
 
     getAPIMessageLocalization(word, params = {}) {
@@ -825,21 +686,21 @@ class artScraper {
                 "lastPageReached": `${GM_info.script.name} 已經來到最後一頁，停止排序`,
                 "apiCooldown": `請等待API冷卻時間 ${params.waitTime/1000 || ''}秒`
         },
-        "en": {
-            "sortCompleted": `Sorting completed\nTime taken: ${params.waitTime}`,
-            "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
-            "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
-            "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
+            "en": {
+                "sortCompleted": `Sorting completed\nTime taken: ${params.waitTime}`,
+                "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
+                "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
+                "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
         },
-        "ja": {
-            "sortCompleted": `ソート完了\n所要時間：${params.waitTime}`,
-            "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
-            "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
-            "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
+            "ja": {
+                "sortCompleted": `ソート完了\n所要時間：${params.waitTime}`,
+                "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
+                "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
+                "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
         }
-    };
-    return display[navigator.language]?.[word] ?? display["en"][word];
-}
+        };
+        return display[navigator.language]?.[word] ?? display["en"][word];
+    }
 
 }
 
