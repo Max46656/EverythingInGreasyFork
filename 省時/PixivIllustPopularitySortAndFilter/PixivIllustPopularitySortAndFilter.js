@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.0.2
+// @version      2.0.3
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -179,7 +179,7 @@ class artScraper {
         let timeStr = '';
         if (hours > 0) timeStr += `${hours}:`;
         if (minutes > 0) timeStr += `${minutes}:`;
-        timeStr += `${seconds}`;
+        timeStr += `${Number.parseFloat(seconds).toFixed(2)}`;
 
         console.info(`${GM_info.script.name} 總耗時: ${totalSeconds} 秒 (${timeStr})`);
 
