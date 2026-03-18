@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.0.1
+// @version      2.0.2
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -24,6 +24,7 @@
 // @grant        GM_getValue
 // @grant        GM.info
 // @grant        GM_notification
+// @grant        GM.notification
 // @downloadURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.meta.js
 // ==/UserScript==
@@ -182,12 +183,10 @@ class artScraper {
 
         console.info(`${GM_info.script.name} 總耗時: ${totalSeconds} 秒 (${timeStr})`);
 
-        const message = this.getAPIMessageLocalization("sortCompleted", { waitTime: timeStr });
-
         GM_notification({
+            text: this.getAPIMessageLocalization("sortCompleted", { waitTime: timeStr }),
             title: document.title,
-            text: message,
-            image: "https://www.google.com/s2/favicons?sz=64&domain=pixiv.net",
+            image: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://pixiv.net&size=64",
             timeout: 8000,
             onclick: () => {
                 window.focus();
