@@ -25,7 +25,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[連結開啟管理器] 問題回報
 // @license      MPL2.0
 //
-// @version      1.2.4
+// @version      1.2.5
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
@@ -34,9 +34,8 @@
 // @grant        GM_openInTab
 // ==/UserScript==
 
-const RULE_VERSION = 2;
-
 class RuleManager {
+    RULE_VERSION = 3;
     openRules;
     constructor() {
         this.openRules = GM_getValue('openRules', { rules: [], version: 0 });
@@ -44,20 +43,30 @@ class RuleManager {
     }
 
     migrateRulesIfNeeded() {
-        if (this.openRules.version >= RULE_VERSION) return;
+        if (this.openRules.version >= this.RULE_VERSION) return;
 
-        console.log(`[${GM_info.script.name}] 規則版本從 ${this.openRules.version} 升級至 ${RULE_VERSION}`);
+        console.info(`[${GM_info.script.name}] 規則版本從 ${this.openRules.version} 升級至 ${this.RULE_VERSION}`);
 
+        if (this.openRules.version < 3) {
+            this.openRules.rules.forEach(rule => {
+                if (rule.sameDomainAll === "on" && rule.targetUrl === null) {
+                    rule.sameDomainAll = true;
+                }else if (rule.sameDomainAll === "on" && rule.targetUrl !== null) {
+                    rule.sameDomainAll = false;
+                }
+            });
 
-        this.openRules.rules.forEach(rule => {
-            if (rule.priority === undefined) {
-                rule.priority = 1;
-            }
-        });
+        }
+        if (this.openRules.version < 2) {
+            this.openRules.rules.forEach(rule => {
+                if (rule.priority === undefined) {
+                    rule.priority = 1;
+                }
+            });
+        }
 
-        this.openRules.version = RULE_VERSION;
+        this.openRules.version = this.RULE_VERSION;
         this.updateRules();
-
         alert(I18N.i18n[I18N.getLanguage()].alertMsg);
     }
 
@@ -415,14 +424,13 @@ class LinkHandler {
                 console.warn(`[${GM_info.script.name}] 規則符合失敗`, e);
             }
         }
-
         if (matchedRules.length === 0) return null;
 
         matchedRules.sort((a, b) => (a.priority || 1) - (b.priority || 1));
 
         const topRule = matchedRules[0];
 
-        console.info(`[${GM_info.script.name}] matchedRules:`)
+        console.info(`[${GM_info.script.name}] matchedRules:`);
         console.table(matchedRules);
 
         return topRule;
@@ -437,6 +445,7 @@ class LinkHandler {
     }
 
     executeRule(rule, url) {
+        console.info(`執行任務 ${rule.name}`)
         let method = rule.openMethod
         const background = rule.isBackground ?? true;
 
@@ -463,7 +472,7 @@ class I18N {
     }
     static i18n = {
         'zh-TW': {
-            alertMsg: '規則資料已更新：所有舊規則已自動補上優先順序 1，您可進入設定面板手動調整優先順序。',
+            alertMsg: '規則資料已更新：所有舊規則已將同網域開啟改為布林值。',
             title: '連結開啟設定',
             matchingRules: '符合的規則',
             noMatchingRules: '當前網頁無符合的規則。',
@@ -491,7 +500,7 @@ class I18N {
             default: '預設'
         },
         'ja': {
-            alertMsg: 'ルールデータが更新されました：すべての古いルールに優先度1が自動的に付與されました。設定畫面で優先度を調整できます。',
+            alertMsg: 'ルールデータが更新されました：すべての古いルールで「同ドメインすべて」の設定をブール値に変更しました。',
             title: 'リンク開く設定',
             matchingRules: '一致するルール',
             noMatchingRules: '現在のページに一致するルールはありません。',
@@ -506,20 +515,20 @@ class I18N {
             priority: '優先度：',
             enabled: 'ルール有効：',
             addRule: 'ルールを追加',
-            save: '儲存',
+            save: '保存',
             delete: '削除',
             ruleNamePlaceholder: '例：私のルール（省略可能）',
             urlPatternPlaceholder: '例：https://example\\.com/.*',
             targetUrlPlaceholder: '例：https://example\\.com/target/.*',
-            priorityPlaceholder: '數位が小さいほど優先（デフォルト1）',
+            priorityPlaceholder: '数字が小さいほど優先（デフォルト1）',
             invalidRegex: '無効な正規表現',
-            invalidPriority: '優先度は正の整數（≥1）でなければなりません',
+            invalidPriority: '優先度は正の整数（≥1）でなければなりません',
             sameTab: '同じタブで開く',
             newTab: '新しいタブで開く',
             default: 'デフォルト'
         },
         'en': {
-            alertMsg: 'Rules data has been updated: All old rules have been automatically assigned priority 1. You can adjust priorities in the settings panel.',
+            alertMsg: 'Rules data has been updated: The "Apply to all same-domain links" setting in all old rules has been changed to boolean value.',
             title: 'Link Open Settings',
             matchingRules: 'Matching Rules',
             noMatchingRules: 'No rules match the current URL.',
@@ -547,7 +556,7 @@ class I18N {
             default: 'Default'
         },
         'de': {
-            alertMsg: 'Regeldaten wurden aktualisiert: Allen alten Regeln wurde automatisch Priorität 1 zugewiesen. Sie können die Prioritäten im Einstellungsbereich anpassen.',
+            alertMsg: 'Regeldaten wurden aktualisiert: Die Einstellung „Regel auf alle gleiche Domain anwenden“ in allen alten Regeln wurde in einen booleschen Wert geändert.',
             title: 'Link-Öffnungs-Einstellungen',
             matchingRules: 'Passende Regeln',
             noMatchingRules: 'Keine Regeln passen zur aktuellen URL.',
@@ -575,7 +584,7 @@ class I18N {
             default: 'Standard'
         },
         'hi': {
-            alertMsg: 'नियम डेटा अपडेट हो गया है: सभी पुराने नियमों को स्वचालित रूप से प्राथमिकता 1 सौंपी गई है। आप सेटिंग पैनल में प्राथमिकताएँ समायोजित कर सकते हैं।',
+            alertMsg: 'नियम डेटा अपडेट हो गया है: सभी पुराने नियमों में "सभी समान डोमेन पर नियम लागू करें" सेटिंग को बूलियन मान में बदल दिया गया है।',
             title: 'लिंक ओपन सेटिंग्स',
             matchingRules: 'मिलान करने वाले नियम',
             noMatchingRules: 'वर्तमान URL से कोई नियम मेल नहीं खाता।',
@@ -603,7 +612,7 @@ class I18N {
             default: 'डिफ़ॉल्ट'
         },
         'uk': {
-            alertMsg: 'Дані правил оновлено: усім старим правилам автоматично присвоєно пріоритет 1. Ви можете налаштувати пріоритети в панелі налаштувань.',
+            alertMsg: 'Дані правил оновлено: у всіх старих правилах налаштування «Застосовувати правило до всіх посилань того ж домену» змінено на логічне значення.',
             title: 'Налаштування відкриття посилань',
             matchingRules: 'Відповідні правила',
             noMatchingRules: 'Жодне правило не відповідає поточній URL.',
@@ -631,7 +640,7 @@ class I18N {
             default: 'За замовчуванням'
         },
         'cs': {
-            alertMsg: 'Data pravidel byla aktualizována: Všem starým pravidlům byla automaticky přiřazena priorita 1. Prioritu můžete upravit v panelu nastavení.',
+            alertMsg: 'Data pravidel byla aktualizována: U všech starých pravidel bylo nastavení „Aplikovat pravidlo na všechny odkazy stejné domény“ změněno na logickou hodnotu.',
             title: 'Nastavení otevírání odkazů',
             matchingRules: 'Odpovídající pravidla',
             noMatchingRules: 'Žádná pravidla neodpovídají aktuální URL.',
@@ -659,8 +668,7 @@ class I18N {
             default: 'Výchozí'
         },
         'lt': {
-
-            alertMsg: 'Taisyklių duomenys atnaujinti: visoms senoms taisyklėms automatiškai priskirtas prioritetas 1. Prioritetus galite koreguoti nustatymų skydelyje.',
+            alertMsg: 'Taisyklių duomenys atnaujinti: visose senose taisyklėse nustatymas „Taikyti taisyklę visoms tos pačios domeno nuorodoms“ pakeistas į loginę reikšmę.',
             title: 'Nuorodų atidarymo nustatymai',
             matchingRules: 'Atitinkantys taisyklės',
             noMatchingRules: 'Jokia taisyklė neatitinka dabartinio URL.',
