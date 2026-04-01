@@ -25,7 +25,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[連結開啟管理器] 問題回報
 // @license      MPL2.0
 //
-// @version      1.2.3
+// @version      1.2.4
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
@@ -327,7 +327,6 @@ class WebElementHandler {
                     ruleName: document.getElementById(`LinkOpenManager-updateRuleName${globalIndex}`).value.trim() || null,
                     urlPattern: document.getElementById(`LinkOpenManager-updateUrlPattern${globalIndex}`).value.trim(),
                     sameDomainAll: document.getElementById(`LinkOpenManager-updateSameDomainAll${globalIndex}`).checked,
-                    sameDomainAll: document.getElementById(`LinkOpenManager-updateSameDomainAll${globalIndex}`).value,
                     priority:document.getElementById(`LinkOpenManager-updatePriority${globalIndex}`).value,
                     isBlacklist: document.getElementById(`LinkOpenManager-updateIsBlacklist${globalIndex}`).checked,
                     targetUrl: document.getElementById(`LinkOpenManager-updateSameDomainAll${globalIndex}`).checked ? null : document.getElementById(`LinkOpenManager-updateTargetUrl${globalIndex}`)?.value.trim() ?? null,
