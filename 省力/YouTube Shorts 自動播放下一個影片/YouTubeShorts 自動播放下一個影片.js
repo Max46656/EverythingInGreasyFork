@@ -21,7 +21,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.4
 // @license      MPL2.0
 //
-// @version      1.5.1
+// @version      1.5.2
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @require      https://update.greasyfork.org/scripts/569411/1772717/SPA%20動態路由監聽器.js#v1.0.2
@@ -62,9 +62,9 @@ class ShortsAutoPlayer {
         const titleObserver = new MutationObserver(async () => {
             if (document.title !== lastTitle) {
                 lastTitle = document.title;
-                console.log("影片標題已變更")
+                //console.log("影片標題已變更")
                 setTimeout(() => { this.newShortArrive() }, 800);
-                }
+            }
         });
 
         titleObserver.observe(document.querySelector('title'), {
@@ -81,18 +81,18 @@ class ShortsAutoPlayer {
             if (this.progressObserver) {
                 this.progressObserver.disconnect();
                 this.progressObserver = null;
-                console.log(`${GM_info.script.name} 重置監聽器 ${this.progressObserver}`);
+                //console.log(`${GM_info.script.name} 重置監聽器 ${this.progressObserver}`);
             }
 
             const progressEl = await this.waitForElement(this.progressSelector, 5000);
-            console.log(`${GM_info.script.name} 找到進度條` ,progressEl);
+            //console.log(`${GM_info.script.name} 找到進度條` ,progressEl);
 
             this.progressObserver = new MutationObserver((mutation) => {
                 try{
                     const val = Number(mutation[0].target.getAttribute('aria-valuenow'));
-                    console.log(`${GM_info.script.name} 監聽進度條 ${typeof val}${val} ${typeof this.lastProgress}${this.lastProgress}`);
+                    //console.log(`${GM_info.script.name} 監聽進度條 ${typeof val}${val} ${typeof this.lastProgress}${this.lastProgress}`);
                     if (this.lastProgress >= this.highThreshold && val === this.lowThreshold) {
-                        console.log(`${GM_info.script.name} 影片重播`);
+                        //console.log(`${GM_info.script.name} 影片重播`);
                         this.clickToNext();
                     }
                     this.lastProgress = val;
