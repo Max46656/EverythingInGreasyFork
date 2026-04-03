@@ -21,7 +21,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.4
 // @license      MPL2.0
 //
-// @version      1.5.0
+// @version      1.5.1
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @require      https://update.greasyfork.org/scripts/569411/1772717/SPA%20動態路由監聽器.js#v1.0.2
@@ -35,7 +35,7 @@ class ShortsAutoPlayer {
     nextBtnSelector = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
     buttonbarSelector = '#button-bar';
 
-    highThreshold = 50;
+    highThreshold = 50; // 根據影片的長度與使用者的容忍值決定，越短的影片一次跨越的%就會越大，因此設定90%有可能直接跳過導致無法偵測影片再次開始，然而太低亦可能導致使用者想回到開頭時誤觸發下一部影片跳轉。
     lowThreshold = 0;
     lastProgress = 0;
 
@@ -54,7 +54,6 @@ class ShortsAutoPlayer {
     }
 
     async newShortArrive(){
-        await this.#listenNextClick();
         await this.#observeProgress();
     }
 
@@ -65,7 +64,7 @@ class ShortsAutoPlayer {
                 lastTitle = document.title;
                 console.log("影片標題已變更")
                 setTimeout(() => { this.newShortArrive() }, 800);
-            }
+                }
         });
 
         titleObserver.observe(document.querySelector('title'), {
@@ -73,31 +72,6 @@ class ShortsAutoPlayer {
             subtree: true,
             characterData: true
         });
-    }
-
-    async #listenNextClick() {
-        try {
-            if (this.nextBtnClickListener) {
-                const oldBtn = document.querySelector(this.nextBtnSelector);
-                if (oldBtn) oldBtn.removeEventListener('click', this.nextBtnClickListener);
-                this.nextBtnClickListener = null;
-            }
-
-            const nextBtn = await this.waitForElement(this.nextBtnSelector, 20000);
-            if (!nextBtn) throw new Error(nextBtn);
-
-            this.nextBtnClickListener = () => {
-                this.lastProgress = 0;
-                console.info(`${GM_info.script.name} 下一部影片按鈕被點選`);
-                setTimeout(() => { this.#observeProgress() }, 1000);
-            };
-
-            nextBtn.addEventListener('click', this.nextBtnClickListener);
-            console.info(`${GM_info.script.name} 找到下一部按鈕，已綁定 click 監聽`);
-        } catch (err) {
-            console.warn(`${GM_info.script.name} 監聽下一部按鈕失敗`, err);
-            setTimeout(() => this.observeNext(), 100);
-        }
     }
 
     async #observeProgress() {
@@ -120,7 +94,6 @@ class ShortsAutoPlayer {
                     if (this.lastProgress >= this.highThreshold && val === this.lowThreshold) {
                         console.log(`${GM_info.script.name} 影片重播`);
                         this.clickToNext();
-                        setTimeout(() => { this.#listenNextClick() }, 400);
                     }
                     this.lastProgress = val;
                     //console.log(mutation,mutation[0].target,mutation[0].oldValue)
