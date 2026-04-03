@@ -18,10 +18,10 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/省力/YouTube%20Shorts%20自動播放下一個影片
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts%20自動播放下一個影片]%20Bug回報
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.4
 // @license      MPL2.0
 //
-// @version      1.4.6
+// @version      1.5.0
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @require      https://update.greasyfork.org/scripts/569411/1772717/SPA%20動態路由監聽器.js#v1.0.2
@@ -49,11 +49,33 @@ class ShortsAutoPlayer {
 
     async #init() {
         await this.addAutoNextToggle();
-        await this.listenNextClick();
-        await this.observeProgress();
+        await this.newShortArrive();
+        this.observeTitle();
     }
 
-    async listenNextClick() {
+    async newShortArrive(){
+        await this.#listenNextClick();
+        await this.#observeProgress();
+    }
+
+    observeTitle(){
+        let lastTitle = document.title;
+        const titleObserver = new MutationObserver(async () => {
+            if (document.title !== lastTitle) {
+                lastTitle = document.title;
+                console.log("影片標題已變更")
+                setTimeout(() => { this.newShortArrive() }, 800);
+            }
+        });
+
+        titleObserver.observe(document.querySelector('title'), {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+    }
+
+    async #listenNextClick() {
         try {
             if (this.nextBtnClickListener) {
                 const oldBtn = document.querySelector(this.nextBtnSelector);
@@ -67,7 +89,7 @@ class ShortsAutoPlayer {
             this.nextBtnClickListener = () => {
                 this.lastProgress = 0;
                 console.info(`${GM_info.script.name} 下一部影片按鈕被點選`);
-                setTimeout(() => { this.observeProgress() }, 1000);
+                setTimeout(() => { this.#observeProgress() }, 1000);
             };
 
             nextBtn.addEventListener('click', this.nextBtnClickListener);
@@ -78,7 +100,7 @@ class ShortsAutoPlayer {
         }
     }
 
-    async observeProgress() {
+    async #observeProgress() {
         if (!this.enabled) return;
         this.lastProgress = 0;
         try {
@@ -98,7 +120,7 @@ class ShortsAutoPlayer {
                     if (this.lastProgress >= this.highThreshold && val === this.lowThreshold) {
                         console.log(`${GM_info.script.name} 影片重播`);
                         this.clickToNext();
-                        setTimeout(() => { this.listenNextClick() }, 400);
+                        setTimeout(() => { this.#listenNextClick() }, 400);
                     }
                     this.lastProgress = val;
                     //console.log(mutation,mutation[0].target,mutation[0].oldValue)
@@ -190,7 +212,7 @@ class ShortsAutoPlayer {
             if (!this.enabled && this.progressObserver){
                 this.progressObserver.disconnect();
             }else if (this.enabled){
-                this.observeProgress();
+                this.#observeProgress();
             }
         }catch(err){
             console.warn(`${GM_info.script.name} 切換模式失敗`, err);
