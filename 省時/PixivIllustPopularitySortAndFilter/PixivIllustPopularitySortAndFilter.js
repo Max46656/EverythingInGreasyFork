@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.0.4
+// @version      2.0.5
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -269,8 +269,8 @@ class artScraper {
                     console.info(`${GM_info.script.name}: 缺少${pageStandard - thumbnailCount}張圖片，嘗試滾動載入...`);
                     window.scrollBy(0, window.innerHeight);
                     await this.delay(200);
-
-                    if (window.innerHeight + window.scrollY >= document.body.scrollHeight) {
+                    //3029.760009765625 !>= 3030 認真¿
+                    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 10) {
                         window.scrollTo(0, 0);
                         let currentArts = await this.getElementListBySelector(artsClass);
                         pageStandard = currentArts.length;
