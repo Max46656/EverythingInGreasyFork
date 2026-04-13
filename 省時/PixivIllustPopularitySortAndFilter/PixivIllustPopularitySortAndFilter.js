@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.0.6
+// @version      2.1.0
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -129,11 +129,12 @@ class artScraper {
 
     setStrategy(){
         const url = self.location.href;
+        console.log(url)
         if (url.includes('https://www.pixiv.net/bookmark_new_illust')) {
             return new subStrategy();
         } else if (url.match(/^https:\/\/www\.pixiv\.net\/(en\/users|users)\/.*\/.*$/)) {
             return new userStrategy();
-        } else if (url.match(/^https:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*\/.*$/)) {
+        } else if (url.match(/^https:\/\/www\.pixiv\.net\/(en\/tags|tags)\/.*\/.*$/) || url.includes("search?q")) {
             return new tagsStrategy();
         } else {
             throw `${GM_info.script.name} Unsupported page type`;
