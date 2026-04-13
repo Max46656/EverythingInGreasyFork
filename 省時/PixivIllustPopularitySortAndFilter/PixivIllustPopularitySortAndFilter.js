@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.1.0
+// @version      2.1.1
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -70,22 +70,22 @@ class tagsStrategy extends pageStrategy{
         return 'a[data-gtm-user-id] img'
     }
     getArtsClass() {
-        return 'section:not(:has(aside)) li:has(a[data-gtm-user-id])';
+        return 'div[data-ga4-label="thumbnail"]';
     }
     getRenderArtWallClass() {
-        return 'section div~div:has(a[data-gtm-user-id]):not(:has(aside))';
+        return 'div[data-ga4-label="works_content"]';
     }
     getArtWallAlignLeftClass(){
         return 'iJEVBL';
     }
     getButtonAtClass() {
-        return 'div:nth-child(3) div:first-child div:first-child:has(div span+a+button)';
+        return 'div[data-ga4-label="menu"] div:has(nav[data-ga4-label="tabs"])';
     }
     getAllButtonClass() {
         return ['kBpizq','kBgAgO','kIZwSN','kIZQyE','eeVGDc','efgaHs'];
     }
     getArtsCountClass(){
-        return 'h3+div span:not([class])';
+        return 'div[data-ga4-label="works_content"] div span span:not(:has(svg))';
     }
 }
 
