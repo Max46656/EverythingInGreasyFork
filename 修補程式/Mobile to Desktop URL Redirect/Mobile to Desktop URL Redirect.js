@@ -12,9 +12,10 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.4.1
+// @version      1.4.2
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -205,19 +206,20 @@ class DesktopSwitcher {
     getDesktopUrl() {
         let tempUrl = this.url;
         const customPattern = this.customRules[this.hostname];
+        console.log(customPattern)
         if (customPattern) {
-            console.log(`應用自訂規則於: ${this.hostname}, regex=${customPattern.regex}`);
+            console.log(`應用自訂規則於: ${this.hostname}, regex=${customPattern.match}`);
             try {
-                tempUrl = tempUrl.replace(customPattern.regex, customPattern.replace);
+                tempUrl = tempUrl.replace(customPattern.match, customPattern.replace);
                 if (tempUrl !== this.url) return tempUrl;
             } catch (error) {
                 console.error(`應用自訂規則失敗: ${error.message}`);
             }
         }else{
             for (const pattern of this.mobilePatterns) {
-                if (pattern.regex.test(tempUrl)) {
-                    console.log(`檢測到手機版模式: ${pattern.regex}`);
-                    tempUrl = tempUrl.replace(pattern.regex, pattern.replace);
+                if (pattern.match.test(tempUrl)) {
+                    console.log(`檢測到手機版模式: ${pattern.match}`);
+                    tempUrl = tempUrl.replace(pattern.match, pattern.replace);
                 }
             }
         }
