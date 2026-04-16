@@ -12,10 +12,9 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.4.2
+// @version      1.4.3
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
@@ -35,15 +34,15 @@ class DesktopSwitcher {
         this.blacklist = Array.isArray(GM_getValue("blacklist", [])) ? GM_getValue("blacklist", []) : [];
         this.customRules = GM_getValue("customRules", {});
         this.mobilePatterns = [
-            { regex: /:\/\/m\./, replace: "://" },
-            { regex: /\/m\//, replace: "/" },
-            { regex: /\.mobile\./, replace: "." },
-            { regex: /\/mobile\//, replace: "/" },
-            { regex: /\.wap\./, replace: "." },
-            { regex: /\?view=mobile(&|$)/, replace: "?" },
-            { regex: /&view=mobile/, replace: "" },
-            { regex: /\?device=mobile(&|$)/, replace: "?" },
-            { regex: /&device=mobile/, replace: "" },
+            { match: /:\/\/m\./, replace: "://" },
+            { match: /\/m\//, replace: "/" },
+            { match: /\.mobile\./, replace: "." },
+            { match: /\/mobile\//, replace: "/" },
+            { match: /\.wap\./, replace: "." },
+            { match: /\?view=mobile(&|$)/, replace: "?" },
+            { match: /&view=mobile/, replace: "" },
+            { match: /\?device=mobile(&|$)/, replace: "?" },
+            { match: /&device=mobile/, replace: "" },
         ];
 
         this.registerMenu();
@@ -98,7 +97,7 @@ class DesktopSwitcher {
         const replaceString = prompt(`修改替換字串 (目前: ${currentRule.replace}):`, currentRule.replace);
         if (matchString && replaceString) {
             try {
-                this.customRules[this.hostname] = { regex: matchString, replace: replaceString };
+                this.customRules[this.hostname] = { match: matchString, replace: replaceString };
                 GM_setValue("customRules", this.customRules);
                 console.log(`已更新 ${this.hostname} 的自訂規則: match=${matchString}, replace=${replaceString}`);
             } catch (error) {
@@ -206,9 +205,8 @@ class DesktopSwitcher {
     getDesktopUrl() {
         let tempUrl = this.url;
         const customPattern = this.customRules[this.hostname];
-        console.log(customPattern)
         if (customPattern) {
-            console.log(`應用自訂規則於: ${this.hostname}, regex=${customPattern.match}`);
+            console.log(`應用自訂規則於: ${this.hostname}, match=${customPattern.match}`);
             try {
                 tempUrl = tempUrl.replace(customPattern.match, customPattern.replace);
                 if (tempUrl !== this.url) return tempUrl;
