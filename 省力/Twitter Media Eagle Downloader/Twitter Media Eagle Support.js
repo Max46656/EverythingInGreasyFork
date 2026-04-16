@@ -11,7 +11,7 @@
 // @namespace   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Media%20Eagle%20Downloader
 // @supportURL  https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Twitter 媒體Eagle保存] 問題回報-v2.3.0
 //
-// @version     2.3.1
+// @version     2.4.0
 // @match       https://twitter.com/*
 // @match       https://x.com/*
 // @match       https://mobile.twitter.com/*
@@ -19,6 +19,8 @@
 // @grant       GM_setValue
 // @grant       GM_getValue
 // @grant       GM_xmlhttpRequest
+// @grant       GM_notification
+
 // @compatible  Chrome
 // @compatible  Firefox
 // @icon        https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://tw.eagle.cool&size=64
@@ -534,7 +536,7 @@ const TMD = (function () {
             return o.replace(/(YY(YY)?|MMM?|DD|hh|mm|ss|h2|ap)/g, n => ('0' + v[n]).substr(-n.length));
         },
         downloader: (function () {
-            let tasks = [], thread = 0, max_thread = 2, retry = 0, max_retry = 2, failed = 0, notifier, has_failed = false;
+            let tasks = [], thread = 0, max_thread = 2, retry = 0, max_retry = 5, failed = 0, notifier, has_failed = false;
             return {
                 add: function (task) {
                     tasks.push(task);
@@ -550,10 +552,12 @@ const TMD = (function () {
                     else thread -= 1;
                     this.update();
                 },
-                start: function (task) {
+                start: async function (task) {
                     this.update();
+
                     let folderId = GM_getValue("eagle_last_folder");
-                    return new Promise(resolve => {
+
+                    return new Promise(async (resolve) => {
                         const imageData = {
                             url: task.url,
                             name: task.name,
@@ -570,28 +574,33 @@ const TMD = (function () {
                                 "Content-Type": "application/json"
                             },
                             data: JSON.stringify(imageData),
-                            onload: response => {
+                            onload: (response) => {
                                 if (response.status >= 200 && response.status < 300) {
                                     task.onload();
-                                    console.log('Image added to Eagle:', response);
+                                    console.log('Image added to Eagle successfully:', response);
                                 } else {
-                                    console.error('Failed to add image to Eagle:', response);
+                                    console.error('Failed to add image to Eagle (HTTP error):', response);
                                     this.retry(task, response);
                                 }
                                 resolve();
                             },
-                            onerror: error => {
-                                console.error('Failed to add image to Eagle:', error);
+                            onerror: async (error) => {
+                                console.error('Network error when adding image to Eagle:', error);
+                                console.log('嘗試啟動 Eagle App 並等待其就緒...');
+                                await this.openEagle();
+
                                 this.retry(task, error);
                                 resolve();
                             },
-                            ontimeout: error => {
-                                console.error('Timeout adding image to Eagle:', error);
+                            ontimeout: async (error) => {
+                                console.error('Timeout when adding image to Eagle:', error);
+                                console.log('嘗試啟動 Eagle App 並等待其就緒...');
+                                await this.openEagle();
+
                                 this.retry(task, error);
                                 resolve();
                             }
                         });
-
                     });
                 },
                 retry: function (task, result) {
@@ -631,6 +640,49 @@ const TMD = (function () {
                     if (failed > 0) notifier.lastChild.innerText = failed;
                     if (thread > 0 || tasks.length > 0 || failed > 0) notifier.classList.add('running');
                     else notifier.classList.remove('running');
+                },
+                openEagle: async function() {
+                    window.open("eagle://open", '_self');
+
+                    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+                    const checkEagleStatus = () => new Promise((resolve, reject) => {
+                        GM_xmlhttpRequest({
+                            url: "http://localhost:41595/api/library/info",
+                            method: "GET",
+                            timeout: 100,
+                            onload: (res) => {
+                                resolve(res.status);
+                            },
+                            onerror: (err) => {
+                                resolve(0);
+                            },
+                            ontimeout: () => {
+                                resolve(0);
+                            }
+                        });
+                    });
+
+                    console.log("正在檢查 Eagle App 是否已啟動...");
+
+                    let attempts = 0;
+                    const maxAttempts = 120;
+
+                    while (attempts < maxAttempts) {
+                        const eagleResponse = await checkEagleStatus();
+                        //console.log(`Eagle 狀態檢查 (${attempts + 1}/${maxAttempts})：`, eagleResponse);
+
+                        if (eagleResponse === 200) {
+                            console.info("Eagle App 已成功啟動並就緒。");
+                            return true;
+                        }
+
+                        await sleep(500);
+                        attempts++;
+                    }
+
+                    console.error("Eagle App 啟動逾時，請手動確認 Eagle 是否已開啟。");
+                    return false;
                 }
             };
         })(),
