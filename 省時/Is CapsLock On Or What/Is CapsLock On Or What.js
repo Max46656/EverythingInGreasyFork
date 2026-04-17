@@ -17,7 +17,7 @@
 // @author       Max
 // @license      MPL2.0
 
-// @version      1.3.0
+// @version      1.4.1
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_getValue
@@ -29,7 +29,6 @@
 
 class CapsLockIndicator {
     lastCapsState = null;
-
     ringBuzzer = GM_getValue('ringBuzzer', true);
     audioContext = null;
     volume = GM_getValue('volume', 0.6);
@@ -43,12 +42,29 @@ class CapsLockIndicator {
 
     constructor() {
         this.i18n = new I18n();
+        this.initializeCapsLockState();
         this.createAudioContext();
         this.createIndicator();
         this.registerMenuCommands();
         this.bindKeyboardEvents();
 
-        console.info(`${GM_info.script.name} (${this.i18n.getCurrentLang()}) 已初始化 | 音量:${this.volume} | 顯示圖示:${this.showIndicator}`);
+        console.info(`${GM_info.script.name} (${this.i18n.detectLanguage()}) 已初始化 | 音量:${this.volume} | 顯示圖示:${this.showIndicator}`);
+    }
+
+    initializeCapsLockState() {
+        const detectState = (e) => {
+          const state = e.getModifierState?.('CapsLock');
+          if (typeof state === 'boolean' && state !== this.lastCapsState) {
+            this.lastCapsState = state;
+            this.updateIndicator(state);
+            console.log(`${GM_info.script.name} 透過互動事件取得初始 Caps Lock 狀態: ${state}`);
+          }
+        };
+
+        const events = ['mousemove', 'wheel', 'keydown'];
+        events.forEach(eventType => {
+          document.addEventListener(eventType, detectState, { once: true });
+        });
     }
 
     createAudioContext() {
@@ -98,11 +114,6 @@ class CapsLockIndicator {
                 }, 10);
             }
         });
-
-        setTimeout(() => {
-            this.lastCapsState = navigator.getModifierState?.('CapsLock') ?? false;
-            this.updateIndicator(this.lastCapsState);
-        }, 500);
     }
 
     createIndicator() {
@@ -114,7 +125,7 @@ class CapsLockIndicator {
             display: this.showIndicator ? 'block' : 'none',
             fontSize: '20px',
             lineHeight: '1',
-            opacity: 1,
+            opacity: 0.7,
             backgroundColor: 'rgba(0, 0, 0, 0)',
             color: '#ffffff',
             zIndex: '2147483647',
