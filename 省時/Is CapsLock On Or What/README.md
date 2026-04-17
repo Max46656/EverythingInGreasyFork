@@ -23,7 +23,7 @@ No more guessing whether Caps Lock is enabled — you’ll both **hear** and **s
 ### Installation
 
 1. Install [Violentmonkey](https://violentmonkey.github.io) (supports Chrome, Firefox, Vivaldi, etc.)
-2. Click [here](https://greasyfork.org/scripts/XXXXXX) to install **Caps Lock Sound Indicator** (replace with actual GreasyFork link after upload)
+2. Click [here](https://greasyfork.org/zh-TW/scripts/574275-%E7%8F%BE%E5%9C%A8%E6%98%AF%E5%A4%A7%E5%AF%AB%E5%97%8E) to install **Caps Lock Sound Indicator**
 3. Done!
 
 ### Usage
