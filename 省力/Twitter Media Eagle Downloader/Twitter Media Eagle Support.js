@@ -11,7 +11,7 @@
 // @namespace   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Media%20Eagle%20Downloader
 // @supportURL  https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Twitter 媒體Eagle保存] 問題回報-v2.3.0
 //
-// @version     2.4.0
+// @version     2.5.0
 // @match       https://twitter.com/*
 // @match       https://x.com/*
 // @match       https://mobile.twitter.com/*
@@ -56,6 +56,8 @@ const TMD = (function () {
             if (article) this.addButtonTo(article);
             let listitems = node.tagName == 'LI' && node.getAttribute('role') == 'listitem' && [node] || node.tagName == 'DIV' && node.querySelectorAll('li[role="listitem"]:not(li:has(div[data-testid="swipe-to-dismiss"]))');
             if (listitems) this.addButtonToMedia(listitems);
+            let media_list = node.tagName == 'LI' && node.getAttribute('role') == 'listitem' && node.closest('section[role="region"]:has([role="listitem"])');
+            if (media_list) this.addSelectToList(media_list);
             let photo = node.tagName == 'DIV' && node.getAttribute('data-testid') == 'swipe-to-dismiss' || node.tagName == 'MAIN' && node.getAttribute('role') == 'main' && node.querySelectorAll(".r-iyfy8q") || node.tagName == 'UL' && node.querySelectorAll(".r-deolkf");
             //console.log(photo)
             if (photo) this.addButtonToFullScreen(Array.from(photo));
@@ -63,6 +65,7 @@ const TMD = (function () {
         addButtonTo: async function (article) {
             if (article.dataset.detected) return;
             article.dataset.detected = 'true';
+
             let media_selector = [
                 'a[href*="/photo/1"]',
                 'button[data-testid="playButton"]',
@@ -165,7 +168,7 @@ const TMD = (function () {
                 }
             }
         },
-        addButtonToMedia: function(listitems) {
+        addButtonToMedia: async function(listitems) {
             listitems.forEach(li => {
                 if (li.dataset.detected) return;
                 li.dataset.detected = 'true';
@@ -245,6 +248,50 @@ const TMD = (function () {
                 if (img) img.appendChild(btn_down);
                 if (img) img.appendChild(select);
             }));
+        },
+        addSelectToList: async function (media_list) {
+            if (document.getElementById('eagle-folder-select-floating')) return;
+            let select = document.createElement("select");
+            select.id = "eagle-folder-select-floating";
+            Object.assign(select.style, {
+                position: 'fixed',
+                bottom: '100px',
+                right: '100px',
+                zIndex: '100',
+                padding: '3px 5px',
+                backgroundColor: 'rgb(79, 83, 91)',
+                color: 'white',
+                border: '1px solid #ccc',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                outline: 'none',
+                transition: 'all 0.2s ease',
+                isolation: 'isolate',
+                pointerEvents: 'auto',
+            });
+            const folders = await this.getEagleFolderList();
+
+            folders.forEach(f => {
+                const option = document.createElement("option");
+                option.value = f.id;
+                option.textContent = f.name;
+                select.appendChild(option);
+            });
+
+            let lastFolderId = GM_getValue("eagle_last_folder", select.value || "");
+
+            Array.from(select.options).forEach(option => {
+                if (option.value === lastFolderId) option.selected = true;
+            });
+
+            select.onclick = e => {
+                e.preventDefault();
+                GM_setValue("eagle_last_folder", select.value);
+            };
+            if (document.getElementById('eagle-folder-select-floating')) return;
+            media_list.appendChild(select);
         },
         getEagleFolderList: async function() {
             return new Promise(resolve => {
