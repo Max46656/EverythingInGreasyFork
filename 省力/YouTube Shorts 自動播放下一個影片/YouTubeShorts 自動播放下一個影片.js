@@ -21,10 +21,10 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BYouTubeShorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87%5D
 // @license      MPL2.0
 //
-// @version      1.5.3
+// @version      1.5.4
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
-// @require      https://update.greasyfork.org/scripts/569411/1772717/SPA%20動態路由監聽器.js#v1.0.2
+// @require      https://update.greasyfork.org/scripts/569411/1804849/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js#1.2.0
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @run-at       document-idle
