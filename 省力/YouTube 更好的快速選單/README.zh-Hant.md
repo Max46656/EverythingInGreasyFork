@@ -21,7 +21,7 @@ YouTube 在觀看影片頁面時，預設會把左側的迷你導覽選單（Min
 ### Installation
 
 1. 安裝 [Violentmonkey](https://violentmonkey.github.io) 或 Tampermonkey
-2. 安裝 [YouTube 更好的快速選單](https://greasyfork.org/scripts/xxxxxx)（安裝後請重新整理 YouTube 影片頁面）
+2. 安裝 [YouTube 更好的快速選單](https://greasyfork.org/zh-TW/scripts/566549-youtube-%E6%9B%B4%E5%A5%BD%E7%9A%84%E5%BF%AB%E9%80%9F%E9%81%B8%E5%96%AE)（安裝後請重新整理 YouTube 影片頁面）
 3. 完成！
 
 ### Usage
