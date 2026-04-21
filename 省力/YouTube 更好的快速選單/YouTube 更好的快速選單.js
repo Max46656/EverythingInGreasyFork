@@ -18,8 +18,8 @@
 // @description:es  Continuar usando el menú lateral en la página de reproducción de vídeo
 //
 // @author       Max
-// @namespace    https://github.com/Max46656
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/YouTube%20%E6%9B%B4%E5%A5%BD%E7%9A%84%E5%BF%AB%E9%80%9F%E9%81%B8%E5%96%AE
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BBug%5D%20YouTube%20%E6%9B%B4%E5%A5%BD%E7%9A%84%E5%BF%AB%E9%80%9F%E9%81%B8%E5%96%AE
 // @license      MPL2.0
 //
 // @version      2.0.0
