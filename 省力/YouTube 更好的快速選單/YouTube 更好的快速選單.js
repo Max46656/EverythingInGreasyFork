@@ -22,7 +22,8 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BBug%5D%20YouTube%20%E6%9B%B4%E5%A5%BD%E7%9A%84%E5%BF%AB%E9%80%9F%E9%81%B8%E5%96%AE
 // @license      MPL2.0
 //
-// @version      2.0.0
+// @version      2.0.2
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @match        https://www.youtube.com/*
 // @grant        GM_addStyle
 // @require      https://update.greasyfork.org/scripts/569411/1804849/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js#1.2.0
