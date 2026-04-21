@@ -28,7 +28,7 @@
  * 或是
  */
 /*
-2. 新增類之後以addRule()註冊(同樣支援鍵值對與陣列鍵值對)
+2. 新增物件之後以addRule()註冊(同樣支援鍵值對與陣列鍵值對)
 const handler = new DynamicRouteHandler();
 handler.addRule({
     matchPatterns: [/^https?:\/\/(www\.)?youtube\.com\/shorts\/.+/]
