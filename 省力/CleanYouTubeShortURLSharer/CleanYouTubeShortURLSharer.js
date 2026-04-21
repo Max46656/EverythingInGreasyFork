@@ -13,7 +13,8 @@
 // @description:de Ersetzt die YouTube-Teilen-Schaltfläche durch eine saubere Version, die einen trackingfreien Kurzlink kopiert.
 
 // @author       Max
-// @namespace    https://github.com/Max46656
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/CleanYouTubeShortURLSharer
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8
 // @license      MPL2.0
 
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
