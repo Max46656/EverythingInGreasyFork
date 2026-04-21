@@ -18,10 +18,10 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/省力/YouTube%20Shorts%20自動播放下一個影片
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[YouTubeShorts 自動播放下一個影片] Bug回報-v1.4.4
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BYouTubeShorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87%5D
 // @license      MPL2.0
 //
-// @version      1.5.2
+// @version      1.5.3
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @require      https://update.greasyfork.org/scripts/569411/1772717/SPA%20動態路由監聽器.js#v1.0.2
@@ -40,7 +40,6 @@ class ShortsAutoPlayer {
     lastProgress = 0;
 
     enabled = GM_getValue('shortsAutoNextEnabled', true);
-    nextBtnClickListener = null;
     progressObserver = null;
     toggleButton = null;
     constructor() {
@@ -64,7 +63,7 @@ class ShortsAutoPlayer {
                 lastTitle = document.title;
                 //console.log("影片標題已變更")
                 setTimeout(() => { this.newShortArrive() }, 800);
-            }
+                }
         });
 
         titleObserver.observe(document.querySelector('title'), {
@@ -230,15 +229,6 @@ class ShortsAutoPlayer {
             this.progressObserver.disconnect();
             this.progressObserver = null;
             console.info(`${GM_info.script.name} 已斷開進度條 MutationObserver`);
-        }
-
-        if (this.nextBtnClickListener) {
-            const nextBtn = document.querySelector(this.nextBtnSelector);
-            if (nextBtn) {
-                nextBtn.removeEventListener('click', this.nextBtnClickListener);
-                console.info(`${GM_info.script.name} 已移除下一部按鈕的 click 監聽器`);
-            }
-            this.nextBtnClickListener = null;
         }
 
         if (this.toggleButton?.parentElement) {
