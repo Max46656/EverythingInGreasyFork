@@ -21,7 +21,7 @@
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
 // @grant        GM.info
-// @version      1.1.3
+// @version      1.1.4
 // @downloadURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.meta.js
 // ==/UserScript==
@@ -102,14 +102,13 @@ class YouTubeShortUrlCopier {
 
     createCustomShareButton(originalButton){
         const button = document.createElement('button');
-        button.className = 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--enable-backdrop-filter-experiment';
-        button.classList.add('yt-spec-button-shape-next--segmented-start');
-        button.classList.add('yt-spec-button-shape-next--segmented-top');
+        button.className = 'ytSpecButtonShapeNextHost ytSpecButtonShapeNextTonal ytSpecButtonShapeNextMono ytSpecButtonShapeNextSizeM ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart ytSpecButtonShapeNextEnableBackdropFilterExperiment';
 
         const iconContainer = document.createElement('div');
-        iconContainer.className = 'yt-spec-button-shape-next__icon';
+        iconContainer.className = 'ytSpecButtonShapeNextIcon';
         const span = document.createElement('span');
-        span.className = 'yt-icon-shape style-scope yt-icon yt-spec-icon-shape';
+        span.style.width = '24px'
+        span.style.height = '24px'
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -131,7 +130,11 @@ class YouTubeShortUrlCopier {
         iconContainer.appendChild(span);
 
         const textDiv = document.createElement('div');
-        textDiv.textContent = this.i18n.get('share');
+        textDiv.className = 'ytSpecButtonShapeNextButtonTextContent';
+        const textSpan = document.createElement('span');
+        textSpan.className = 'ytAttributedStringHost ytAttributedStringWhiteSpaceNoWrap';
+        textSpan.textContent = this.i18n.get('share');
+        textDiv.appendChild(textSpan);
 
         button.appendChild(iconContainer);
         button.appendChild(textDiv);
@@ -146,12 +149,11 @@ class YouTubeShortUrlCopier {
 
         const wrapper = document.createElement('label');
         wrapper.id = 'yscsb-timestamp-checkbox-wrapper';
-        wrapper.className = 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--segmented-end yt-spec-button-shape-next--enable-backdrop-filter-experiment';
-        wrapper.classList.add('yt-spec-button-shape-next--segmented-end');
-        wrapper.classList.add('yt-spec-button-shape-next--segmented-bottom');
+        wrapper.className = 'ytSpecButtonShapeNextHost ytSpecButtonShapeNextTonal ytSpecButtonShapeNextMono ytSpecButtonShapeNextSizeM ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd ytSpecButtonShapeNextEnableBackdropFilterExperiment';
         wrapper.style.display = 'inline-flex';
         wrapper.style.alignItems = 'center';
         wrapper.style.cursor = 'pointer';
+        wrapper.style.width =  'auto';
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
@@ -164,7 +166,7 @@ class YouTubeShortUrlCopier {
         });
 
         const iconContainer = document.createElement('div');
-        iconContainer.className = 'yt-spec-button-shape-next__icon';
+        iconContainer.className = 'ytSpecButtonShapeNextIcon';
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', 'M12 1.5C6.2 1.5 1.5 6.2 1.5 12S6.2 22.5 12 22.5 22.5 17.8 22.5 12 17.8 1.5 12 1.5zm0 19c-4.7 0-8.5-3.8-8.5-8.5S7.3 3.5 12 3.5 20.5 7.3 20.5 12 16.7 20.5 12 20.5zm.75-13v4.25H17v1.5h-5.25V7.5h1.5z');
@@ -178,7 +180,12 @@ class YouTubeShortUrlCopier {
         iconContainer.appendChild(svg);
 
         const textDiv = document.createElement('div');
-        textDiv.textContent = this.i18n.get('timestamp');
+        textDiv.className = 'ytSpecButtonShapeNextButtonTextContent';
+        const textSpan = document.createElement('span');
+        textSpan.className = 'ytAttributedStringHost ytAttributedStringWhiteSpaceNoWrap';
+        textSpan.textContent = this.i18n.get('timestamp');
+        textSpan.role = 'text';
+        textDiv.appendChild(textSpan);
 
         wrapper.appendChild(checkbox);
         wrapper.appendChild(iconContainer);
