@@ -12,19 +12,19 @@
 // @description:de  Speichert Pixiv-Bilder und Animationen direkt in Eagle
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
-// @version      1.7.0
+// @author       Max
+// @namespace    https://github.com/Max46656
+// @license      MPL2.0
+//
+// @version      1.8.0
 // @match        https://www.pixiv.net/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=pixiv.net
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=http://tw.eagle.cool
 // @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @require      https://greasyfork.org/scripts/2963-gif-js/code/gifjs.js?version=8596
 // @run-at       document-end
-//
-// @author       Max
-// @namespace    https://github.com/Max46656
-// @license      MPL2.0
 // @downloadURL https://update.greasyfork.org/scripts/546402/Pixiv%20Save%20to%20Eagle.user.js
 // @updateURL https://update.greasyfork.org/scripts/546402/Pixiv%20Save%20to%20Eagle.meta.js
 // ==/UserScript==
@@ -169,6 +169,50 @@ class EagleAPI {
         this.blinkTimer = null;
     }
 
+    async openEagle() {
+        window.open("eagle://open", '_self');
+
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        const checkEagleStatus = () => new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                url: "http://localhost:41595/api/library/info",
+                method: "GET",
+                timeout: 100,
+                onload: (res) => {
+                    resolve(res.status);
+                },
+                onerror: (err) => {
+                    resolve(0);
+                },
+                ontimeout: () => {
+                    resolve(0);
+                }
+            });
+        });
+
+        console.log("正在檢查 Eagle App 是否已啟動...");
+
+        let attempts = 0;
+        const maxAttempts = 120;
+
+        while (attempts < maxAttempts) {
+            const eagleResponse = await checkEagleStatus();
+            //console.log(`Eagle 狀態檢查 (${attempts + 1}/${maxAttempts})：`, eagleResponse);
+
+            if (eagleResponse === 200) {
+                console.info("Eagle App 已成功啟動並就緒。");
+                return true;
+            }
+
+            await sleep(500);
+            attempts++;
+        }
+
+        console.error("Eagle App 啟動逾時，請手動確認 Eagle 是否已開啟。");
+        return false;
+    }
+
     async save(urlOrBase64, name, folderId = [], retryDelay = 3000) {
         const PREFIX = `[${GM_info.script.name}]`;
         const originalTitle = document?.title || "Pixiv";
@@ -189,7 +233,6 @@ class EagleAPI {
         new Promise((resolve) => {
             if (!document || !document.title) {
                 console.warn(`${PREFIX} 分頁已關閉，停止 Eagle 儲存重試`);
-                this.#stopTitleBlink();
                 resolve(false);
                 return;
             }
@@ -203,23 +246,21 @@ class EagleAPI {
                 onload: (r) => {
                     if (r.status >= 200 && r.status < 300) {
                         console.log(`${PREFIX} 已新增至 Eagle: ${name}`);
-                        this.#stopTitleBlink();
                         success = true;
                         resolve(true);
                     } else {
                         //console.warn(`${PREFIX} Eagle 回應非 2xx: ${r.status}`);
-                        this.#startTitleBlink(originalTitle);
                         resolve(false);
                     }
                 },
-                onerror: (err) => {
+                onerror: async (err) => {
                     //console.error(`${PREFIX} 網路錯誤:`, err);
-                    this.#startTitleBlink(originalTitle);
+                    await this.openEagle();
                     resolve(false);
                 },
-                ontimeout: () => {
+                ontimeout: async() => {
                     console.warn(`${PREFIX} 請求超時`);
-                    this.#startTitleBlink(originalTitle);
+                    await this.openEagle();
                     resolve(false);
                 }
             });
@@ -235,10 +276,8 @@ class EagleAPI {
             retryCount++;
         }
 
-        this.#stopTitleBlink();
         return success;
     }
-
 
     async getFolderList(retryDelay = 3000) {
         const PREFIX = `[${GM_info.script.name}]`;
@@ -250,7 +289,6 @@ class EagleAPI {
         new Promise((resolve) => {
             if (!document || !document.title) {
                 console.warn(`${PREFIX} 分頁已關閉，停止取得資料夾`);
-                this.#stopTitleBlink();
                 resolve([]);
                 return;
             }
@@ -270,22 +308,18 @@ class EagleAPI {
                             }
                         };
                         folders.forEach(f => appendFolder(f));
-                        this.#stopTitleBlink();
                         resolve(list);
                     } catch (e) {
                         console.error(`${PREFIX} 解析資料夾列表失敗`, e);
-                        this.#startTitleBlink(originalTitle);
                         resolve([]);
                     }
                 },
                 onerror: (err) => {
                     console.error(`${PREFIX} 取得資料夾網路錯誤:`, err);
-                    this.#startTitleBlink(originalTitle);
                     resolve([]);
                 },
                 ontimeout: () => {
                     console.warn(`${PREFIX} 取得資料夾超時`);
-                    this.#startTitleBlink(originalTitle);
                     resolve([]);
                 }
             });
@@ -298,50 +332,11 @@ class EagleAPI {
             }
             const result = await sendRequest();
             if (result.length > 0) {
-                this.#stopTitleBlink();
                 return result;
             }
             retryCount++;
         }
     }
-
-    #startTitleBlink(originalTitle) {
-
-        if (this.blinkTimer) return;
-
-        let titleElement = document.querySelector('title[data-next-head]') || document.title;
-
-        if (!titleElement) {
-            console.warn("[EagleAPI] 找不到 <title> 元素，標題閃爍放棄");
-            return;
-        }
-
-        let showError = true;
-        const originalText = titleElement.textContent || originalTitle || "Pixiv";
-
-        const update = () => {
-            if (!document || !titleElement.isConnected) {
-                this.#stopTitleBlink();
-                return;
-            }
-            titleElement.textContent = showError ? "Eagle Error" : originalText;
-            showError = !showError;
-        };
-
-        this.blinkTimer = setInterval(update, 800);
-    }
-
-    #stopTitleBlink() {
-
-        if (this.blinkTimer) {
-            clearInterval(this.blinkTimer);
-            this.blinkTimer = null;
-
-            const titleElement = document.querySelector('title[data-next-head]') || document.title;
-            titleElement.textContent = document.title;
-        }
-    }
-
 }
 
 class PixivAPI {
@@ -498,8 +493,8 @@ class ArtworkPageHandler {
 
     async init() {
         this.buttonPosition = await GM.getValue("buttonPosition", "↖");
-        await this.addToolbar();
-        await this.addImageButtons();
+        this.addImageButtons();
+        this.addToolbar();
         this.observeDomChange(() => this.addImageButtons());
     }
 
