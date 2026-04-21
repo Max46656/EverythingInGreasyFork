@@ -18,7 +18,7 @@ YouTube hides the left sidebar mini-guide when watching videos, forcing users to
 ### Installation
 
 1. Install [Violentmonkey](https://violentmonkey.github.io) or Tampermonkey
-2. Install [YouTube Better Quick Menu](https://greasyfork.org/scripts/xxxxxx)
+2. Install [YouTube Better Quick Menu](https://greasyfork.org/zh-TW/scripts/566549-youtube-%E6%9B%B4%E5%A5%BD%E7%9A%84%E5%BF%AB%E9%80%9F%E9%81%B8%E5%96%AE)
 3. Refresh any YouTube video watch page
 
 ### Usage
