@@ -13,10 +13,11 @@
 // @description:es  Guarda imágenes y animaciones de Pixiv directamente en Eagle
 //
 // @author       Max
-// @namespace    https://github.com/Max46656
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Pixiv%20Save%20to%20Eagle
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BBug%5D%20Pixiv%20%E5%9C%96%E7%89%87%E5%84%B2%E5%AD%98%E8%87%B3%20Eagle
 // @license      MPL2.0
 //
-// @version      1.8.0
+// @version      1.8.1
 // @match        https://www.pixiv.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=http://tw.eagle.cool
 // @grant        GM_registerMenuCommand
