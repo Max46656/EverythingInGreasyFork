@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.1.1
+// @version      2.1.2
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -218,7 +218,7 @@ class artScraper {
                 i--;
             }
             await this.getArtsInPage(thumbnailClass, artsClass);
-            let nextPageLink = document.querySelectorAll('a:has(polyline[points="1,2 5,6 9,2"]');
+            let nextPageLink = document.querySelectorAll('a[aria-label="Next"]');
             let retryCount = 0;
             if(nextPageLink[nextPageLink.length-1].hasAttribute("hidden")&& Number(new URL(nextPageLink[nextPageLink.length-1].href).searchParams.get('p')) === Number(document.querySelector("nav a+button span,nav [aria-label='Previous']+span")?.textContent.trim())){
                 console.info(this.getAPIMessageLocalization("lastPageReached"));
@@ -340,12 +340,12 @@ class artScraper {
     }
 
     toNextPage() {
-        const nextPageButton = document.querySelector('a:has(polyline[points="1,2 5,6 9,2"]):last-of-type');
+        const nextPageButton = document.querySelector('a[aria-label="Next"]');
         nextPageButton.click();
     }
 
     toPervPage() {
-        const pervPageButton = document.querySelector('a:has(polyline[points="1,2 5,6 9,2"]):first-of-type');
+        const pervPageButton = document.querySelector('a[aria-label="Previous"]');
         pervPageButton.click();
     }
 
