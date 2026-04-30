@@ -12,27 +12,29 @@
 
 // @match        https://twitter.com/*
 // @match        https://x.com/*
-// @require      https://update.greasyfork.org/scripts/542910/1632051/%E5%BF%AB%E6%8D%B7%E9%8D%B5%E5%87%BD%E5%BC%8F%E5%BA%AB.js
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_info
-// @version      1.3.0
+// @require      https://update.greasyfork.org/scripts/542910/1632051/%E5%BF%AB%E6%8D%B7%E9%8D%B5%E5%87%BD%E5%BC%8F%E5%BA%AB.js
+// @version      1.4.1
 
 // @author       Max
 // @namespace    https://github.com/Max46656
 // @license      MPL2.0
+// @downloadURL https://update.greasyfork.org/scripts/543615/Twitter%E5%BF%AB%E6%8D%B7%E9%8D%B5.user.js
+// @updateURL https://update.greasyfork.org/scripts/543615/Twitter%E5%BF%AB%E6%8D%B7%E9%8D%B5.meta.js
 // ==/UserScript==
 
 class TwitterShortcuts {
+    RuleVersion = 1;
+    shortcutLib = new ShortcutLibrary({
+              RuleC: false,
+              RuleR: true,
+              RuleU: ['shortcut'],
+              RuleD: false,
+          });
     constructor() {
-        this.shortcutLib = new ShortcutLibrary({
-            RuleC: false,
-            RuleR: true,
-            RuleU: ['shortcut'],
-            RuleD: false,
-        });
-
         this.twitterRules = [
             {
                 "ruleName": "返回",
@@ -58,8 +60,8 @@ class TwitterShortcuts {
                 "ruleName": "使用者資料",
                 "urlPattern": "https://x.com/.*",
                 "selectorType": "css",
-                "selector": "nav a",
-                "nthElement": 7,
+                "selector": "nav a[data-testid='AppTabBar_Profile_Link']",
+                "nthElement": 1,
                 "shortcut": "CapsLock+e",
                 "ifLinkOpen": false,
                 "isEnabled": true
@@ -68,8 +70,8 @@ class TwitterShortcuts {
                 "ruleName": "Grok",
                 "urlPattern": "https://x.com/.*",
                 "selectorType": "css",
-                "selector": "nav a",
-                "nthElement": 5,
+                "selector": "nav a[href='/i/grok']",
+                "nthElement": 1,
                 "shortcut": "CapsLock+r",
                 "ifLinkOpen": false,
                 "isEnabled": true
@@ -78,8 +80,8 @@ class TwitterShortcuts {
                 "ruleName": "搜尋",
                 "urlPattern": "https://x.com/.*",
                 "selectorType": "css",
-                "selector": "nav a",
-                "nthElement": 2,
+                "selector": "nav a[href='/explore']",
+                "nthElement": 1,
                 "shortcut": "CapsLock+t",
                 "ifLinkOpen": false,
                 "isEnabled": true
@@ -135,6 +137,26 @@ class TwitterShortcuts {
                 "isEnabled": true
             },
             {
+                "ruleName": "追蹤/退追使用者",
+                "urlPattern": "https://x.com/.*",
+                "selectorType": "css",
+                "selector": "button[data-testid$='follow']",
+                "nthElement": 1,
+                "shortcut": "CapsLock+b",
+                "ifLinkOpen": false,
+                "isEnabled": true
+            },
+            {
+                "ruleName": "時間軸更新",
+                "urlPattern": "https://x.com/.*",
+                "selectorType": "css",
+                "selector": "div[role='status'] button",
+                "nthElement": 1,
+                "shortcut": "CapsLock+z",
+                "ifLinkOpen": false,
+                "isEnabled": true
+            },
+            {
                 "ruleName": "轉推",
                 "urlPattern": "https://x.com/.*/status/[0-9]*/photo/[0-9]*",
                 "selectorType": "css",
@@ -165,26 +187,6 @@ class TwitterShortcuts {
                 "isEnabled": true
             },
             {
-                "ruleName": "追蹤/退追使用者",
-                "urlPattern": "https://x.com/.*",
-                "selectorType": "css",
-                "selector": "button[data-testid$='follow']",
-                "nthElement": 1,
-                "shortcut": "CapsLock+b",
-                "ifLinkOpen": false,
-                "isEnabled": true
-            },
-            {
-                "ruleName": "時間軸更新",
-                "urlPattern": "https://x.com/.*",
-                "selectorType": "css",
-                "selector": "div[role='status'] button",
-                "nthElement": 1,
-                "shortcut": "CapsLock+z",
-                "ifLinkOpen": false,
-                "isEnabled": true
-            },
-            {
               "ruleName": "導向貼文原po頁面",
               "urlPattern": "https://x.com/.*/status/[0-9]+.*",
               "selectorType": "css",
@@ -198,7 +200,7 @@ class TwitterShortcuts {
               "ruleName": "關閉貼文",
               "urlPattern": "https://x.com/.*/status/[0-9]*/photo/[0-9]*",
               "selectorType": "css",
-              "selector": "div[role='presentation'] button",
+              "selector": "div[role='dialog'] div[role='presentation'] button",
               "nthElement": 1,
               "shortcut": "CapsLock+q",
               "ifLinkOpen": false,
@@ -213,6 +215,7 @@ class TwitterShortcuts {
     // 返回值: void
     init() {
         this.addTwitterRules();
+        this.migrationTwitterRules();
     }
 
     // 新增Twitter規則（若規則尚未存在）
@@ -236,8 +239,42 @@ class TwitterShortcuts {
                 }
             });
         } else {
-            console.log(`${GM_info.script.name}: Twitter規則已存在，跳過新增`);
+            //console.log(`${GM_info.script.name}: Twitter規則已存在，跳過新增`);
         }
+    }
+
+    /**
+     * 遷移 Twitter (X) 相關規則
+     * 以程式碼中定義的 this.twitterRules 為準，強制更新已儲存的規則
+     * 用於規則格式變更或內容更新時
+     */
+    migrationTwitterRules() {
+        if (GM_getValue('clickRulesVersion', 0) >= this.RuleVersion) return;
+        const existingRules = this.shortcutLib.getRules();
+        let updatedCount = 0;
+
+        this.twitterRules.forEach(newRule => {
+            const existingIndex = existingRules.findIndex(existing =>
+                existing.ruleName === newRule.ruleName &&
+                existing.urlPattern === newRule.urlPattern
+            );
+
+            if (existingIndex !== -1) {
+                this.shortcutLib.updateRule(existingIndex, newRule);
+                updatedCount++;
+                console.log(`${GM_info.script.name}: 已更新規則 "${newRule.ruleName}" (index: ${existingIndex})`);
+            } else {
+                const success = this.shortcutLib.addRule(newRule);
+                if (success) {
+                    console.log(`${GM_info.script.name}: 已新增規則 "${newRule.ruleName}"`);
+                    updatedCount++;
+                }
+            }
+        });
+
+        GM_setValue('clickRulesVersion', this.RuleVersion);
+
+        console.log(`${GM_info.script.name}: Twitter 規則遷移完成，共處理 ${updatedCount} 條規則 (新版本: ${this.RuleVersion})`);
     }
 }
 
