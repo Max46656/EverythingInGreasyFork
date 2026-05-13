@@ -21,10 +21,10 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BYouTubeShorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87%5D
 // @license      MPL2.0
 //
-// @version      1.5.4
+// @version      1.5.5
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
-// @require      https://update.greasyfork.org/scripts/569411/1804849/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js#1.2.0
+// @require      https://update.greasyfork.org/scripts/569411/1804849/SPA%20動態路由監聽器.js
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @run-at       document-idle
@@ -41,6 +41,9 @@ class ShortsAutoPlayer {
 
     enabled = GM_getValue('shortsAutoNextEnabled', true);
     progressObserver = null;
+    nextBtnClickListener = null;
+    keyboardListener = null;
+    wheelListener = null;
     toggleButton = null;
     constructor() {
         this.#init();
@@ -48,6 +51,7 @@ class ShortsAutoPlayer {
 
     async #init() {
         await this.addAutoNextToggle();
+        await this.#observeNextSwitch();
         await this.newShortArrive();
         this.observeTitle();
     }
@@ -62,8 +66,8 @@ class ShortsAutoPlayer {
             if (document.title !== lastTitle) {
                 lastTitle = document.title;
                 //console.log("影片標題已變更")
-                setTimeout(() => { this.newShortArrive() }, 800);
-                }
+                setTimeout(() => { this.newShortArrive() }, 500);
+            }
         });
 
         titleObserver.observe(document.querySelector('title'), {
@@ -108,6 +112,42 @@ class ShortsAutoPlayer {
             });
         } catch (err) {
             console.warn(`${GM_info.script.name} 監聽進度條失敗`, err);
+        }
+    }
+
+    async #observeNextSwitch() {
+        try {
+            const nextBtn = await this.waitForElement(this.nextBtnSelector, 15000);
+            if (!nextBtn) {
+                console.warn(`${GM_info.script.name} 找不到下一部按鈕，稍後重試`);
+                setTimeout(() => this.#observeNextSwitch(), 100);
+                return;
+            }
+
+            console.info(`${GM_info.script.name} 找到下一部按鈕，已綁定多種切換監聽`);
+
+            this.nextBtnClickListener = () => {
+                this.progressObserver.disconnect();
+            };
+            nextBtn.addEventListener('click', this.nextBtnClickListener);
+
+            this.keyboardListener = (e) => {
+                if (e.key === 'ArrowDown') {
+                    this.progressObserver.disconnect();
+                }
+            };
+            document.addEventListener('keydown', this.keyboardListener);
+
+            this.wheelListener = (e) => {
+                if (e.deltaY > 0) {  // 向下滾動
+                    this.progressObserver.disconnect();
+                }
+            };
+            document.addEventListener('wheel', this.wheelListener, { passive: true });
+
+        } catch (err) {
+            console.warn(`${GM_info.script.name} 監聽切換事件失敗`, err);
+            setTimeout(() => this.#observeNextSwitch(), 3000);
         }
     }
 
@@ -184,7 +224,7 @@ class ShortsAutoPlayer {
             if (!this.enabled && this.progressObserver){
                 this.progressObserver.disconnect();
             }else if (this.enabled){
-                this.#observeProgress();
+                this.newShortArrive();
             }
         }catch(err){
             console.warn(`${GM_info.script.name} 切換模式失敗`, err);
@@ -229,6 +269,17 @@ class ShortsAutoPlayer {
             this.progressObserver.disconnect();
             this.progressObserver = null;
             console.info(`${GM_info.script.name} 已斷開進度條 MutationObserver`);
+        }
+        if (this.nextBtnClickListener) {
+            const btn = document.querySelector(this.nextBtnSelector);
+            if (btn) btn.removeEventListener('click', this.nextBtnClickListener);
+            this.nextBtnClickListener = null;
+
+            document.removeEventListener('keydown', this.keyboardListener);
+            this.keyboardListener = null;
+
+            document.removeEventListener('wheel', this.wheelListener);
+            this.wheelListener = null;
         }
 
         if (this.toggleButton?.parentElement) {
