@@ -21,7 +21,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BYouTubeShorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87%5D
 // @license      MPL2.0
 //
-// @version      1.5.7
+// @version      1.6.0
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @require      https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
@@ -35,9 +35,12 @@ class ShortsAutoPlayer {
     nextBtnSelector = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
     buttonbarSelector = '#button-bar';
 
-    highThreshold = 50; // 根據影片的長度與使用者的容忍值決定，越短的影片一次跨越的%就會越大，因此設定90%有可能直接跳過導致無法偵測影片再次開始，然而太低亦可能導致使用者想回到開頭時誤觸發下一部影片跳轉。
+    highThreshold = 60; // 根據影片的長度與使用者的容忍值決定，越短的影片一次跨越的%就會越大，因此設定90%有可能直接跳過導致無法偵測影片再次開始，然而太低亦可能導致使用者想回到開頭時誤觸發下一部影片跳轉。
     lowThreshold = 0;
     lastProgress = 0;
+
+    lastSwitchTime = 0;
+    switchDebounceMs = 1000;
 
     enabled = GM_getValue('shortsAutoNextEnabled', true);
     progressObserver = null;
@@ -45,6 +48,7 @@ class ShortsAutoPlayer {
     keyboardListener = null;
     wheelListener = null;
     toggleButton = null;
+    lastTitle = document.title;
     constructor() {
         this.#init();
     }
@@ -52,29 +56,6 @@ class ShortsAutoPlayer {
     async #init() {
         await this.#addAutoNextToggle();
         await this.#observeNextSwitch();
-        await this.#newShortArrive();
-        this.#observeTitle();
-    }
-
-    async #newShortArrive(){
-        await this.#observeProgress();
-    }
-
-    #observeTitle(){
-        let lastTitle = document.title;
-        const titleObserver = new MutationObserver(async () => {
-            if (document.title !== lastTitle) {
-                lastTitle = document.title;
-                //console.log("影片標題已變更")
-                setTimeout(() => { this.#newShortArrive() }, 500);
-            }
-        });
-
-        titleObserver.observe(document.querySelector('title'), {
-            childList: true,
-            subtree: true,
-            characterData: true
-        });
     }
 
     async #observeProgress() {
@@ -94,7 +75,7 @@ class ShortsAutoPlayer {
                 try{
                     const val = Number(mutation[0].target.getAttribute('aria-valuenow'));
                     //console.log(`${GM_info.script.name} 監聽進度條 ${typeof val}${val} ${typeof this.lastProgress}${this.lastProgress}`);
-                    if (this.lastProgress >= this.highThreshold && val === this.lowThreshold) {
+                    if (this.lastProgress >= this.highThreshold && val === this.lowThreshold && Date.now() - this.lastSwitchTime > this.switchDebounceMs) {
                         //console.log(`${GM_info.script.name} 影片重播`);
                         this.#clickToNext();
                     }
@@ -119,38 +100,45 @@ class ShortsAutoPlayer {
         try {
             const nextBtn = await this.#waitForElement(this.nextBtnSelector, 15000);
             if (!nextBtn) {
-                console.warn(`${GM_info.script.name} 找不到下一部按鈕，稍後重試`);
-                setTimeout(() => this.#observeNextSwitch(), 100);
+                console.warn(`${GM_info.script.name} 找不到下一部按鈕`);
                 return;
             }
 
             console.info(`${GM_info.script.name} 找到下一部按鈕，已綁定多種切換監聽`);
 
-            this.nextBtnClickListener = () => {
-                this.progressObserver.disconnect();
-                this.#observeProgress();
-            };
+            this.nextBtnClickListener = () => this.#handleNextSwitch('button-click');
             nextBtn.addEventListener('click', this.nextBtnClickListener);
 
             this.keyboardListener = (e) => {
-                if (e.key === 'ArrowDown') {
-                    this.progressObserver.disconnect();
-                    this.#observeProgress();
-
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    this.#handleNextSwitch('arrow-down');
                 }
             };
             document.addEventListener('keydown', this.keyboardListener);
 
             this.wheelListener = (e) => {
-                this.progressObserver.disconnect();
-                this.#observeProgress();
+                if (e.deltaY > 30 || e.deltaY < -30) {
+                    this.#handleNextSwitch('wheel-down');
+                }
             };
             document.addEventListener('wheel', this.wheelListener, { passive: true });
 
         } catch (err) {
             console.warn(`${GM_info.script.name} 監聽切換事件失敗`, err);
-            setTimeout(() => this.#observeNextSwitch(), 3000);
+            setTimeout(() => this.#observeNextSwitch(), 2000);
         }
+    }
+
+    #handleNextSwitch(triggerType) {
+        const now = Date.now();
+        this.lastSwitchTime = now;
+        this.lastProgress = 0;
+
+        console.info(`${GM_info.script.name} 偵測到切換事件 [${triggerType}]，記錄時間戳 ${now}，重設進度`);
+
+        setTimeout(() => {
+            this.observeProgress();
+        }, 400);
     }
 
     async #addAutoNextToggle() {
@@ -226,7 +214,7 @@ class ShortsAutoPlayer {
             if (!this.enabled && this.progressObserver){
                 this.progressObserver.disconnect();
             }else if (this.enabled){
-                this.#newShortArrive();
+                this.#observeProgress();
             }
         }catch(err){
             console.warn(`${GM_info.script.name} 切換模式失敗`, err);
@@ -235,10 +223,15 @@ class ShortsAutoPlayer {
 
     #clickToNext() {
         const button = document.querySelector(this.nextBtnSelector);
-        if (!button) return console.warn(`${GM_info.script.name} 找不到「下一部影片」按鈕`);
-        //this.lastProgress = 0;
+        if (!button) {
+            console.warn(`${GM_info.script.name} 找不到下一部按鈕`);
+            return;
+        }
+
+        this.#handleNextSwitch('auto-click');
+
         button.click();
-        console.info(`${GM_info.script.name} 已點選下一個影片 ${this.lastProgress}`);
+        console.info(`${GM_info.script.name} 已自動點選下一部影片`);
     }
 
     #waitForElement(selector, timeout = 15000) {
