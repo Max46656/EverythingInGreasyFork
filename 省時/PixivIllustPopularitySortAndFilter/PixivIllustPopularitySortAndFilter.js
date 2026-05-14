@@ -25,7 +25,6 @@
 // @grant        GM.info
 // @grant        GM_notification
 // @grant        GM.notification
-// @require      https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
 // @downloadURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.meta.js
 // ==/UserScript==
