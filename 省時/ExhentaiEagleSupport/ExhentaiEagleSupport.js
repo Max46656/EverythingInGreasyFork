@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[熊貓 Eagle 支援] 問題回報-V1.7.1
 // @license      MPL2.0
 //
-// @version      1.8.0
+// @version      1.8.1
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -36,7 +36,7 @@
 // @grant        GM_openInTab
 // @grant        GM_addStyle
 // @grant        window.close
-// @icon         https://exhentai.org/favicon.ico
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=http://tw.eagle.cool
 // @downloadURL https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.user.js
 // @updateURL https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.meta.js
 // ==/UserScript==
