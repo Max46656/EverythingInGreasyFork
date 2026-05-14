@@ -21,9 +21,10 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BYouTubeShorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87%5D
 // @license      MPL2.0
 //
-// @version      1.6.0
+// @version      1.6.1
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @require      https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -50,13 +51,12 @@ class ShortsAutoPlayer {
     toggleButton = null;
     lastTitle = document.title;
     constructor() {
-        this.#init();
+        this.#addAutoNextToggle();
+        this.#observeNextSwitch();
+        this.#observeProgress();
     }
 
-    async #init() {
-        await this.#addAutoNextToggle();
-        await this.#observeNextSwitch();
-    }
+
 
     async #observeProgress() {
         if (!this.enabled) return;
@@ -65,16 +65,15 @@ class ShortsAutoPlayer {
             if (this.progressObserver) {
                 this.progressObserver.disconnect();
                 this.progressObserver = null;
-                //console.log(`${GM_info.script.name} 重置監聽器 ${this.progressObserver}`);
+                console.log(`${GM_info.script.name} 重置監聽器 ${this.progressObserver}`);
             }
-
             const progressEl = await this.#waitForElement(this.progressSelector, 5000);
             //console.log(`${GM_info.script.name} 找到進度條` ,progressEl);
 
             this.progressObserver = new MutationObserver((mutation) => {
                 try{
                     const val = Number(mutation[0].target.getAttribute('aria-valuenow'));
-                    //console.log(`${GM_info.script.name} 監聽進度條 ${typeof val}${val} ${typeof this.lastProgress}${this.lastProgress}`);
+                    console.log(`${GM_info.script.name} 監聽進度條 ${typeof val}${val} ${typeof this.lastProgress}${this.lastProgress}`);
                     if (this.lastProgress >= this.highThreshold && val === this.lowThreshold && Date.now() - this.lastSwitchTime > this.switchDebounceMs) {
                         //console.log(`${GM_info.script.name} 影片重播`);
                         this.#clickToNext();
@@ -137,7 +136,7 @@ class ShortsAutoPlayer {
         console.info(`${GM_info.script.name} 偵測到切換事件 [${triggerType}]，記錄時間戳 ${now}，重設進度`);
 
         setTimeout(() => {
-            this.observeProgress();
+            this.#observeProgress();
         }, 400);
     }
 
