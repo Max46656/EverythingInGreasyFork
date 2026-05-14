@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.1.3
+// @version      2.1.4
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -25,6 +25,7 @@
 // @grant        GM.info
 // @grant        GM_notification
 // @grant        GM.notification
+// @require      https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
 // @downloadURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.meta.js
 // ==/UserScript==
@@ -114,18 +115,22 @@ class subStrategy extends pageStrategy{
 }
 
 class artScraper {
+    domain = 'https://www.pixiv.net';
+    allArts = [];
+    allArtsWithoutLike = new Map(); // id → element
+    discardLikesMinLimit = GM_getValue("discardLikesMinLimit",false);
+    currentArtCount=0;
     constructor(targetPages,likesMinLimit) {
-        this.domain = 'https://www.pixiv.net';
-        this.allArts = [];
-        this.allArtsWithoutLike = new Map(); // id → element
         this.targetPages = GM_getValue("targetPages", 10) || targetPages;
         this.likesMinLimit = GM_getValue("likesMinLimit", 50) || likesMinLimit;
-        this.discardLikesMinLimit = GM_getValue("discardLikesMinLimit",false);
+        // console.log(strategy.getThumbnailClass(),strategy.getArtsClass(),strategy.getRenderArtWallClass(),strategy.getButtonAtClass(),strategy.getAllButtonClass())
+        this.init();
+    }
+
+    init(){
         this.strategy = this.setStrategy();
         this.ensurePageParam();
-        this.currentArtCount=0;
-        // console.log(strategy.getThumbnailClass(),strategy.getArtsClass(),strategy.getRenderArtWallClass(),strategy.getButtonAtClass(),strategy.getAllButtonClass())
-    }
+    };
 
     setStrategy(){
         const url = self.location.href;
@@ -687,21 +692,21 @@ class artScraper {
                 "lastPageReached": `${GM_info.script.name} 已經來到最後一頁，停止排序`,
                 "apiCooldown": `請等待API冷卻時間 ${params.waitTime/1000 || ''}秒`
         },
-            "en": {
-                "sortCompleted": `Sorting completed\nTime taken: ${params.waitTime}`,
-                "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
-                "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
-                "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
+        "en": {
+            "sortCompleted": `Sorting completed\nTime taken: ${params.waitTime}`,
+            "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
+            "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
+            "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
         },
-            "ja": {
-                "sortCompleted": `ソート完了\n所要時間：${params.waitTime}`,
-                "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
-                "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
-                "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
+        "ja": {
+            "sortCompleted": `ソート完了\n所要時間：${params.waitTime}`,
+            "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
+            "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
+            "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
         }
-        };
-        return display[navigator.language]?.[word] ?? display["en"][word];
-    }
+    };
+    return display[navigator.language]?.[word] ?? display["en"][word];
+}
 
 }
 
@@ -794,6 +799,7 @@ class readingStand {
 let pageUrl = window.location.href;
 //網頁名稱不論載入或AJAX更換頁面都會在過程會觸發1次，hashchange與popstate在此無法正確處理，改使用自定事件
 let currentTitle = document.title;
+console.log(currentTitle);
 const titleDescriptor = {
     get: function() {
         return currentTitle;
@@ -813,6 +819,7 @@ window.addEventListener('titlechange', (e) => {
     if (window.location.href === pageUrl) {
         return;
     }
+    console.log(currentTitle);
     pageUrl = window.location.href;
     let johnTheHornyOne = new artScraper(10, 50);
     johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
