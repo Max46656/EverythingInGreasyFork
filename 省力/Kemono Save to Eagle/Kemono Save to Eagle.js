@@ -13,11 +13,10 @@
 // @description:es  Guarda imágenes y animaciones de Kemono directamente en Eagle
 //
 // @author       Max
-// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Kemono%20Save%20to%20Eagle
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Kemono%20儲存至%20Eagle]%20問題回報-V1.5.3
+// @namespace    https://github.com/Max46656
 // @license      MPL2.0
 //
-// @version      1.5.4
+// @version      1.6.1
 // @match        https://kemono.cr/*/user/*/post/*
 // @match        https://coomer.st/*/user/*/post/*
 // @icon         https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://tw.eagle.cool&size=64
@@ -41,7 +40,6 @@ class EagleClient {
      * @returns {Promise<boolean>} 是否最終成功
      */
     async save(urlOrBase64, name, folderId = [], retryDelay = 3000) {
-        const PREFIX = `[${GM_info.script.name}]`;
         const data = {
             url: urlOrBase64,
             name,
@@ -54,8 +52,7 @@ class EagleClient {
         let blinkInterval = null;
         const sendRequest = () => new Promise((resolve) => {
             if (!document || !document.title) {
-                console.warn(`${PREFIX} 分頁已關閉，停止 Eagle 儲存重試`);
-                this.#stopTitleBlink(originalTitle, blinkInterval);
+                console.warn(`${GM_info.script.name} 分頁已關閉，停止 Eagle 儲存重試`);
                 resolve(false);
                 return;
             }
@@ -67,23 +64,19 @@ class EagleClient {
                 timeout: 1000,
                 onload: (r) => {
                     if (r.status >= 200 && r.status < 300) {
-                        console.log(`${PREFIX} ⭘ 已新增: ${name}`);
-                        this.#stopTitleBlink(originalTitle, blinkInterval);
+                        console.log(`${GM_info.script.name} ⭘ 已新增: ${name}`);
                         resolve(true);
                     } else {
-                        console.warn(`${PREFIX} Eagle 回應非 2xx: ${r.status} ${r.statusText || '無狀態文字'}`);
-                        this.#startTitleBlink(originalTitle, blinkInterval);
+                        console.warn(`${GM_info.script.name} Eagle 回應非 2xx: ${r.status} ${r.statusText || '無狀態文字'}`);
                         resolve(false);
                     }
                 },
                 onerror: (err) => {
-                    console.error(`${PREFIX} 網路錯誤:`, err);
-                    this.#startTitleBlink(originalTitle, blinkInterval);
+                    console.error(`${GM_info.script.name} 網路錯誤:`, err);
                     resolve(false);
                 },
                 ontimeout: () => {
-                    console.warn(`${PREFIX} 請求超時`);
-                    this.#startTitleBlink(originalTitle, blinkInterval);
+                    console.warn(`${GM_info.script.name} 請求超時`);
                     resolve(false);
                 }
             });
@@ -96,32 +89,48 @@ class EagleClient {
         return true;
     }
 
-    #startTitleBlink(originalTitle, blinkIntervalRef) {
-        if (blinkIntervalRef.value) return;
+    async openEagle() {
+        window.open("eagle://open", '_self');
 
-        let showError = true;
-        blinkIntervalRef.value = setInterval(() => {
-            if (!document || !document.title) {
-                this.#stopTitleBlink(originalTitle, blinkIntervalRef);
-                return;
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        const checkEagleStatus = () => new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                url: "http://localhost:41595/api/library/info",
+                method: "GET",
+                timeout: 100,
+                onload: (res) => {
+                    resolve(res.status);
+                },
+                onerror: (err) => {
+                    resolve(0);
+                },
+                ontimeout: () => {
+                    resolve(0);
+                }
+            });
+        });
+
+        //console.log("正在檢查 Eagle App 是否已啟動...");
+
+        let attempts = 0;
+        const maxAttempts = 120;
+
+        while (attempts < maxAttempts) {
+            const eagleResponse = await checkEagleStatus();
+            //console.log(`Eagle 狀態檢查 (${attempts + 1}/${maxAttempts})：`, eagleResponse);
+
+            if (eagleResponse === 200) {
+                console.info("Eagle App 已成功啟動並就緒。");
+                return true;
             }
-            document.title = showError ? 'Eagle 儲存失敗' : originalTitle;
-            showError = !showError;
-        }, 1000);
 
-        window.addEventListener('unload', () => {
-            this.#stopTitleBlink(originalTitle, blinkIntervalRef);
-        }, { once: true });
-    }
+            await sleep(500);
+            attempts++;
+        }
 
-    #stopTitleBlink(originalTitle, blinkIntervalRef) {
-        if (blinkIntervalRef.value) {
-            clearInterval(blinkIntervalRef.value);
-            blinkIntervalRef.value = null;
-        }
-        if (originalTitle && document && document.title) {
-            document.title = originalTitle;
-        }
+        console.error("Eagle App 啟動逾時，請手動確認 Eagle 是否已開啟。");
+        return false;
     }
 
     async getFolderList() {
@@ -146,9 +155,15 @@ class EagleClient {
                         resolve([])
                     }
                 },
-                onerror: err => {
+                onerror: async (err) => {
                     console.error(err)
+                    await this.openEagle();
                     resolve([])
+                },
+                ontimeout: async () => {
+                    console.warn(`${GM_info.script.name} 請求超時`);
+                    await this.openEagle();
+                    resolve(false);
                 }
             })
         })
