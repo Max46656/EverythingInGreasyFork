@@ -53,7 +53,7 @@ class ShortsAutoPlayer {
         await this.#addAutoNextToggle();
         await this.#observeNextSwitch();
         await this.#newShortArrive();
-        //this.#observeTitle();
+        this.#observeTitle();
     }
 
     async #newShortArrive(){
