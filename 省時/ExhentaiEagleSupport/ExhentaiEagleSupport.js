@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[熊貓 Eagle 支援] 問題回報-V1.7.1
 // @license      MPL2.0
 //
-// @version      1.7.1
+// @version      1.8.0
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -37,6 +37,8 @@
 // @grant        GM_addStyle
 // @grant        window.close
 // @icon         https://exhentai.org/favicon.ico
+// @downloadURL https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.user.js
+// @updateURL https://update.greasyfork.org/scripts/502195/%E7%86%8A%E8%B2%93%20Eagle%20%E6%94%AF%E6%8F%B4.meta.js
 // ==/UserScript==
 
 class PicTrioFactory {
@@ -178,17 +180,19 @@ class AlbumPageManager {
 
                             console.log(`[AlbumPageManager] 成功取得資料夾列表（重試次數：${retryCount}）`);
                             resolve(list);
-                        } catch (e) {
-                            console.error('[AlbumPageManager] 解析資料夾列表失敗', e);
+                        } catch (err) {
+                            console.error('[AlbumPageManager] 解析資料夾列表失敗', err);
                             retry();
                         }
                     },
-                    onerror: (err) => {
+                    onerror: async (err) => {
                         console.error('[AlbumPageManager] 取得資料夾列表失敗', err);
+                        await this.openEagle();
                         retry();
                     },
-                    ontimeout: () => {
+                    ontimeout: async () => {
                         console.warn('[AlbumPageManager] 取得資料夾列表超時');
+                        await this.openEagle();
                         retry();
                     }
                 });
@@ -202,6 +206,50 @@ class AlbumPageManager {
 
             fetchFolders();
         });
+    }
+
+    async openEagle() {
+        window.open("eagle://open", '_self');
+
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        const checkEagleStatus = () => new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                url: "http://localhost:41595/api/library/info",
+                method: "GET",
+                timeout: 100,
+                onload: (res) => {
+                    resolve(res.status);
+                },
+                onerror: (err) => {
+                    resolve(0);
+                },
+                ontimeout: () => {
+                    resolve(0);
+                }
+            });
+        });
+
+        //console.log("正在檢查 Eagle App 是否已啟動...");
+
+        let attempts = 0;
+        const maxAttempts = 120;
+
+        while (attempts < maxAttempts) {
+            const eagleResponse = await checkEagleStatus();
+            //console.log(`Eagle 狀態檢查 (${attempts + 1}/${maxAttempts})：`, eagleResponse);
+
+            if (eagleResponse === 200) {
+                console.info("Eagle App 已成功啟動並就緒。");
+                return true;
+            }
+
+            await sleep(500);
+            attempts++;
+        }
+
+        console.error("Eagle App 啟動逾時，請手動確認 Eagle 是否已開啟。");
+        return false;
     }
 
     /**
@@ -285,50 +333,43 @@ class AlbumPageManager {
  * @param {HTMLSelectElement} select - 要填入資料的 select 元素
  */
     async loadFoldersIntoSelect(select) {
-        select.innerHTML = '';
-
         const errorOpt = document.createElement('option');
         errorOpt.value = '';
         errorOpt.textContent = I18n.t('eagleError');
         errorOpt.disabled = true;
         select.appendChild(errorOpt);
-        select.value = '';
 
-        const tryLoad = async () => {
-            try {
-                const folders = await this.getFolderList();
+        try {
+            const folders = await this.getFolderList();
 
-                select.innerHTML = '';
+            select.innerHTML = '';
 
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = '';
-                defaultOpt.textContent = I18n.t('selectFolder');
-                select.appendChild(defaultOpt);
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = I18n.t('selectFolder');
+            select.appendChild(defaultOpt);
 
-                folders.forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f.id;
-                    opt.textContent = f.name;
-                    if (f.id === this.selectedFolderId) opt.selected = true;
-                    select.appendChild(opt);
-                });
+            folders.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = f.name;
+                if (f.id === this.selectedFolderId) opt.selected = true;
+                select.appendChild(opt);
+            });
 
-                select.value = this.selectedFolderId || '';
+            select.value = this.selectedFolderId || '';
 
-                console.log('[AlbumPageManager] 資料夾選擇器載入完成');
+            console.log('[AlbumPageManager] 資料夾選擇器載入完成');
 
-            } catch (err) {
-                console.error('[AlbumPageManager] 資料夾載入最終失敗', err);
-                select.innerHTML = '';
-                const errOpt = document.createElement('option');
-                errOpt.value = '';
-                errOpt.textContent = I18n.t('folderLoadFailed');
-                errOpt.disabled = true;
-                select.appendChild(errOpt);
-            }
-        };
-
-        tryLoad();
+        } catch (err) {
+            console.error('[AlbumPageManager] 資料夾載入最終失敗', err);
+            select.innerHTML = '';
+            const errOpt = document.createElement('option');
+            errOpt.value = '';
+            errOpt.textContent = I18n.t('folderLoadFailed');
+            errOpt.disabled = true;
+            select.appendChild(errOpt);
+        }
 
         select.addEventListener('change', (e) => {
             this.selectedFolderId = e.target.value;
