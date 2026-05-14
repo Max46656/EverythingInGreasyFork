@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.1.4
+// @version      2.1.5
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -123,14 +123,34 @@ class artScraper {
     constructor(targetPages,likesMinLimit) {
         this.targetPages = GM_getValue("targetPages", 10) || targetPages;
         this.likesMinLimit = GM_getValue("likesMinLimit", 50) || likesMinLimit;
+        this.observePageChange();
         // console.log(strategy.getThumbnailClass(),strategy.getArtsClass(),strategy.getRenderArtWallClass(),strategy.getButtonAtClass(),strategy.getAllButtonClass())
         this.init();
     }
 
     init(){
+        readingStand.expandAllArtworks();
         this.strategy = this.setStrategy();
+        this.addStartButton(this.strategy.getButtonAtClass(), this.strategy.getAllButtonClass());
         this.ensurePageParam();
     };
+
+    observePageChange() {
+        let lastTitle = document.title;
+        const titleObserver = new MutationObserver(async () => {
+            if (document.title !== lastTitle) {
+                lastTitle = document.title;
+                    //console.log("Page changed to:", currentPath);
+                    this.init();
+            }
+        });
+
+        titleObserver.observe(document.querySelector('title'), {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+    }
 
     setStrategy(){
         const url = self.location.href;
@@ -692,97 +712,97 @@ class artScraper {
                 "lastPageReached": `${GM_info.script.name} 已經來到最後一頁，停止排序`,
                 "apiCooldown": `請等待API冷卻時間 ${params.waitTime/1000 || ''}秒`
         },
-        "en": {
-            "sortCompleted": `Sorting completed\nTime taken: ${params.waitTime}`,
-            "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
-            "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
-            "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
+                "en": {
+                    "sortCompleted": `Sorting completed\nTime taken: ${params.waitTime}`,
+                    "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
+                    "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
+                    "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
         },
-        "ja": {
-            "sortCompleted": `ソート完了\n所要時間：${params.waitTime}`,
-            "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
-            "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
-            "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
+                "ja": {
+                    "sortCompleted": `ソート完了\n所要時間：${params.waitTime}`,
+                    "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
+                    "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
+                    "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
         }
-    };
-    return display[navigator.language]?.[word] ?? display["en"][word];
-}
-
-}
-
-class customMenu {
-    constructor() {
-        this.registerMenuCommand(this);
-    }
-
-    rowsOfArtsWallMenu() {
-        const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
-        if (rows && Number.isInteger(rows) && rows > 0) {
-            GM_setValue("rowsOfArtsWall", rows);
-        } else {
-            alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
+            };
+            return display[navigator.language]?.[word] ?? display["en"][word];
         }
+
     }
 
-    toggleLeftAlignMenu() {
-        const currentState = GM_getValue("leftAlign", false);
-        const newState = !currentState;
-        GM_setValue("leftAlign", newState);
-        alert(this.getFeatureMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
-    }
+    class customMenu {
+        constructor() {
+            this.registerMenuCommand(this);
+        }
 
-    discardLikesMinLimitMenu(){
-        const currentState = GM_getValue("discardLikesMinLimit", false);
-        const newState = !currentState;
-        GM_setValue("discardLikesMinLimit", newState);
-        alert(this.getFeatureMessageLocalization("likesMinLimitDiscardMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
-    }
-
-    getFeatureMessageLocalization(word) {
-        let display = {
-            "zh-TW": {
-                "rowsOfArtsWall": "行數設定",
-                "rowsOfArtsWallPrompt": "一行顯示幾個繪畫?(請根據瀏覽器放大程度決定) 目前為：",
-                "rowsOfArtsWallMenuError": "請輸入一個數字，且不能小於1",
-                "leftAlign": "置左排版",
-                "leftAlignToggleMessage": "置左排版已",
-                "discardLikesMinLimit": "低讚數作品過濾",
-                "likesMinLimitDiscardMessage": "過濾低讚數作品（節省記憶體與加快載入）已",
-                "enabled": "啟用",
-                "disabled": "停用"
-            },
-            "en": {
-                "rowsOfArtsWall": "row setting",
-                "rowsOfArtsWallPrompt": "How many paintings should be displayed in one row?(Please decide based on browser magnification level) Currently:",
-                "rowsOfArtsWallMenuError": "Please enter a number, and it cannot be less than 1",
-                "leftAlign": "Left-aligned Layout",
-                "leftAlignToggleMessage": "Left-aligned layout is now ",
-                "discardLikesMinLimit": "Filter Low-Like Artworks",
-                "likesMinLimitDiscardMessage": "Filtering out low-like artworks (saves memory and speeds up loading) is now ",
-                "enabled": "enabled",
-                "disabled": "disabled"
-            },
-            "ja": {
-                "rowsOfArtsWall": "行設定",
-                "rowsOfArtsWallPrompt": "1 行に何枚の絵畫を表示する必要がありますか?(ブラウザの倍率レベルに基づいて決定してください) 現在：",
-                "rowsOfArtsWallMenuError": "數値を入力してください。1 未満にすることはできません",
-                "leftAlign": "左揃えレイアウト",
-                "leftAlignToggleMessage": "左揃えレイアウトが",
-                "discardLikesMinLimit": "低いいね數作品フィルタリング",
-                "likesMinLimitDiscardMessage": "低いいね數作品をフィルタリング（メモリ節約・読み込み高速化）が",
-                "enabled": "有効",
-                "disabled": "無効"
+        rowsOfArtsWallMenu() {
+            const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
+            if (rows && Number.isInteger(rows) && rows > 0) {
+                GM_setValue("rowsOfArtsWall", rows);
+            } else {
+                alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
             }
-        };
-        return display[navigator.language]?.[word] ?? display["en"][word];
-    }
+        }
 
-    registerMenuCommand(instance) {
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
-        GM_registerMenuCommand(instance.getFeatureMessageLocalization("discardLikesMinLimit"), () => instance.discardLikesMinLimitMenu());
+        toggleLeftAlignMenu() {
+            const currentState = GM_getValue("leftAlign", false);
+            const newState = !currentState;
+            GM_setValue("leftAlign", newState);
+            alert(this.getFeatureMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
+        }
+
+        discardLikesMinLimitMenu(){
+            const currentState = GM_getValue("discardLikesMinLimit", false);
+            const newState = !currentState;
+            GM_setValue("discardLikesMinLimit", newState);
+            alert(this.getFeatureMessageLocalization("likesMinLimitDiscardMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
+        }
+
+        getFeatureMessageLocalization(word) {
+            let display = {
+                "zh-TW": {
+                    "rowsOfArtsWall": "行數設定",
+                    "rowsOfArtsWallPrompt": "一行顯示幾個繪畫?(請根據瀏覽器放大程度決定) 目前為：",
+                    "rowsOfArtsWallMenuError": "請輸入一個數字，且不能小於1",
+                    "leftAlign": "置左排版",
+                    "leftAlignToggleMessage": "置左排版已",
+                    "discardLikesMinLimit": "低讚數作品過濾",
+                    "likesMinLimitDiscardMessage": "過濾低讚數作品（節省記憶體與加快載入）已",
+                    "enabled": "啟用",
+                    "disabled": "停用"
+                },
+                "en": {
+                    "rowsOfArtsWall": "row setting",
+                    "rowsOfArtsWallPrompt": "How many paintings should be displayed in one row?(Please decide based on browser magnification level) Currently:",
+                    "rowsOfArtsWallMenuError": "Please enter a number, and it cannot be less than 1",
+                    "leftAlign": "Left-aligned Layout",
+                    "leftAlignToggleMessage": "Left-aligned layout is now ",
+                    "discardLikesMinLimit": "Filter Low-Like Artworks",
+                    "likesMinLimitDiscardMessage": "Filtering out low-like artworks (saves memory and speeds up loading) is now ",
+                    "enabled": "enabled",
+                    "disabled": "disabled"
+                },
+                "ja": {
+                    "rowsOfArtsWall": "行設定",
+                    "rowsOfArtsWallPrompt": "1 行に何枚の絵畫を表示する必要がありますか?(ブラウザの倍率レベルに基づいて決定してください) 現在：",
+                    "rowsOfArtsWallMenuError": "數値を入力してください。1 未満にすることはできません",
+                    "leftAlign": "左揃えレイアウト",
+                    "leftAlignToggleMessage": "左揃えレイアウトが",
+                    "discardLikesMinLimit": "低いいね數作品フィルタリング",
+                    "likesMinLimitDiscardMessage": "低いいね數作品をフィルタリング（メモリ節約・読み込み高速化）が",
+                    "enabled": "有効",
+                    "disabled": "無効"
+                }
+            };
+            return display[navigator.language]?.[word] ?? display["en"][word];
+        }
+
+        registerMenuCommand(instance) {
+            GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
+            GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
+            GM_registerMenuCommand(instance.getFeatureMessageLocalization("discardLikesMinLimit"), () => instance.discardLikesMinLimitMenu());
+        }
     }
-}
 
 class readingStand {
     static expandAllArtworks() {
@@ -795,37 +815,5 @@ class readingStand {
     }
 }
 
-//新增對網頁網址的檢查，以確保即便標題被其他程式修改，腳本仍能意識到是否在相同頁面
-let pageUrl = window.location.href;
-//網頁名稱不論載入或AJAX更換頁面都會在過程會觸發1次，hashchange與popstate在此無法正確處理，改使用自定事件
-let currentTitle = document.title;
-console.log(currentTitle);
-const titleDescriptor = {
-    get: function() {
-        return currentTitle;
-    },
-    set: function(newTitle) {
-        delete document.title;//避免無限遞迴
-        document.title = newTitle;
-        currentTitle = newTitle;
-        Object.defineProperty(document, 'title', titleDescriptor);
-        const event = new CustomEvent('titlechange', { detail: { newTitle: newTitle } });
-        window.dispatchEvent(event);
-    }
-}
-
-window.addEventListener('titlechange', (e) => {
-    readingStand.expandAllArtworks();
-    if (window.location.href === pageUrl) {
-        return;
-    }
-    console.log(currentTitle);
-    pageUrl = window.location.href;
-    let johnTheHornyOne = new artScraper(10, 50);
-    johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
-});
-
-//初始化
 let johnTheHornyOne = new artScraper(10, 50);
-johnTheHornyOne.addStartButton(johnTheHornyOne.strategy.getButtonAtClass(), johnTheHornyOne.strategy.getAllButtonClass());
 const johnTheRestaurantWaiter = new customMenu();
