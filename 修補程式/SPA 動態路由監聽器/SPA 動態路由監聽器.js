@@ -2,8 +2,8 @@
 // @name         SPA 動態路由監聽器
 // @description  監聽 SPA 網站的動態路由變化，當網址更改時檢查進入/離開/維持特定網址模式時觸發回調
 //
-// @namespace    https://github.com/Max46656/EverythingInGreasyFork/edit/main/修補程式/SPA%20動態路由監聽器/SPA%20動態路由監聽器.js
-// @version      1.2.0
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E4%BF%AE%E8%A3%9C%E7%A8%8B%E5%BC%8F/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8
+// @version      1.3.0
 // @author       Max
 //
 // @match        *://*/*
@@ -41,6 +41,7 @@ handler.start();
 */
 
 class DynamicRouteHandler {
+    static instance = null;
     #listeners = [];
     #lastUrl = location.href;
     #intervalId = null;
@@ -48,6 +49,15 @@ class DynamicRouteHandler {
     #counter = 0; // 用於確保 ID 唯一性
 
     constructor(initialRules = null, { debug = false } = {}) {
+        if (DynamicRouteHandler.instance) {
+            if (initialRules) {
+                const rulesArray = Array.isArray(initialRules) ? initialRules : [initialRules];
+                rulesArray.forEach(rule => DynamicRouteHandler.instance.addRule(rule));
+            }
+            if (debug) DynamicRouteHandler.instance.debug = debug;
+            return DynamicRouteHandler.instance;
+        }
+
         this.debug = debug;
         this._log = this.debug ? (...args) => console.log('[DynamicRouteHandler]', ...args) : () => {};
 
@@ -55,6 +65,7 @@ class DynamicRouteHandler {
             const rulesArray = Array.isArray(initialRules) ? initialRules : [initialRules];
             rulesArray.forEach(rule => this.addRule(rule));
         }
+        DynamicRouteHandler.instance = this;
     }
 
     /**
@@ -191,4 +202,4 @@ class DynamicRouteHandler {
 }
 
 window.DynamicRouteHandler = DynamicRouteHandler;
-if(window.DynamicRouteHandler) console.log('[DynamicRouteHandler] v1.2.0 已載入');
+if(window.DynamicRouteHandler) console.log('[DynamicRouteHandler] v1.3.0 已載入');
