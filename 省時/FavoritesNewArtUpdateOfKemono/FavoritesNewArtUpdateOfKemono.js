@@ -14,7 +14,7 @@
 // @version      2.1.2
 // @match        *://kemono.cr/*
 // @match        *://coomer.st/*
-// @require      https://update.greasyfork.org/scripts/569411/1772731/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js#v1.0.3
+// @require      https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
 // @grant        none
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=kemono.cr
 // @downloadURL https://update.greasyfork.org/scripts/501634/%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0.user.js
