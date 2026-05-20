@@ -21,7 +21,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BYouTubeShorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87%5D
 // @license      MPL2.0
 //
-// @version      1.6.3
+// @version      1.6.4
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
@@ -51,9 +51,9 @@ class ShortsAutoPlayer {
     toggleButton = null;
     lastTitle = document.title;
     constructor() {
-      this.#addAutoNextToggle();
-      this.#observeNextSwitch();
-      this.#observeProgress();
+        this.#addAutoNextToggle();
+        this.#observeNextSwitch();
+        this.#observeProgress();
     }
 
     async #observeProgress() {
@@ -135,14 +135,19 @@ class ShortsAutoPlayer {
 
         //await await new Promise(resolve => setTimeout(resolve, 1000));
         //this.#observeProgress();
-        setTimeout(() => { this.#observeProgress() }, 800);
-        setTimeout(() => { this.#observeProgress() }, 2400);
+        setTimeout(() => { this.#newShortsShowUp() }, 800);
+        setTimeout(() => { this.#newShortsShowUp() }, 2400);
+    }
+
+    #newShortsShowUp(){
+        this.#observeProgress();
+        this.#addAutoNextToggle();
     }
 
     async #addAutoNextToggle() {
         if(document.querySelector("#autoNextToggle")) return;
         try {
-            const Buttonbar = await this.#waitForElement(this.buttonbarSelector, 10000);
+            const Buttonbar = await this.#waitForElement(this.buttonbarSelector, 100000);
 
             if (!Buttonbar) {
                 console.warn(`${GM_info.script.name} 找不到按鈕的父容器`);
@@ -151,7 +156,7 @@ class ShortsAutoPlayer {
 
             const wrapper = document.createElement('toggle-button-view-model');
             wrapper.style.display = 'flex';
-            wrapper。style.flexDirection = 'column';
+            wrapper.style.flexDirection = 'column';
             wrapper.style.alignItems = 'center';
             wrapper.style.gap = '4px';
             wrapper.id = 'autoNextToggle';
