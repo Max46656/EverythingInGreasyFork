@@ -21,7 +21,8 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BYouTubeShorts%20%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE%E4%B8%8B%E4%B8%80%E5%80%8B%E5%BD%B1%E7%89%87%5D
 // @license      MPL2.0
 //
-// @version      1.6.2
+// @version      1.6.3
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @match        https://www.youtube.com/*
 // @match        https://www.youtube.com/shorts/*
 // @require      https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
@@ -33,7 +34,7 @@
 class ShortsAutoPlayer {
     progressSelector = 'yt-progress-bar [role="slider"]';
     nextBtnSelector = 'button:has(path[d="M12 3a1 1 0 00-1 1v13.586l-5.293-5.293a1 1 0 10-1.414 1.414L12 21.414l7.707-7.707a1 1 0 10-1.414-1.414L13 17.586V4a1 1 0 00-1-1Z"])';
-    buttonbarSelector = '#button-bar';
+    buttonbarSelector = 'reel-action-bar-view-model';
 
     highThreshold = 60; // 根據影片的長度與使用者的容忍值決定，越短的影片一次跨越的%就會越大，因此設定90%有可能直接跳過導致無法偵測影片再次開始，然而太低亦可能導致使用者想回到開頭時誤觸發下一部影片跳轉。
     lowThreshold = 0;
@@ -141,16 +142,16 @@ class ShortsAutoPlayer {
     async #addAutoNextToggle() {
         if(document.querySelector("#autoNextToggle")) return;
         try {
-            const Buttonbar = await this.#waitForElement(this.buttonbarSelector, 20000);
+            const Buttonbar = await this.#waitForElement(this.buttonbarSelector, 10000);
 
             if (!Buttonbar) {
                 console.warn(`${GM_info.script.name} 找不到按鈕的父容器`);
                 return;
             }
 
-            const wrapper = document.createElement('div');
+            const wrapper = document.createElement('toggle-button-view-model');
             wrapper.style.display = 'flex';
-            wrapper.style.flexDirection = 'column';
+            wrapper。style.flexDirection = 'column';
             wrapper.style.alignItems = 'center';
             wrapper.style.gap = '4px';
             wrapper.id = 'autoNextToggle';
@@ -163,7 +164,7 @@ class ShortsAutoPlayer {
             toggle.style.background = this.enabled ? '#065fd4' : '#272727';
 
             const labelDiv = document.createElement('div');
-            labelDiv.className = 'yt-spec-button-shape-with-label__label';
+            labelDiv.className = 'ytSpecButtonShapeWithLabelLabel';
             labelDiv.setAttribute('aria-hidden', 'false');
 
             const span = document.createElement('span');
