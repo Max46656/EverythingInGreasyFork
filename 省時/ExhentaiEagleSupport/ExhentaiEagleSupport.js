@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[熊貓 Eagle 支援] 問題回報-V1.7.1
 // @license      MPL2.0
 //
-// @version      1.8.1
+// @version      1.9.0
 // @match        *://exhentai.org/s/*
 // @match        *://e-hentai.org/s/*
 // @match        *://exhentai.org/g/*
@@ -259,7 +259,6 @@ class AlbumPageManager {
  * @param {string} [position='right'] - 浮動選單的位置：'left' 或 'right'
  */
     async addFolderSelector(position = 'left') {
-        // ── 原位置的選擇器（inline） ──
         const container = document.querySelector('#taglist');
         if (container && !document.querySelector('#eagleFolderSelector-inline')) {
             const select = document.createElement('select');
@@ -284,7 +283,6 @@ class AlbumPageManager {
             this.loadFoldersIntoSelect(select);
         }
 
-        // ── 浮動版選擇器（fixed 定位） ──
         if (document.querySelector('#eagleFolderSelector-floating')) return;
 
         const floatingSelect = document.createElement('select');
@@ -441,6 +439,8 @@ class AlbumPageManager {
 class BatchDownloader {
     constructor() {
         this.gdtObserver = null;
+        this.lastChecked = null;
+        this.rangeIndicator = null;
     }
 
     init() {
@@ -450,6 +450,8 @@ class BatchDownloader {
         this.startGalleryObserver();
 
         this.processThumbnails();
+
+        this.bindMultipletCheckEvents();
     }
 
     injectStyles() {
@@ -498,13 +500,11 @@ class BatchDownloader {
         });
     }
 
-
     processThumbnails() {
         const unprocessedLinks = document.querySelectorAll('#gdt a[href*="hentai.org/s/"]:not(.eagle-batch-wrapper *)');
-
         if (unprocessedLinks.length === 0) return;
 
-        console.log('[BatchDownloader]',I18n.t('foundThumbs',unprocessedLinks.length));
+        console.log('[BatchDownloader]', I18n.t('foundThumbs', { count: unprocessedLinks.length }));
 
         unprocessedLinks.forEach(link => {
             const wrapper = document.createElement('div');
@@ -515,16 +515,24 @@ class BatchDownloader {
             checkbox.style.marginRight = '6px';
             checkbox.style.verticalAlign = 'middle';
 
+            let pageNumber = 'unknown';
+
+            const linkHref = link.href;
+            if (linkHref) {
+                const match = linkHref.match(/-(\d+)$/);
+                if (match) {
+                    pageNumber = match[1];
+                }
+            }
+
+            checkbox.dataset.page = pageNumber;
+
             wrapper.appendChild(checkbox);
             wrapper.appendChild(link.cloneNode(true));
             link.parentNode.replaceChild(wrapper, link);
         });
     }
 
-    /**
-     * 新增批次下載按鈕 - 浮動在頁面左下或右下角
-     * @param {string} [position='right'] - 按鈕位置：'left' 或 'right'
-     */
     addBatchButton(position = 'left') {
         if (document.querySelector('#eagleOnSPage')) return;
 
@@ -591,6 +599,84 @@ class BatchDownloader {
                 checkbox.checked = false;
             }
         });
+    }
+
+    bindMultipletCheckEvents() {
+        document.addEventListener('click', (e) => {
+            if (e.target.type !== 'checkbox') return;
+
+            const checkbox = e.target;
+
+            if (e.shiftKey && this.lastChecked) { //選擇結束
+                this.selectRange(this.lastChecked, checkbox);
+                this.showIndicator(checkbox);
+            } else if (e.shiftKey) { //選擇開始
+                this.lastChecked = checkbox;
+                this.showIndicator(this.lastChecked);
+            } else {
+                this.lastChecked = checkbox;
+                this.hideIndicator();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Shift') {
+                this.hideIndicator();
+            }
+        });
+    }
+
+    /**
+   * 在兩個 checkbox 之間勾選所有項目
+   */
+    selectRange(startCheckbox, endCheckbox) {
+        const allCheckboxes = Array.from(
+            document.querySelectorAll('.eagle-batch-wrapper input[type="checkbox"]')
+        );
+
+        const startIndex = allCheckboxes.indexOf(startCheckbox);
+        const endIndex = allCheckboxes.indexOf(endCheckbox);
+
+        if (startIndex === -1 || endIndex === -1) return;
+
+        const from = Math.min(startIndex, endIndex);
+        const to = Math.max(startIndex, endIndex);
+
+        for (let i = from; i <= to; i++) {
+            allCheckboxes[i].checked = true;
+        }
+
+        console.log(`[BatchRangeSelector] 已勾選第 ${from + 1} 到 ${to + 1} 個項目`);
+    }
+
+    showIndicator(checkbox) {
+        this.hideIndicator();
+
+        const wrapper = checkbox.closest('.eagle-batch-wrapper');
+        if (!wrapper) return;
+
+        this.rangeIndicator = document.createElement('span');
+        this.rangeIndicator.textContent = '↻';
+        Object.assign(this.rangeIndicator.style, {
+            position: 'absolute',
+            left: '28px',
+            top: '4px',
+            fontSize: '18px',
+            color: '#ff9800',
+            zIndex: '100',
+            pointerEvents: 'none',
+            animation: 'rangePop 0.3s'
+        });
+
+        wrapper.style.position = 'relative';
+        wrapper.appendChild(this.rangeIndicator);
+    }
+
+    hideIndicator() {
+        if (this.rangeIndicator) {
+            this.rangeIndicator.remove();
+            this.rangeIndicator = null;
+        }
     }
 }
 
