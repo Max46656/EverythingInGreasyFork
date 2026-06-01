@@ -22,7 +22,7 @@
 // @match        https://www.youtube.com/watch*
 // @grant        GM_setClipboard
 // @grant        GM.info
-// @version      1.1.7
+// @version      1.1.8
 // @downloadURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/535128/YouTube%20%E4%B9%BE%E6%B7%A8%E7%9F%AD%E7%B6%B2%E5%9D%80%E5%88%86%E4%BA%AB%E5%99%A8.meta.js
 // ==/UserScript==
@@ -68,21 +68,16 @@ class YouTubeShortUrlCopier {
         }
     }
 
-
     waitForShareButton(){
         this.replaceButtonInterval = setInterval(() => {
             const originalButton = document.querySelector(this.shareButtonOfVideoSelector) || document.querySelector(this.shareButtonOfShortSelector);
 
             if (originalButton){
                 clearInterval(this.replaceButtonInterval);
-                this.replaceShareButton(originalButton);
+                const wrapper = this.createSegmentedShareButtons(originalButton);
+                originalButton.parentNode.replaceChild(wrapper, originalButton);
             }
         }, this.pollInterval);
-    }
-
-    replaceShareButton(originalButton){
-        const wrapper = this.createSegmentedShareButtons(originalButton);
-        originalButton.parentNode.replaceChild(wrapper, originalButton);
     }
 
     createSegmentedShareButtons(originalButton){
@@ -389,7 +384,6 @@ class TitleObserver {
         observer.observe(titleElement, { childList: true });
     }
 }
-
 
 const johnTheTrackingStoper = new YouTubeShortUrlCopier();
 new TitleObserver(() => johnTheTrackingStoper.toggleShareButtonHandler());
