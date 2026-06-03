@@ -8,7 +8,7 @@
 // @name:de      YouTube Besserer Schnellmenü
 // @name:es      YouTube Mejor Menú Rápido
 
-// @description  在影片頁面中繼續使用側邊選單
+// @description     在影片頁面中繼續使用側邊選單
 // @description:en  Continue using the sidebar menu on the video watch page
 // @description:ja  動畫ページでもサイドバーメニューを使い続けます
 // @description:hi  वीडियो पेज पर साइडबार मेनू का उपयोग जारी रखें
@@ -18,19 +18,19 @@
 // @description:es  Continuar usando el menú lateral en la página de reproducción de vídeo
 //
 // @author       Max
-// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/YouTube%20%E6%9B%B4%E5%A5%BD%E7%9A%84%E5%BF%AB%E9%80%9F%E9%81%B8%E5%96%AE
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BBug%5D%20YouTube%20%E6%9B%B4%E5%A5%BD%E7%9A%84%E5%BF%AB%E9%80%9F%E9%81%B8%E5%96%AE
+// @namespace    https://github.com/Max46656
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      2.0.4
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
+// @version      2.0.5
 // @match        https://www.youtube.com/*
 // @grant        GM_addStyle
-// @require      https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
+// @require      https://raw.githubusercontent.com/Max46656/EverythingInGreasyFork/refs/heads/8-%E5%8A%9F%E8%83%BD%E5%BB%BA%E8%AD%B0-spa-%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8%E5%B0%8D%E6%96%BC%E5%A4%9A%E5%80%8B%E8%85%B3%E6%9C%AC%E8%AB%8B%E6%B1%82%E7%9A%84%E5%AF%A6%E4%BD%9C%E6%96%B9%E5%BC%8F/%E4%BF%AE%E8%A3%9C%E7%A8%8B%E5%BC%8F/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
 // ==/UserScript==
 
 const PREFIX = '[YouTube Mini Guide Float]';
-const TRIGGER_WIDTH = 20;
+const TRIGGER_WIDTH = 8;
+const TRIGGER_NOT_WIDTH = 80;
 
 class YTFloatMiniGuide {
     constructor() {
@@ -130,9 +130,10 @@ class YTFloatMiniGuide {
 
     handleMouseMove(e) {
         const shouldShow = e.clientX <= TRIGGER_WIDTH;
+        const shouldNotShow = e.clientX > TRIGGER_NOT_WIDTH;
         if (shouldShow && !this.isVisible) {
             this.showGuide();
-        } else if (!shouldShow && this.isVisible) {
+        } else if (shouldNotShow && this.isVisible) {
             this.hideGuide();
         }
     }
