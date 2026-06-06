@@ -26,7 +26,7 @@
 // @version      2.0.6
 // @match        https://www.youtube.com/*
 // @grant        GM_addStyle
-// @require      https://raw.githubusercontent.com/Max46656/EverythingInGreasyFork/refs/heads/8-%E5%8A%9F%E8%83%BD%E5%BB%BA%E8%AD%B0-spa-%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8%E5%B0%8D%E6%96%BC%E5%A4%9A%E5%80%8B%E8%85%B3%E6%9C%AC%E8%AB%8B%E6%B1%82%E7%9A%84%E5%AF%A6%E4%BD%9C%E6%96%B9%E5%BC%8F/%E4%BF%AE%E8%A3%9C%E7%A8%8B%E5%BC%8F/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
+// @require https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
 // ==/UserScript==
 
 const PREFIX = '[YouTube Mini Guide Float]';
