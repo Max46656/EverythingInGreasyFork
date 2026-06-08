@@ -17,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BBug%5D%20Pixiv%20%E5%9C%96%E7%89%87%E5%84%B2%E5%AD%98%E8%87%B3%20Eagle
 // @license      MPL2.0
 //
-// @version      1.9.0
+// @version      1.10.0
 // @match        https://www.pixiv.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=http://tw.eagle.cool
 // @grant        GM_registerMenuCommand
@@ -214,7 +214,7 @@ class EagleAPI {
         return false;
     }
 
-    async save(urlOrBase64, name, folderId = [], retryDelay = 3000) {
+    async save(urlOrBase64, name, folderId = [], url, retryDelay = 3000) {
         const PREFIX = `[${GM_info.script.name}]`;
         const originalTitle = document?.title || "Pixiv";
 
@@ -223,10 +223,10 @@ class EagleAPI {
             name,
             folderId: Array.isArray(folderId) ? folderId : [folderId],
             tags: [],
-            website: location.href,
+            website: `https://www.pixiv.net/artworks/${url}`,
             headers: { referer: "https://www.pixiv.net/" }
         };
-
+        console.log(JSON.stringify(data))
         let retryCount = 0;
         let success = false;
 
@@ -401,14 +401,14 @@ class IllustProcessor {
             const baseUrl = illust.urls.original;
             const url = baseUrl.replace(/_p\d\./, `_p${pageIndex}.`);
             const name = illust.pageCount > 1 ? `${baseName}_p${pageIndex}` : baseName;
-            await this.eagle.save(url, name, folderId);
+            await this.eagle.save(url, name, folderId,illustId);
             console.lnfo(I18n.t('saved') + ":", name);
         }
     }
 
     async handleSingle(illust, baseName, folderId) {
-        await this.eagle.save(illust.urls.original, baseName, folderId);
-        console.info(I18n.t('saved') + ":", baseName);
+        await this.eagle.save(illust.urls.original, baseName, folderId,illust.illustId);
+        console.info(`${I18n.t('saved')}：`, baseName);
     }
 
     async handleSet(illust, baseName, folderId) {
@@ -419,9 +419,9 @@ class IllustProcessor {
 
         for (const [i, url] of urls.entries()) {
             const name = `${baseName}_p${i}`;
-            await this.eagle.save(url, name, folderId);
+            await this.eagle.save(url, name, folderId,illust.illustId);
         }
-        console.info(I18n.t('savedMultiple', { count: illust.pageCount }));
+        console.info(`${I18n.t('savedMultiple')}`, { count: illust.pageCount });
     }
 
     async handleGif(illust, baseName, folderId) {
@@ -470,8 +470,8 @@ class IllustProcessor {
                 reader.onload = async () => {
                     const base64 = reader.result;
                     const name = `${baseName}.gif`;
-                    await this.eagle.save(base64, name, folderId);
-                    console.info(I18n.t('savedGif') + ":", name);
+                    await this.eagle.save(base64, name, folderId,illust.illustId);
+                    console.info(`${I18n.t('savedGif')}` + ":", name);
                 };
                 reader.readAsDataURL(blob);
             });
