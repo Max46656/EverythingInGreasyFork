@@ -17,7 +17,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BBug%5D%20Pixiv%20%E5%9C%96%E7%89%87%E5%84%B2%E5%AD%98%E8%87%B3%20Eagle
 // @license      MPL2.0
 //
-// @version      1.8.1
+// @version      1.9.0
 // @match        https://www.pixiv.net/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=http://tw.eagle.cool
 // @grant        GM_registerMenuCommand
@@ -63,9 +63,9 @@ class JohnThePostcardSalesman {
 
                 if (currentPath !== this.lastPath) {
                     this.lastPath = currentPath;
-                    console.log("Page changed to:", currentPath);
+                    //console.log("Page changed to:", currentPath);
 
-                    document.querySelectorAll("[id^='save-to-eagle-btn'], [id^='eagle-btn'], #save-all-to-eagle-btn").forEach(btn => {
+                    document.querySelectorAll(".eagle-download-btn, #save-all-to-eagle-btn").forEach(btn => {
                         const parent = btn.closest('.cNcUof') || btn.parentElement;
                         if (parent) parent.remove();
                     });
@@ -137,16 +137,16 @@ class JohnThePostcardSalesman {
             confirmButton.style.fontSize = "14px";
             confirmButton.onclick = async () => {
                 await GM.setValue("buttonPosition", select.value);
-                console.log("Saved position:", await GM.getValue("buttonPosition"));
+                //console.log("Saved position:", await GM.getValue("buttonPosition"));
                 container.remove();
             };
 
             select.onchange = async () => {
                 const newPosition = select.value;
                 await GM.setValue("buttonPosition", newPosition);
-                console.log("Position changed to:", newPosition);
+                console.info("Position changed to:", newPosition);
 
-                document.querySelectorAll("[id^='save-to-eagle-btn-']").forEach(btn => {
+                document.querySelectorAll("[class*='eagle-download-btn']").forEach(btn => {
                     const parent = btn.parentElement;
                     if (parent) parent.remove();
                 });
@@ -192,7 +192,7 @@ class EagleAPI {
             });
         });
 
-        console.log("正在檢查 Eagle App 是否已啟動...");
+        //console.log("正在檢查 Eagle App 是否已啟動...");
 
         let attempts = 0;
         const maxAttempts = 120;
@@ -246,7 +246,7 @@ class EagleAPI {
                 timeout: 1000,
                 onload: (r) => {
                     if (r.status >= 200 && r.status < 300) {
-                        console.log(`${PREFIX} 已新增至 Eagle: ${name}`);
+                        console.info(`${PREFIX} 已新增至 Eagle: ${name}`);
                         success = true;
                         resolve(true);
                     } else {
@@ -269,7 +269,7 @@ class EagleAPI {
 
         while (!success) {
             if (retryCount > 0) {
-                console.log(`${PREFIX} 重試第 ${retryCount} 次: ${name} (無限重試中...)`);
+                console.info(`${PREFIX} 重試第 ${retryCount} 次: ${name} (無限重試中...)`);
                 await new Promise(r => setTimeout(r, retryDelay));
             }
             const ok = await sendRequest();
@@ -328,7 +328,7 @@ class EagleAPI {
 
         while (true) {
             if (retryCount > 0) {
-                console.log(`${PREFIX} 重試取得資料夾列表 第 ${retryCount} 次 (無限重試中...)`);
+                //console.log(`${PREFIX} 重試取得資料夾列表 第 ${retryCount} 次 (無限重試中...)`);
                 await new Promise(r => setTimeout(r, retryDelay));
             }
             const result = await sendRequest();
@@ -402,13 +402,13 @@ class IllustProcessor {
             const url = baseUrl.replace(/_p\d\./, `_p${pageIndex}.`);
             const name = illust.pageCount > 1 ? `${baseName}_p${pageIndex}` : baseName;
             await this.eagle.save(url, name, folderId);
-            console.log(I18n.t('saved') + ":", name);
+            console.lnfo(I18n.t('saved') + ":", name);
         }
     }
 
     async handleSingle(illust, baseName, folderId) {
         await this.eagle.save(illust.urls.original, baseName, folderId);
-        console.log(I18n.t('saved') + ":", baseName);
+        console.info(I18n.t('saved') + ":", baseName);
     }
 
     async handleSet(illust, baseName, folderId) {
@@ -421,7 +421,7 @@ class IllustProcessor {
             const name = `${baseName}_p${i}`;
             await this.eagle.save(url, name, folderId);
         }
-        console.log(I18n.t('savedMultiple', { count: illust.pageCount }));
+        console.info(I18n.t('savedMultiple', { count: illust.pageCount }));
     }
 
     async handleGif(illust, baseName, folderId) {
@@ -471,7 +471,7 @@ class IllustProcessor {
                     const base64 = reader.result;
                     const name = `${baseName}.gif`;
                     await this.eagle.save(base64, name, folderId);
-                    console.log(I18n.t('savedGif') + ":", name);
+                    console.info(I18n.t('savedGif') + ":", name);
                 };
                 reader.readAsDataURL(blob);
             });
@@ -644,6 +644,15 @@ class OtherPagesHandler {
             this.addButtonsToThumbnails();
             this.addFolderSelect();
         });
+        document.body.addEventListener("click",async (e) => {
+            if(!e.target.closest('.eagle-download-btn'))
+                return;
+            e.preventDefault();
+            e.stopPropagation();
+            const folderId = await GM.getValue(this.storageKey);
+            await this.processor.downloadIllust(e.target.id, folderId);
+        });
+
     }
 
     /**
@@ -696,7 +705,7 @@ class OtherPagesHandler {
 
         select.onchange = async () => {
             await GM.setValue(this.storageKey, select.value);
-            console.log(`[${GM_info.script.name}] 已切換 Eagle 資料夾為：${select.value}`);
+            //console.log(`[${GM_info.script.name}] 已切換 Eagle 資料夾為：${select.value}`);
         };
 
         document.body.appendChild(select);
@@ -719,21 +728,14 @@ class OtherPagesHandler {
             }
             if (!nextDiv) continue;
 
-            const btnId = `eagle-btn-${illustId}`;
-            if (document.getElementById(btnId)) continue;
+            if (document.getElementById(illustId)) continue;
 
             const btn = document.createElement("button");
-            btn.id = btnId;
+            btn.id = illustId;
             btn.textContent = "﹀";
             btn.className = "charcoal-button eagle-download-btn";
             btn.style.cssText = "margin-top: 4px; width: 100%; padding: 6px; font-size: 14px; cursor: pointer;";
             btn.title = I18n.t('saveAllToEagle');
-            btn.onclick = async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const folderId = await GM.getValue(this.storageKey);
-                await this.processor.downloadIllust(illustId, folderId);
-            };
             nextDiv.appendChild(btn);
         }
     }
