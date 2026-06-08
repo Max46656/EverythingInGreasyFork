@@ -25,7 +25,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[連結開啟管理器] 問題回報
 // @license      MPL2.0
 //
-// @version      1.2.5
+// @version      1.3.0
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
@@ -35,7 +35,7 @@
 // ==/UserScript==
 
 class RuleManager {
-    RULE_VERSION = 3;
+    RULE_VERSION = 4;
     openRules;
     constructor() {
         this.openRules = GM_getValue('openRules', { rules: [], version: 0 });
@@ -47,6 +47,14 @@ class RuleManager {
 
         console.info(`[${GM_info.script.name}] 規則版本從 ${this.openRules.version} 升級至 ${this.RULE_VERSION}`);
 
+        if (this.openRules.version < 4) {
+            this.openRules.rules.forEach(rule => {
+                if (rule.stopIfClosest === undefined) {
+                    rule.stopIfClosest = null;
+                }
+            });
+
+        }
         if (this.openRules.version < 3) {
             this.openRules.rules.forEach(rule => {
                 if (rule.sameDomainAll === "on" && rule.targetUrl === null) {
@@ -144,8 +152,6 @@ class WebElementHandler {
                 <input type="text" id="LinkOpenManager-updateRuleName${ruleIndex}" value="${rule.ruleName || ''}">
                 <label>${i18n.urlPattern}</label>
                 <input type="text" id="LinkOpenManager-updateUrlPattern${ruleIndex}" value="${rule.urlPattern}">
-                <label>${i18n.priority}</label>
-                <input type="number" min="1" step="1" id="LinkOpenManager-updatePriority${ruleIndex}" value="${rule.priority || 1}" placeholder="${i18n.priorityPlaceholder}">
                 <div class="checkbox-container">
                     <label>${i18n.sameDomainAll}</label>
                     <input type="checkbox" id="LinkOpenManager-updateSameDomainAll${ruleIndex}" ${rule.sameDomainAll ? 'checked' : ''}>
@@ -165,6 +171,10 @@ class WebElementHandler {
                     <label>${i18n.isBackground}</label>
                     <input type="checkbox" id="LinkOpenManager-updateIsBackground${ruleIndex}" ${rule.isBackground ? 'checked' : ''}>
                 </div>
+                <label>${i18n.priority}</label>
+                <input type="number" min="1" step="1" id="LinkOpenManager-updatePriority${ruleIndex}" value="${rule.priority || 1}" placeholder="${i18n.priorityPlaceholder}">
+                <label>${i18n.stopIfClosest}</label>
+                <input type="text" id="LinkOpenManager-updateStopIfClosest${ruleIndex}" value="${rule.stopIfClosest || ''}">
                 <div class="checkbox-container">
                     <label>${i18n.enabled}</label>
                     <input type="checkbox" id="LinkOpenManager-updateEnabled${ruleIndex}" ${rule.enabled ? 'checked' : ''}>
@@ -219,8 +229,6 @@ class WebElementHandler {
                 <input type="text" id="LinkOpenManager-ruleName" placeholder="${i18n.ruleNamePlaceholder}">
                 <label>${i18n.urlPattern}</label>
                 <input type="text" id="LinkOpenManager-urlPattern" value="${window.location.origin}/.*">
-                <label>${i18n.priority}</label>
-                <input type="number" min="1" step="1" id="LinkOpenManager-priority" value="1" placeholder="${i18n.priorityPlaceholder}">
                 <div class="checkbox-container">
                     <label>${i18n.sameDomainAll}</label>
                     <input type="checkbox" id="LinkOpenManager-sameDomainAll" checked>
@@ -241,6 +249,10 @@ class WebElementHandler {
                     <label>${i18n.isBackground}</label>
                     <input type="checkbox" id="LinkOpenManager-isBackground" checked>
                 </div>
+                <label>${i18n.priority}</label>
+                <input type="number" min="1" step="1" id="LinkOpenManager-priority" value="1" placeholder="${i18n.priorityPlaceholder}">
+                <label>${i18n.stopIfClosest}</label>
+                <input type="text" id="LinkOpenManager-stopIfClosest" placeholder="${i18n.stopIfClosestPlaceholder}">
                 <div class="checkbox-container">
                     <label>${i18n.enabled}</label>
                     <input type="checkbox" id="LinkOpenManager-enabled" checked>
@@ -264,6 +276,7 @@ class WebElementHandler {
                 urlPattern: document.getElementById('LinkOpenManager-urlPattern').value.trim(),
                 sameDomainAll: document.getElementById('LinkOpenManager-sameDomainAll').checked,
                 priority:document.getElementById('LinkOpenManager-priority').value,
+                stopIfClosest:document.getElementById('LinkOpenManager-stopIfClosest').value.trim() || null,
                 isBlacklist: document.getElementById('LinkOpenManager-isBlacklist').checked,
                 targetUrl: document.getElementById('LinkOpenManager-sameDomainAll').checked ? null : document.getElementById('LinkOpenManager-targetUrl').value.trim(),
                 openMethod: document.getElementById('LinkOpenManager-openMethod').value,
@@ -281,6 +294,7 @@ class WebElementHandler {
             document.getElementById('LinkOpenManager-urlPattern').value = window.location.origin + '/.*';
             document.getElementById('LinkOpenManager-sameDomainAll').checked = true;
             document.getElementById('LinkOpenManager-priority').value = 1;
+            document.getElementById('LinkOpenManager-stopIfClosest').value = '';
             document.getElementById('LinkOpenManager-isBlacklist').checked = false;
             document.getElementById('LinkOpenManager-targetUrl').value = '';
             document.getElementById('LinkOpenManager-targetUrl').disabled = true;
@@ -337,6 +351,7 @@ class WebElementHandler {
                     urlPattern: document.getElementById(`LinkOpenManager-updateUrlPattern${globalIndex}`).value.trim(),
                     sameDomainAll: document.getElementById(`LinkOpenManager-updateSameDomainAll${globalIndex}`).checked,
                     priority:document.getElementById(`LinkOpenManager-updatePriority${globalIndex}`).value,
+                    stopIfClosest:document.getElementById(`LinkOpenManager-updateStopIfClosest${globalIndex}`).value.trim() || null,
                     isBlacklist: document.getElementById(`LinkOpenManager-updateIsBlacklist${globalIndex}`).checked,
                     targetUrl: document.getElementById(`LinkOpenManager-updateSameDomainAll${globalIndex}`).checked ? null : document.getElementById(`LinkOpenManager-updateTargetUrl${globalIndex}`)?.value.trim() ?? null,
                     openMethod: document.getElementById(`LinkOpenManager-updateOpenMethod${globalIndex}`).value,
@@ -391,12 +406,13 @@ class LinkHandler {
         document.addEventListener('click', (event) => {
             if (event.button !== 0) return;
             const a = event.target.closest('a');
+
             if (!a || !a.href) return;
             if (a.href.startsWith('javascript:') || !a.href.startsWith('http')) return;
 
             const rule = this.findMatchingRule(a.href);
 
-            if (!rule || rule.isBlacklist || rule.openMethod === "default") return;
+            if (!rule || rule.isBlacklist || rule.openMethod === "default" || rule.stopIfClosest && event.target.closest(rule.stopIfClosest)) return;
             event.preventDefault();
             event.stopImmediatePropagation();
 
@@ -462,12 +478,18 @@ class LinkHandler {
 }
 
 class I18N {
+    //supportLang :zh-TW、ja、de、es、hi、uk、cs、lt;
     static getLanguage() {
         const lang = navigator.language || navigator.userLanguage;
         if (lang.startsWith('zh')) return 'zh-TW';
         if (lang.startsWith('ja')) return 'ja';
         if (lang.startsWith('de')) return 'de';
         if (lang.startsWith('es')) return 'es';
+        if (lang.startsWith('hi')) return 'hi';
+        if (lang.startsWith('uk')) return 'uk';
+        if (lang.startsWith('cs')) return 'cs';
+        if (lang.startsWith('lt')) return 'lt';
+
         return 'en';
     }
     static i18n = {
@@ -485,6 +507,7 @@ class I18N {
             openMethod: '開啟方式：',
             isBackground: '新頁面為非活動標籤頁：',
             priority: '優先順序：',
+            stopIfClosest: '若父元素則停止',
             enabled: '規則啟用：',
             addRule: '新增規則',
             save: '儲存',
@@ -493,6 +516,7 @@ class I18N {
             urlPatternPlaceholder: '例如：https://example.com/.*',
             targetUrlPlaceholder: '例如：https://example.com/target/.*',
             priorityPlaceholder: '數字越小越優先（預設 1）',
+            stopIfClosestPlaceholder: '如果父元素包含此元素則不執行規則',
             invalidRegex: '無效的正則表達式',
             invalidPriority: '優先順序必須是正整數（≥1）',
             sameTab: '同頁開啟',
@@ -513,6 +537,7 @@ class I18N {
             openMethod: '開く方法：',
             isBackground: '新しいページを非アクティブタブ：',
             priority: '優先度：',
+            stopIfClosest: '親要素の場合停止',
             enabled: 'ルール有効：',
             addRule: 'ルールを追加',
             save: '保存',
@@ -523,6 +548,7 @@ class I18N {
             priorityPlaceholder: '数字が小さいほど優先（デフォルト1）',
             invalidRegex: '無効な正規表現',
             invalidPriority: '優先度は正の整数（≥1）でなければなりません',
+            stopIfClosestPlaceholder: '親要素がこの要素を含む場合、ルールを実行しません',
             sameTab: '同じタブで開く',
             newTab: '新しいタブで開く',
             default: 'デフォルト'
@@ -541,6 +567,7 @@ class I18N {
             openMethod: 'Open Method:',
             isBackground: 'New Page as Background Tab:',
             priority: 'Priority:',
+            stopIfClosest: 'Stop if parent element',
             enabled: 'Rule Enabled:',
             addRule: 'Add Rule',
             save: 'Save',
@@ -549,6 +576,7 @@ class I18N {
             urlPatternPlaceholder: 'e.g., https://example\\.com/.*',
             targetUrlPlaceholder: 'e.g., https://example\\.com/target/.*',
             priorityPlaceholder: 'Smaller number = higher priority (default 1)',
+            stopIfClosestPlaceholder: 'If the parent element contains this element, the rule will not be executed',
             invalidRegex: 'Invalid regular expression',
             invalidPriority: 'Priority must be a positive integer (≥1)',
             sameTab: 'Same Tab',
@@ -569,6 +597,7 @@ class I18N {
             openMethod: 'Öffnungsmethode:',
             isBackground: 'Neue Seite als Hintergrund-Tab:',
             priority: 'Priorität:',
+            stopIfClosest: 'Bei Parent-Element stoppen',
             enabled: 'Regel aktiviert:',
             addRule: 'Regel hinzufügen',
             save: 'Speichern',
@@ -577,6 +606,7 @@ class I18N {
             urlPatternPlaceholder: 'z.B. https://example\\.com/.*',
             targetUrlPlaceholder: 'z.B. https://example\\.com/target/.*',
             priorityPlaceholder: 'Kleinere Zahl = höhere Priorität (Standard 1)',
+            stopIfClosestPlaceholder: 'Wenn das Parent-Element dieses Element enthält, wird die Regel nicht ausgeführt',
             invalidRegex: 'Ungültiger regulärer Ausdruck',
             invalidPriority: 'Priorität muss eine positive Ganzzahl sein (≥1)',
             sameTab: 'Gleicher Tab',
@@ -597,6 +627,7 @@ class I18N {
             openMethod: 'ओपन विधि:',
             isBackground: 'नया पेज बैकग्राउंड टैब के रूप में:',
             priority: 'प्राथमिकता:',
+            stopIfClosest: 'पैरेंट एलिमेंट होने पर रोकें',
             enabled: 'नियम सक्षम:',
             addRule: 'नियम जोड़ें',
             save: 'सहेजें',
@@ -605,6 +636,7 @@ class I18N {
             urlPatternPlaceholder: 'उदा. https://example\\.com/.*',
             targetUrlPlaceholder: 'उदा. https://example\\.com/target/.*',
             priorityPlaceholder: 'छोटी संख्या = उच्च प्राथमिकता (डिफ़ॉल्ट 1)',
+            stopIfClosestPlaceholder: 'यदि पैरेंट एलिमेंट इस एलिमेंट को शामिल करता है तो नियम निष्पादित नहीं किया जाएगा',
             invalidRegex: 'अमान्य रेगुलर एक्सप्रेशन',
             invalidPriority: 'प्राथमिकता एक धनात्मक पूर्णांक होनी चाहिए (≥1)',
             sameTab: 'उसी टैब में',
@@ -625,6 +657,7 @@ class I18N {
             openMethod: 'Метод відкриття:',
             isBackground: 'Нова сторінка як фонова вкладка:',
             priority: 'Пріоритет:',
+            stopIfClosest: 'Зупинити якщо батьківський елемент',
             enabled: 'Правило ввімкнено:',
             addRule: 'Додати правило',
             save: 'Зберегти',
@@ -635,6 +668,7 @@ class I18N {
             priorityPlaceholder: 'Менше число = вищий пріоритет (за замовчуванням 1)',
             invalidRegex: 'Недійсний регулярний вираз',
             invalidPriority: 'Пріоритет повинен бути додатнім цілим числом (≥1)',
+            stopIfClosestPlaceholder: 'Якщо батьківський елемент містить цей елемент, правило не буде виконано',
             sameTab: 'У тій самій вкладці',
             newTab: 'У новій вкладці',
             default: 'За замовчуванням'
@@ -653,6 +687,7 @@ class I18N {
             openMethod: 'Metoda otevření:',
             isBackground: 'Nová stránka jako pozadí karta:',
             priority: 'Priorita:',
+            stopIfClosest: 'Zastavit při rodičovském prvku',
             enabled: 'Pravidlo povoleno:',
             addRule: 'Přidat pravidlo',
             save: 'Uložit',
@@ -661,6 +696,7 @@ class I18N {
             urlPatternPlaceholder: 'např. https://example\\.com/.*',
             targetUrlPlaceholder: 'např. https://example\\.com/target/.*',
             priorityPlaceholder: 'Menší číslo = vyšší priorita (výchozí 1)',
+            stopIfClosestPlaceholder: 'Pokud rodičovský prvek obsahuje tento prvek, pravidlo nebude provedeno',
             invalidRegex: 'Neplatný regulární výraz',
             invalidPriority: 'Priorita musí být kladné celé číslo (≥1)',
             sameTab: 'Stejná karta',
@@ -681,6 +717,7 @@ class I18N {
             openMethod: 'Atidarymo metodas:',
             isBackground: 'Naujas puslapis kaip foninis skirtukas:',
             priority: 'Prioritetas:',
+            stopIfClosest: 'Sustabdyti jei tėvinis elementas',
             enabled: 'Taisyklė įjungta:',
             addRule: 'Pridėti taisyklę',
             save: 'Išsaugoti',
@@ -689,6 +726,7 @@ class I18N {
             urlPatternPlaceholder: 'pvz. https://example\\.com/.*',
             targetUrlPlaceholder: 'pvz. https://example\\.com/target/.*',
             priorityPlaceholder: 'Mažesnis skaičius = aukštesnis prioritetas (numatytas 1)',
+            stopIfClosestPlaceholder: 'Jei tėvinis elementas turi šį elementą, taisyklė nebus vykdoma',
             invalidRegex: 'Neteisingas reguliarusis reiškinys',
             invalidPriority: 'Prioritetas turi būti teigiamas sveikasis skaičius (≥1)',
             sameTab: 'Tas pats skirtukas',
