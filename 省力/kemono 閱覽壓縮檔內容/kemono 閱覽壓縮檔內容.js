@@ -12,17 +12,18 @@
 // @description:cs Rozbalit obrázky ze ZIP souborů přímo do příspěvku pro okamžité zobrazení bez nutnosti stahování
 // @description:lt Išarchyvuoti paveikslėlius iš ZIP failų tiesiai į įrašą, kad būtų galima peržiūrėti be atsisiuntimo
 //
-// @author Max
-// @namespace https://github.com/Max46656
-// @supportURL https://github.com/Max46656/EverythingInGreasyFork/issues
-// @license MPL2.0
+// @author       Max
+// @namespace    https://github.com/Max46656
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
+// @license      MPL2.0
 //
-// @version 1.5.0
-// @match https://kemono.cr/*/user/*/post/*
-// @require https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
-// @grant GM_xmlhttpRequest
-// @connect self
-// @icon https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kemono.cr&size=64
+// @version      1.5.1
+// @match        https://kemono.cr/*/user/*/post/*
+// @match        https://pawchive.tld/*/user/*/post/*
+// @require      https://unpkg.com/@zip.js/zip.js@2.7.53/dist/zip-full.min.js
+// @grant        GM_xmlhttpRequest
+// @connect      self
+// @icon         https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kemono.cr&size=64
 // ==/UserScript==
 
 /**
