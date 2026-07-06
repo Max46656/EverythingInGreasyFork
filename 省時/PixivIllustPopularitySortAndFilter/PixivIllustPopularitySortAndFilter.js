@@ -12,7 +12,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=[Pixiv作品熱門程度排序與篩選器] Bug回報-v1.11.1
 // @license MPL2.0
 //
-// @version      2.1.5
+// @version      2.1.6
 // @match        https://www.pixiv.net/bookmark_new_illust.php*
 // @match        https://www.pixiv.net/users/*
 // @match        https://www.pixiv.net/tags/*
@@ -25,6 +25,8 @@
 // @grant        GM.info
 // @grant        GM_notification
 // @grant        GM.notification
+// @grant        GM_xmlhttpRequest
+// @require      https://update.greasyfork.org/scripts/569411/1824218/SPA%20%E5%8B%95%E6%85%8B%E8%B7%AF%E7%94%B1%E7%9B%A3%E8%81%BD%E5%99%A8.js
 // @downloadURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/497015/Pixiv%E4%BD%9C%E5%93%81%E7%86%B1%E9%96%80%E7%A8%8B%E5%BA%A6%E6%8E%92%E5%BA%8F%E8%88%87%E7%AF%A9%E9%81%B8%E5%99%A8.meta.js
 // ==/UserScript==
@@ -139,8 +141,8 @@ class artScraper {
         const titleObserver = new MutationObserver(async () => {
             if (document.title !== lastTitle) {
                 lastTitle = document.title;
-                    //console.log("Page changed to:", currentPath);
-                    this.init();
+                //console.log("Page changed to:", currentPath);
+                this.init();
             }
         });
 
@@ -153,7 +155,7 @@ class artScraper {
 
     setStrategy(){
         const url = self.location.href;
-        console.log(url)
+        //console.log(url)
         if (url.includes('https://www.pixiv.net/bookmark_new_illust')) {
             return new subStrategy();
         } else if (url.match(/^https:\/\/www\.pixiv\.net\/(en\/users|users)\/.*\/.*$/)) {
@@ -228,7 +230,7 @@ class artScraper {
         let page = initPage;
         for (let i = initPage; i < endPage; i++) {
             page = Number(document.querySelector("button[aria-current='true'] span,span[aria-current='page']")?.textContent);
-            console.log(page,i,endPage)
+            //console.log(page,i,endPage)
             if(page && i > page){
                 i--;
             }else if(!page || page == 0){
@@ -260,10 +262,10 @@ class artScraper {
             //console.log("this.allArtsWithoutLike.size",this.allArtsWithoutLike.size)
             if(this.allArtsWithoutLike.size >= 300){
                 while(this.allArtsWithoutLike.size > 0){
-                    //console.log("this.allArtsWithoutLike.size",this.allArtsWithoutLike.size);
                     try{
                         await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
-                    }catch (e){
+                    }catch (err){
+                        console.error(err);
                     }
                 }
             }
@@ -275,8 +277,9 @@ class artScraper {
         }
         while(this.allArtsWithoutLike.size > 0){
             try{
-                await this.executeAndcountUpSec('appendLikeElementToAllArts',()=>this.appendLikeElementToAllArts());
-            }catch (e){
+                await this.appendLikeElementToAllArts();
+            }catch (err){
+                console.error(err);
             }
         }
     }
@@ -315,7 +318,6 @@ class artScraper {
                 if (!match) continue;
 
                 const id = match[1];
-
                 if (!this.allArtsWithoutLike.has(id)) {
                     this.allArtsWithoutLike.set(id, art);
                     hasNewArt = true;
@@ -332,34 +334,43 @@ class artScraper {
     }
 
     async appendLikeElementToAllArts() {
-        this.allArtsWithoutLike = this.allArtsWithoutLike.filter(art => art !== undefined && art.getElementsByTagName('a')[0] !== undefined);
-        const entries = Array.from(this.allArtsWithoutLike.entries());
-        //console.table(entries);
-        const ids = entries.map(([id]) => id);
-        const likeCounts = await Promise.all(ids.map(id => this.fetchLikeCount(id))); //429
+        const validArts = Array.from(this.allArtsWithoutLike.values()).filter(art => art && art.getElementsByTagName('a')[0] !== undefined);
+
+        if (validArts.length === 0) {
+            this.allArtsWithoutLike = new Map();
+            return;
+        }
+
+        const ids = validArts.map(art => {
+            const href = art.getElementsByTagName('a')[0].getAttribute('href');
+            return href.match(/\/(\d+)/)?.[1];
+        }).filter(Boolean);
+
+        const likeCounts = await Promise.all(ids.map(id => this.fetchLikeCount(id)));
 
         likeCounts.forEach((likeCount, index) => {
-            const [id, art] = entries[index];
-            if (!art.getElementsByClassName('likes').length) {
-                if (this.discardLikesMinLimit && likeCount < this.likesMinLimit) return;
-                const referenceElement = art.getElementsByTagName('div')[0];
-                if (referenceElement) {
-                    const likeCountElement = document.createElement('span');
-                    likeCountElement.textContent = `${likeCount}`;
-                    likeCountElement.className = 'likes';
-                    likeCountElement.style.cssText =
-                        'text-align: center !important; padding-bottom: 20px !important; color: #0069b1 !important; font-size: 12px !important; font-weight: bold !important; text-decoration: none !important; background-color: #cef !important; background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 12 12%22><path fill=%22%230069B1%22 d=%22M9,1 C10.6568542,1 12,2.34314575 12,4 C12,6.70659075 10.1749287,9.18504759 6.52478604,11.4353705 L6.52478518,11.4353691 C6.20304221,11.6337245 5.79695454,11.6337245 5.4752116,11.4353691 C1.82507053,9.18504652 0,6.70659017 0,4 C1.1324993e-16,2.34314575 1.34314575,1 3,1 C4.12649824,1 5.33911281,1.85202454 6,2.91822994 C6.66088719,1.85202454 7.87350176,1 9,1 Z%22/></svg>") !important; background-position: center left 6px !important; background-repeat: no-repeat !important; padding: 3px 6px 3px 18px !important; border-radius: 3px !important;';
-                    referenceElement.appendChild(likeCountElement);
-                }
-                this.allArts.push({ art, likeCount });
+            const art = validArts[index];
+            if (!art) return;
+
+            if (art.getElementsByClassName('likes').length > 0) return;
+
+            if (this.discardLikesMinLimit && likeCount < this.likesMinLimit) return;
+
+            const referenceElement = art.getElementsByTagName('div')[0];
+            if (referenceElement) {
+                const likeCountElement = document.createElement('span');
+                likeCountElement.textContent = `${likeCount}`;
+                likeCountElement.className = 'likes';
+                likeCountElement.style.cssText =
+                    'text-align: center !important; padding-bottom: 20px !important; color: #0069b1 !important; font-size: 12px !important; font-weight: bold !important; text-decoration: none !important; background-color: #cef !important; background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 12 12%22><path fill=%22%230069B1%22 d=%22M9,1 C10.6568542,1 12,2.34314575 12,4 C12,6.70659075 10.1749287,9.18504759 6.52478604,11.4353705 L6.52478518,11.4353691 C6.20304221,11.6337245 5.79695454,11.6337245 5.4752116,11.4353691 C1.82507053,9.18504652 0,6.70659017 0,4 C1.1324993e-16,2.34314575 1.34314575,1 3,1 C4.12649824,1 5.33911281,1.85202454 6,2.91822994 C6.66088719,1.85202454 7.87350176,1 9,1 Z%22/></svg>") !important; background-position: center left 6px !important; background-repeat: no-repeat !important; padding: 3px 6px 3px 18px !important; border-radius: 3px !important;';
+
+                referenceElement.appendChild(likeCountElement);
             }
-            this.allArtsWithoutLike.delete(id);
+
+            this.allArts.push({ art, likeCount });
         });
-        //console.info(this.allArtsWithoutLike.size,this.allArts.length);
-        /*entries.forEach(([id]) => {
-            this.allArtsWithoutLike.delete(id);
-        });*/
-        //console.table("this.allArts",this.allArts);
+
+        // 清空待處理清單
         this.allArtsWithoutLike = new Map();
     }
 
@@ -374,9 +385,38 @@ class artScraper {
     }
 
     async fetchLikeCount(id) {
+        console.log(id);
         const response = await fetch(`https://www.pixiv.net/ajax/illust/${id}`, { credentials: 'omit' });
         const json = await response.json();
         return json.body.likeCount;
+        /*const url = `https://www.pixiv.net/ajax/illust/${id}`;
+        console.log(`[DEBUG] 正在請求 like: ${url}`);
+
+        return new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: url,
+                onload: (r) => {
+                    console.log(`[DEBUG] id=${id} 狀態碼: ${r.status}`);
+                    console.log(`[DEBUG] 回應頭:`, r.responseHeaders?.substring(0, 300));
+                    if (r.status === 429) {
+                        console.warn(`[DEBUG] 429 (×ω×)`);
+                    }
+                    try {
+                        const json = JSON.parse(r.responseText);
+                        console.log(`[DEBUG] id=${id} likeCount =`, json.body?.likeCount);
+                        resolve(json.body?.likeCount || 0);
+                    } catch (e) {
+                        console.error(`[DEBUG] JSON 解析失敗`, e);
+                        resolve(0);
+                    }
+                },
+                onerror: (e) => {
+                    console.error(`[DEBUG] 請求錯誤 id=${id}`, e);
+                    resolve(0);
+                }
+            });
+        });*/
     }
 
     async sortArts() {
@@ -622,7 +662,7 @@ class artScraper {
         }
         const artsCountElement = await this.getElementBySelector(this.strategy.getArtsCountClass());
 
-        //console.log(artsCountElement);
+        console.log(artsCountElement);
         if (artsCountElement) {
             // 刪除數字中的逗號
             const artsCountText = artsCountElement.textContent.replace(/,/g, '');
@@ -677,7 +717,7 @@ class artScraper {
         while (elements.length === 0) {
             await this.delay(50);
             elements = document.querySelectorAll(selector);
-            //console.log("selector",selector,"找不到，將重試")
+            console.log("selector",selector,"找不到，將重試")
         }
         return elements;
     }
@@ -711,97 +751,97 @@ class artScraper {
                 "lastPageReached": `${GM_info.script.name} 已經來到最後一頁，停止排序`,
                 "apiCooldown": `請等待API冷卻時間 ${params.waitTime/1000 || ''}秒`
         },
-                "en": {
-                    "sortCompleted": `Sorting completed\nTime taken: ${params.waitTime}`,
-                    "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
-                    "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
-                    "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
+            "en": {
+                "sortCompleted": `Sorting completed\nTime taken: ${params.waitTime}`,
+                "pageZeroError": `${GM_info.script.name} Triggered page 0 error, stopping sorting`,
+                "lastPageReached": `${GM_info.script.name} Reached the last page, stopping sorting`,
+                "apiCooldown": `${GM_info.script.name} Please wait for API cooldown time ${params.waitTime/1000 || ''}sec`
         },
-                "ja": {
-                    "sortCompleted": `ソート完了\n所要時間：${params.waitTime}`,
-                    "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
-                    "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
-                    "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
+            "ja": {
+                "sortCompleted": `ソート完了\n所要時間：${params.waitTime}`,
+                "pageZeroError": `${GM_info.script.name} ページ0エラーが発生しました、ソートを停止します`,
+                "lastPageReached": `${GM_info.script.name} 最後のページに到達しました、ソートを停止します`,
+                "apiCooldown": `${GM_info.script.name} APIクールダウン時間をお待ちください ${params.waitTime/1000 || ''}秒`
         }
-            };
-            return display[navigator.language]?.[word] ?? display["en"][word];
-        }
-
+        };
+        return display[navigator.language]?.[word] ?? display["en"][word];
     }
 
-    class customMenu {
-        constructor() {
-            this.registerMenuCommand(this);
-        }
+}
 
-        rowsOfArtsWallMenu() {
-            const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
-            if (rows && Number.isInteger(rows) && rows > 0) {
-                GM_setValue("rowsOfArtsWall", rows);
-            } else {
-                alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
+class customMenu {
+    constructor() {
+        this.registerMenuCommand(this);
+    }
+
+    rowsOfArtsWallMenu() {
+        const rows = parseInt(prompt(`${this.getFeatureMessageLocalization("rowsOfArtsWallPrompt")} ${GM_getValue("rowsOfArtsWall", 7)}`));
+        if (rows && Number.isInteger(rows) && rows > 0) {
+            GM_setValue("rowsOfArtsWall", rows);
+        } else {
+            alert(this.getFeatureMessageLocalization("rowsOfArtsWallMenuError"));
+        }
+    }
+
+    toggleLeftAlignMenu() {
+        const currentState = GM_getValue("leftAlign", false);
+        const newState = !currentState;
+        GM_setValue("leftAlign", newState);
+        alert(this.getFeatureMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
+    }
+
+    discardLikesMinLimitMenu(){
+        const currentState = GM_getValue("discardLikesMinLimit", false);
+        const newState = !currentState;
+        GM_setValue("discardLikesMinLimit", newState);
+        alert(this.getFeatureMessageLocalization("likesMinLimitDiscardMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
+    }
+
+    getFeatureMessageLocalization(word) {
+        let display = {
+            "zh-TW": {
+                "rowsOfArtsWall": "行數設定",
+                "rowsOfArtsWallPrompt": "一行顯示幾個繪畫?(請根據瀏覽器放大程度決定) 目前為：",
+                "rowsOfArtsWallMenuError": "請輸入一個數字，且不能小於1",
+                "leftAlign": "置左排版",
+                "leftAlignToggleMessage": "置左排版已",
+                "discardLikesMinLimit": "低讚數作品過濾",
+                "likesMinLimitDiscardMessage": "過濾低讚數作品（節省記憶體與加快載入）已",
+                "enabled": "啟用",
+                "disabled": "停用"
+            },
+            "en": {
+                "rowsOfArtsWall": "row setting",
+                "rowsOfArtsWallPrompt": "How many paintings should be displayed in one row?(Please decide based on browser magnification level) Currently:",
+                "rowsOfArtsWallMenuError": "Please enter a number, and it cannot be less than 1",
+                "leftAlign": "Left-aligned Layout",
+                "leftAlignToggleMessage": "Left-aligned layout is now ",
+                "discardLikesMinLimit": "Filter Low-Like Artworks",
+                "likesMinLimitDiscardMessage": "Filtering out low-like artworks (saves memory and speeds up loading) is now ",
+                "enabled": "enabled",
+                "disabled": "disabled"
+            },
+            "ja": {
+                "rowsOfArtsWall": "行設定",
+                "rowsOfArtsWallPrompt": "1 行に何枚の絵畫を表示する必要がありますか?(ブラウザの倍率レベルに基づいて決定してください) 現在：",
+                "rowsOfArtsWallMenuError": "數値を入力してください。1 未満にすることはできません",
+                "leftAlign": "左揃えレイアウト",
+                "leftAlignToggleMessage": "左揃えレイアウトが",
+                "discardLikesMinLimit": "低いいね數作品フィルタリング",
+                "likesMinLimitDiscardMessage": "低いいね數作品をフィルタリング（メモリ節約・読み込み高速化）が",
+                "enabled": "有効",
+                "disabled": "無効"
             }
-        }
-
-        toggleLeftAlignMenu() {
-            const currentState = GM_getValue("leftAlign", false);
-            const newState = !currentState;
-            GM_setValue("leftAlign", newState);
-            alert(this.getFeatureMessageLocalization("leftAlignToggleMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
-        }
-
-        discardLikesMinLimitMenu(){
-            const currentState = GM_getValue("discardLikesMinLimit", false);
-            const newState = !currentState;
-            GM_setValue("discardLikesMinLimit", newState);
-            alert(this.getFeatureMessageLocalization("likesMinLimitDiscardMessage") + (newState ? this.getFeatureMessageLocalization("enabled") : this.getFeatureMessageLocalization("disabled")));
-        }
-
-        getFeatureMessageLocalization(word) {
-            let display = {
-                "zh-TW": {
-                    "rowsOfArtsWall": "行數設定",
-                    "rowsOfArtsWallPrompt": "一行顯示幾個繪畫?(請根據瀏覽器放大程度決定) 目前為：",
-                    "rowsOfArtsWallMenuError": "請輸入一個數字，且不能小於1",
-                    "leftAlign": "置左排版",
-                    "leftAlignToggleMessage": "置左排版已",
-                    "discardLikesMinLimit": "低讚數作品過濾",
-                    "likesMinLimitDiscardMessage": "過濾低讚數作品（節省記憶體與加快載入）已",
-                    "enabled": "啟用",
-                    "disabled": "停用"
-                },
-                "en": {
-                    "rowsOfArtsWall": "row setting",
-                    "rowsOfArtsWallPrompt": "How many paintings should be displayed in one row?(Please decide based on browser magnification level) Currently:",
-                    "rowsOfArtsWallMenuError": "Please enter a number, and it cannot be less than 1",
-                    "leftAlign": "Left-aligned Layout",
-                    "leftAlignToggleMessage": "Left-aligned layout is now ",
-                    "discardLikesMinLimit": "Filter Low-Like Artworks",
-                    "likesMinLimitDiscardMessage": "Filtering out low-like artworks (saves memory and speeds up loading) is now ",
-                    "enabled": "enabled",
-                    "disabled": "disabled"
-                },
-                "ja": {
-                    "rowsOfArtsWall": "行設定",
-                    "rowsOfArtsWallPrompt": "1 行に何枚の絵畫を表示する必要がありますか?(ブラウザの倍率レベルに基づいて決定してください) 現在：",
-                    "rowsOfArtsWallMenuError": "數値を入力してください。1 未満にすることはできません",
-                    "leftAlign": "左揃えレイアウト",
-                    "leftAlignToggleMessage": "左揃えレイアウトが",
-                    "discardLikesMinLimit": "低いいね數作品フィルタリング",
-                    "likesMinLimitDiscardMessage": "低いいね數作品をフィルタリング（メモリ節約・読み込み高速化）が",
-                    "enabled": "有効",
-                    "disabled": "無効"
-                }
-            };
-            return display[navigator.language]?.[word] ?? display["en"][word];
-        }
-
-        registerMenuCommand(instance) {
-            GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
-            GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
-            GM_registerMenuCommand(instance.getFeatureMessageLocalization("discardLikesMinLimit"), () => instance.discardLikesMinLimitMenu());
-        }
+        };
+        return display[navigator.language]?.[word] ?? display["en"][word];
     }
+
+    registerMenuCommand(instance) {
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("rowsOfArtsWall"), () => instance.rowsOfArtsWallMenu());
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("leftAlign"), () => instance.toggleLeftAlignMenu());
+        GM_registerMenuCommand(instance.getFeatureMessageLocalization("discardLikesMinLimit"), () => instance.discardLikesMinLimitMenu());
+    }
+}
 
 class readingStand {
     static expandAllArtworks() {
