@@ -12,20 +12,20 @@
 // @description:de Ändert Bilder in Beiträgen in ein übersichtliches Raster-Layout und fügt Vollbild-Diashow hinzu
 // @description:es Cambia las imágenes de las publicaciones a un diseño en cuadrícula limpio y añade modo presentación a pantalla completa
 //
-// @version 1.1.0
+// @author       Max
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/blob/main/%E7%BE%8E%E8%A7%80/Kemono%26Coomer%20grid%20layout%20for%20post/Kemono%26Coomer%20grid%20layout%20for%20post.js
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=Kemono/Coomer%20%E8%B2%BC%E6%96%87%E7%B6%B2%E6%A0%BC%E4%BD%88%E5%B1%80
+// @license      MPL2.0
+//
+// @version 1.1.1
 // @match https://kemono.cr/*/user/*/post/*
 // @match https://coomer.st/*/user/*/post/*
 // @match https://pawchive.tld/*/user/*/post/*
-
 // @grant GM_addStyle
 // @grant GM_setValue
 // @grant GM_getValue
 // @grant GM_getValues
 // @grant GM_registerMenuCommand
-//
-// @author Max
-// @namespace https://github.com/Max46656
-// @license MPL2.0
 // ==/UserScript==
 
 class ImageGridEnhancer {
