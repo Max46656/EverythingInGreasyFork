@@ -13,8 +13,8 @@
 // @description:lt Išarchyvuoti paveikslėlius iš ZIP failų tiesiai į įrašą, kad būtų galima peržiūrėti be atsisiuntimo
 //
 // @author       Max
-// @namespace    https://github.com/Max46656
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/kemono%20%E9%96%B1%E8%A6%BD%E5%A3%93%E7%B8%AE%E6%AA%94%E5%85%A7%E5%AE%B9
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=kemono%20%E9%96%B1%E8%A6%BD%E5%A3%93%E7%B8%AE%E6%AA%94%E5%85%A7%E5%AE%B9
 // @license      MPL2.0
 //
 // @version      1.5.1
