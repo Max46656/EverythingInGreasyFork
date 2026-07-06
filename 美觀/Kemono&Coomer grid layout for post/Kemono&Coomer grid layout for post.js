@@ -12,9 +12,11 @@
 // @description:de Ändert Bilder in Beiträgen in ein übersichtliches Raster-Layout und fügt Vollbild-Diashow hinzu
 // @description:es Cambia las imágenes de las publicaciones a un diseño en cuadrícula limpio y añade modo presentación a pantalla completa
 //
-// @version 1.0.12
+// @version 1.1.0
 // @match https://kemono.cr/*/user/*/post/*
 // @match https://coomer.st/*/user/*/post/*
+// @match https://pawchive.tld/*/user/*/post/*
+
 // @grant GM_addStyle
 // @grant GM_setValue
 // @grant GM_getValue
