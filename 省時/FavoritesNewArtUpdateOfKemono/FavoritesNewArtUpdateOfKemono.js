@@ -11,7 +11,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5B%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
-// @version      2.2.2
+// @version      2.2.3
 // @match        *://kemono.cr/*
 // @match        *://coomer.st/*
 // @match        *://pawchive.tld/*
@@ -46,7 +46,7 @@ class ArtistUpdateCatcher {
         cards = Array.from(document.querySelectorAll('a.user-card'));
         const invalidCards = cards.filter(card => !card.href);
 
-        if (invalidCards.length > 0) {
+        if (invalidCards.length > 0 || cards.length == 0) {
             if (attempt >= maxAttempts) {
                 console.warn(`${GM_info.script.name} 有效卡片數量一直為 0，已達最大重試次數`);
                 return;
