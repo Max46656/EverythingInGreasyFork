@@ -11,7 +11,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5B%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
-// @version      2.2.3
+// @version      2.2.4
 // @match        *://kemono.cr/*
 // @match        *://coomer.st/*
 // @match        *://pawchive.tld/*
@@ -82,39 +82,39 @@ class ArtistUpdateCatcher {
             creatorPostsApi ='https://coomer.st/api/v1' + cleanUrl + '/posts';
             creatorInfoApi = 'https://coomer.st/api/v1' + cleanUrl + '/profile';
         }
-        try {
-            const postsResponse = await fetch(creatorPostsApi, {
-                headers: {
-                    'Accept': 'text/css'
-                }
-            });
-            if (!postsResponse.ok) {
-                await this.delay(2000);
-                return this.fetchUpdateArticles(url);
+
+        const postsResponse = await fetch(creatorPostsApi, {
+            headers: {
+                'Accept': 'text/css'
             }
-            const posts = await postsResponse.json();
-            if (posts.length === 0) {
-                return articles;
+        });
+        if (!postsResponse.ok) {
+            await this.delay(2000);
+            return this.fetchUpdateArticles(url);
+        }
+        const posts = await postsResponse.json();
+        if (posts.length === 0) {
+            return articles;
+        }
+
+        const lastPostTime = new Date(posts[0].published || posts[0].added).getTime();
+        const beforeTimeRange = lastPostTime - this.timeRange;
+
+        const newerPosts = posts.filter(post => {
+            const postTime = new Date(post.published || post.added).getTime();
+            return postTime >= beforeTimeRange;
+        });
+
+        const infoResponse = await fetch(creatorInfoApi, {
+            headers: {
+                'Accept': 'text/css'
             }
+        });
+        const info = await infoResponse.json();
+        const userName = info.name;
 
-            const lastPostTime = new Date(posts[0].published || posts[0].added).getTime();
-            const beforeTimeRange = lastPostTime - this.timeRange;
-
-            const newerPosts = posts.filter(post => {
-                const postTime = new Date(post.published || post.added).getTime();
-                return postTime >= beforeTimeRange;
-            });
-
-            const infoResponse = await fetch(creatorInfoApi, {
-                headers: {
-                    'Accept': 'text/css'
-                }
-            });
-            const info = await infoResponse.json();
-            const userName = info.name;
-
-            for (let post of newerPosts) {
-
+        for (let post of newerPosts) {
+            try {
                 const articleId = post.id;
                 const service = post.service;
                 const user = post.user;
@@ -150,14 +150,14 @@ class ArtistUpdateCatcher {
                   </a>
                   <time class="timestamp" datetime=${timestamp}></time>
               </article>`;
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(articleHtml, 'text/html');
-                const articleElement = doc.body.firstChild;
-                articles.push(articleElement);
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(articleHtml, 'text/html');
+                  const articleElement = doc.body.firstChild;
+                  articles.push(articleElement);
+              } catch (error) {
+                  console.error(`獲取作品 ${url} 失敗:`, error);
+              }
             }
-        } catch (error) {
-            console.error(`獲取作品 ${url} 失敗:`, error);
-        }
         return articles;
     }
 
