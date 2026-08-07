@@ -11,7 +11,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5B%E6%9C%80%E6%84%9B%E3%80%8C%E6%96%B0%E4%BD%9C%E5%93%81%E3%80%8D%E6%9B%B4%E6%96%B0%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
-// @version      2.2.4
+// @version      2.3.0
 // @match        *://kemono.cr/*
 // @match        *://coomer.st/*
 // @match        *://pawchive.tld/*
@@ -150,14 +150,14 @@ class ArtistUpdateCatcher {
                   </a>
                   <time class="timestamp" datetime=${timestamp}></time>
               </article>`;
-                  const parser = new DOMParser();
-                  const doc = parser.parseFromString(articleHtml, 'text/html');
-                  const articleElement = doc.body.firstChild;
-                  articles.push(articleElement);
-              } catch (error) {
-                  console.error(`獲取作品 ${url} 失敗:`, error);
-              }
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(articleHtml, 'text/html');
+                const articleElement = doc.body.firstChild;
+                articles.push(articleElement);
+            } catch (error) {
+                console.error(`獲取作品 ${url} 失敗:`, error);
             }
+        }
         return articles;
     }
 
@@ -372,67 +372,7 @@ class ArtistUpdateCatcher {
 
 }
 
-class PageIndicatorObserver {
-    selector;
-    checkInterval;
-    pageIndicator = null;
-    retryInterval = null;
-    observer = null;
-
-    constructor(selector, checkInterval = 1000) {
-        this.selector = selector;
-        this.checkInterval = checkInterval;
-        this.init();
-    }
-
-    init() {
-        this.retryInterval = setInterval(() => {
-            this.pageIndicator = document.querySelector(this.selector);
-            if (this.pageIndicator) {
-                clearInterval(this.retryInterval);
-                this.setupObserver();
-            } else {
-                console.log(`${this.selector} 頁數顯示器未獲取`);
-            }
-        }, this.checkInterval);
-    }
-
-    setupObserver() {
-        if (!this.pageIndicator) return;
-
-        console.log("pageIndicator:", this.pageIndicator);
-
-        this.observer = new MutationObserver((mutationsList) => {
-            mutationsList.forEach((mutation) => {
-                //console.log("翻頁偵測:，");
-                this.stop();
-                window.location.reload();
-            });
-        });
-
-        const observerOptions = {
-            subtree: true,
-            characterData: true,
-        };
-
-        this.observer.observe(this.pageIndicator, observerOptions);
-    }
-
-    stop() {
-        if (this.retryInterval) {
-            clearInterval(this.retryInterval);
-            this.retryInterval = null;
-        }
-        if (this.observer) {
-            this.observer.disconnect();
-            this.observer = null;
-        }
-        //console.log("停止觀察");
-    }
-}
-
 let johnTheLibrarian;
-let johnThePageTurner;
 
 const routeHandler = new window.DynamicRouteHandler({
     matchPatterns: [/.*\/favorites(\/artists)?/],
@@ -440,13 +380,14 @@ const routeHandler = new window.DynamicRouteHandler({
     onEnter: () => {
         console.log("進入 favorites");
         johnTheLibrarian = new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
-        johnThePageTurner = new PageIndicatorObserver("#paginator-top", 500);
     },
     onLeave: () => {
         console.info("離開 favorites → 清理");
-        johnThePageTurner.stop();
-        johnThePageTurner = null;
         johnTheLibrarian = null;
+    },
+    onRefresh: () => {
+        johnTheLibrarian = null;
+        johnTheLibrarian = new ArtistUpdateCatcher(1000, 4,24*60*60*1000);
     }
 });
 
