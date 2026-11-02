@@ -18,12 +18,13 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork
-// @version      1.1.0
+// @version      1.2.0
 //
 // @match        https://kemono.cr/fanbox/user/*
 // @match        https://kemono.cr/patreon/user/*
 // @grant        GM.xmlHttpRequest
 // @grant        GM_addStyle
+// @icon         https://a.favicon.im/pawchive.st
 // @run-at       document-idle
 // @connect      pawchive.pw
 // @license      MPL-2.0
