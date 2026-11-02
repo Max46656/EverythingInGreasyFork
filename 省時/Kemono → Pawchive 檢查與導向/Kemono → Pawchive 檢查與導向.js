@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name   Kemono → Pawchive 檢查與導向
-// @name:en      Kemono → Pawchive Checker
-// @name:ja      Kemono → Pawchive チェッカー
-// @name:hi      Kemono → Pawchive चेकर
-// @name:de      Kemono → Pawchive Prüfer
-// @name:cs      Kemono → Pawchive Kontrolor
-// @name:lt      Kemono → Pawchive Tikrintuvas
-// @name:es      Verificador Kemono → Pawchive
+// @name   Kemono ⇒ Pawchive 檢查與導向
+// @name:en      Kemono ⇒ Pawchive Checker
+// @name:ja      Kemono ⇒ Pawchive チェッカー
+// @name:hi      Kemono ⇒ Pawchive चेकर
+// @name:de      Kemono ⇒ Pawchive Prüfer
+// @name:cs      Kemono ⇒ Pawchive Kontrolor
+// @name:lt      Kemono ⇒ Pawchive Tikrintuvas
+// @name:es      Verificador Kemono ⇒ Pawchive
 // @description      在 kemono.cr 的 fanbox/patreon 作者與貼文頁檢查 pawchive.pw 對應頁面是否存在，顯示右下角狀態按鈕，點擊後導向。
 // @description:en   Check if corresponding pawchive.pw page exists for kemono.cr fanbox/patreon user & post pages, show floating status button and redirect on click.
 // @description:ja   kemono.cr の fanbox/patreon ユーザーおよび投稿ページに対応する pawchive.pw ページが存在するかを確認し、右下にステータスボタンを表示してクリックでリダイレクトします。
@@ -18,7 +18,7 @@
 //
 // @author       Max
 // @namespace    https://github.com/Max46656/EverythingInGreasyFork
-// @version      1.0.0
+// @version      1.1.0
 //
 // @match        https://kemono.cr/fanbox/user/*
 // @match        https://kemono.cr/patreon/user/*
@@ -31,7 +31,7 @@
 // ==/UserScript==
 
 /**
- * Kemono → Pawchive 存在檢查與導向管理器
+ * Kemono ⇒ Pawchive 存在檢查與導向管理器
  * 負責解析當前頁面、檢查 pawchive.pw 對應狀態、顯示浮動按鈕並處理導向
  */
 class KemonoToPawchiveChecker {
@@ -106,8 +106,8 @@ class KemonoToPawchiveChecker {
         bottom: 24px;
         right: 24px;
         z-index: 99999;
-        min-width: 120px;
-        padding: 10px 16px;
+        min-width: 10px;
+        padding: 4px 6px;
         border: none;
         border-radius: 8px;
         font-size: 14px;
@@ -138,7 +138,7 @@ class KemonoToPawchiveChecker {
     `);
   }
 
-  /**
+/**
    * 建立右下角浮動按鈕
    */
   createButton() {
@@ -146,9 +146,15 @@ class KemonoToPawchiveChecker {
     this.button.id = 'k2p-checker-btn';
     this.button.type = 'button';
     this.button.dataset.status = 'checking';
-    this.button.textContent = 'Checking…';
     this.button.title = 'Checking pawchive.pw…';
     this.button.addEventListener('click', () => this.handleClick());
+
+    this.button.innerHTML = `
+      <span>⇒</span>
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAQMAAACQp+OdAAAABlBMVEX////+/v46op6MAAAAAXRSTlMAQObYZgAAAMVJREFUeNqF0c0JRCEMBOARDx4tIY0sWFos7ZViCR49iNlko+zPO+zA4AdBIghLgyeOjTR/kdcG3VD+ooAXWMGVV5CquHglgzReWS4HKYJilhf6G4MdpbNUREWTjUsEBqobgCwgKIKjaefBUPg+AAYruHpRtA98h/ywe44sDakqWFGaTaTDNidFMJDIiIaiSAZRZEVQTEM00CeSoyErVnnjOqggAwk2JnyUh0NCBZLBX7yBdAA6iAfhAHz7QTrIcyMeoAN4AoU31mkaAn/yAAAAAElFTkSuQmCC" alt="Pawchive" width="16" height="16" style="vertical-align:middle;margin-right:6px;border-radius:2px;">
+      <span>↺</span>
+    `;
+
     document.body.appendChild(this.button);
   }
 
@@ -210,17 +216,20 @@ class KemonoToPawchiveChecker {
   /**
    * 依狀態更新按鈕外觀與文字
    */
-  updateButton() {
+updateButton() {
     if (!this.button) return;
 
     const map = {
       [KemonoToPawchiveChecker.STATUS.FOUND]: {
-        title: '對應頁面存在，點擊導向 pawchive.pw'
+        icon: '⭘',
+        title: '對應頁面存在，點選導向 pawchive.pw'
       },
       [KemonoToPawchiveChecker.STATUS.INCOMPLETE]: {
-        title: '作者頁存在但此貼文不存在，點擊仍可導向'
+        icon: '🛆',
+        title: '作者頁存在但此貼文不存在，點選仍可導向'
       },
       [KemonoToPawchiveChecker.STATUS.MISSING]: {
+        icon: '✕',
         title: '對應頁面不存在'
       }
     };
@@ -228,6 +237,12 @@ class KemonoToPawchiveChecker {
     const info = map[this.status] || map[KemonoToPawchiveChecker.STATUS.MISSING];
     this.button.dataset.status = this.status;
     this.button.title = info.title;
+
+    this.button.innerHTML = `
+      <span>⇒</span>
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAQMAAACQp+OdAAAABlBMVEX////+/v46op6MAAAAAXRSTlMAQObYZgAAAMVJREFUeNqF0c0JRCEMBOARDx4tIY0sWFos7ZViCR49iNlko+zPO+zA4AdBIghLgyeOjTR/kdcG3VD+ooAXWMGVV5CquHglgzReWS4HKYJilhf6G4MdpbNUREWTjUsEBqobgCwgKIKjaefBUPg+AAYruHpRtA98h/ywe44sDakqWFGaTaTDNidFMJDIiIaiSAZRZEVQTEM00CeSoyErVnnjOqggAwk2JnyUh0NCBZLBX7yBdAA6iAfhAHz7QTrIcyMeoAN4AoU31mkaAn/yAAAAAElFTkSuQmCC" alt="Pawchive" width="16" height="16" style="vertical-align:middle;margin-right:6px;border-radius:2px;">
+      <span>${info.icon}</span>
+    `;
   }
 
   /**
