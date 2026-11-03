@@ -11,7 +11,7 @@
 // @namespace   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Media%20Eagle%20Downloader
 // @supportURL  https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Twitter 媒體Eagle保存] 問題回報-v2.3.0
 //
-// @version     2.5.0
+// @version     2.5.1
 // @match       https://twitter.com/*
 // @match       https://x.com/*
 // @match       https://mobile.twitter.com/*
@@ -31,10 +31,10 @@
 
 const filename = 'twitter_{user-name}(@{user-id})_{date-time}_{status-id}_{file-type}';
 
-const TMD = (function () {
+const TMD = (function() {
     let lang, host, history, show_sensitive, is_tweetdeck;
     return {
-        init: async function () {
+        init: async function() {
             GM_registerMenuCommand((this.language[navigator.language] || this.language.en).settings, this.settings);
             lang = this.language[document.querySelector('html').lang] || this.language.en;
 
@@ -48,7 +48,11 @@ const TMD = (function () {
             show_sensitive = GM_getValue('show_sensitive', false);
             document.head.insertAdjacentHTML('beforeend', '<style>' + this.css + (show_sensitive ? this.css_ss : '') + '</style>');
             let observer = new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(node => this.detect(node))));
-            observer.observe(document.body, {childList: true, subtree: true, attributes: true});
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true
+            });
         },
         detect: function(node) {
             let article = node.tagName == 'ARTICLE' && node || node.tagName == 'DIV' && (node.querySelector('article') || node.closest('article'));
@@ -62,19 +66,21 @@ const TMD = (function () {
             //console.log(photo)
             if (photo) this.addButtonToFullScreen(Array.from(photo));
         },
-        addButtonTo: async function (article) {
+        addButtonTo: async function(article) {
             if (article.dataset.detected) return;
             article.dataset.detected = 'true';
 
             let media_selector = [
                 'a[href*="/photo/1"]',
                 'button[data-testid="playButton"]',
+                'div[tabindex="-1"]:has(img[src*="tweet_video_thumb"])',
                 'a[href="/settings/content_you_see"]', //hidden content
                 'div.media-image-container', // for tweetdeck
                 'div.media-preview-container', // for tweetdeck
                 'div[aria-labelledby]>div:first-child>div[role="button"][tabindex="0"]' //for audio (experimental)
             ];
             let media = article.querySelector(media_selector.join(','));
+            //console.log(article,media)
             if (media) {
                 let status_id = article.querySelector('a[href*="/status/"]').href.split('/status/').pop().split('/').shift();
                 let btn_group = article.querySelector('div[role="group"]:last-of-type, ul.tweet-actions, ul.tweet-detail-actions');
@@ -85,7 +91,7 @@ const TMD = (function () {
                 select.style.padding = "5px";
                 select.style.fontSize = "14px";
 
-                let lastFolderId = GM_getValue("eagle_last_folder",select.value);
+                let lastFolderId = GM_getValue("eagle_last_folder", select.value);
 
                 const folders = await this.getEagleFolderList();
                 folders.forEach(f => {
@@ -97,7 +103,9 @@ const TMD = (function () {
                 });
                 select.onclick = e => {
                     e.preventDefault();
-                    GM_setValue("eagle_last_folder", select.value);
+                    if (select.value !== "") {
+                        GM_setValue("eagle_last_folder", select.value);
+                    }
                 }
                 btn_down.querySelector('button').removeAttribute('disabled');
                 if (is_tweetdeck) {
@@ -113,7 +121,7 @@ const TMD = (function () {
                 btn_group.insertBefore(btn_down, btn_share.nextSibling);
                 article.onkeydown = (e) => this.keydown(e, btn_down, status_id, is_exist);
                 btn_down.onclick = () => {
-                    if(GM_getValue("update_select") === true) GM_setValue("eagle_last_folder", select.value);
+                    if (GM_getValue("update_select") === true && select.value !== "") GM_setValue("eagle_last_folder", select.value);
                     this.clickDownload(btn_down, status_id, is_exist);
                 }
                 if (show_sensitive) {
@@ -126,14 +134,14 @@ const TMD = (function () {
             if (imgs.length > 1) {
                 let status_id = article.querySelector('a[href*="/status/"]').href.split('/status/').pop().split('/').shift();
                 let btn_group = article.querySelector('div.r-3o4zer');
-                for(let img of imgs){
+                for (let img of imgs) {
                     let select = document.createElement("select");
                     select.classList.add("eagle-folder-select");
                     select.style.padding = "5px";
                     select.style.fontSize = "14px";
-                    let lastFolderId = GM_getValue("eagle_last_folder",select.value);
+                    let lastFolderId = GM_getValue("eagle_last_folder", select.value);
                     let folders = await this.getEagleFolderList();
-                    for(let folder of folders){
+                    for (let folder of folders) {
                         const option = document.createElement("option");
                         option.value = folder.id;
                         option.textContent = folder.name;
@@ -142,7 +150,9 @@ const TMD = (function () {
                     }
                     select.onclick = e => {
                         e.preventDefault();
-                        GM_setValue("eagle_last_folder", select.value);
+                        if (select.value !== "") {
+                            GM_setValue("eagle_last_folder", select.value);
+                        }
                     }
 
                     let index = img.href.split('/status/').pop().split('/').pop();
@@ -154,15 +164,15 @@ const TMD = (function () {
                     img.parentNode.appendChild(btn_down);
                     btn_down.onclick = e => {
                         e.preventDefault();
-                        if (GM_getValue("update_select") === true){
+                        if (GM_getValue("update_select") === true && select.value !== "") {
                             GM_setValue("eagle_last_folder", select.value);
                             let selects = Array.from(document.getElementsByClassName("eagle-folder-select"))
-                            selects.forEach( s => {
+                            selects.forEach(s => {
                                 for (let option of s.options) option.selected = (option.value === select.value);
                             });
                         }
                         this.clickDownload(btn_down, status_id, is_exist, index);
-                        console.log("clickDownload",{btn_down, status_id, is_exist, index})
+                        //console.log("clickDownload",{btn_down, status_id, is_exist, index})
                     };
                     btn_down.parentElement.appendChild(select);
                 }
@@ -182,7 +192,7 @@ const TMD = (function () {
                 btn_down.classList.add('tmd-down', 'tmd-media');
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
                 let btn_nav = document.querySelector("a[href$='analytics']")?.parentElement;
-                if(btn_nav) btn_nav.appendChild(btn_down);
+                if (btn_nav) btn_nav.appendChild(btn_down);
                 li.appendChild(btn_down);
                 btn_down.onclick = e => {
                     e.preventDefault();
@@ -190,7 +200,7 @@ const TMD = (function () {
                 }
             });
         },
-        addButtonToFullScreen: async function (photo) {
+        addButtonToFullScreen: async function(photo) {
             await Promise.all(photo.map(async (li, index) => {
                 if (li.dataset.detected) return;
                 li.dataset.detected = 'true';
@@ -205,7 +215,7 @@ const TMD = (function () {
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
 
                 let select = document.createElement("select");
-                select.classList.add("eagle-folder-select");
+                select.classList.add("eagle-folder-select-photo");
                 select.style.padding = "5px";
                 select.style.fontSize = "14px";
                 select.style.marginLeft = "5px";
@@ -228,10 +238,10 @@ const TMD = (function () {
                 li.appendChild(btn_down);
                 btn_down.onclick = e => {
                     e.preventDefault();
-                    if (GM_getValue("update_select") === true){
+                    if (GM_getValue("update_select") === true && select.value !== "") {
                         GM_setValue("eagle_last_folder", select.value);
-                        let selects = Array.from(document.getElementsByClassName("eagle-folder-select"));
-                        selects.forEach( s => {
+                        let selects = Array.from(document.getElementsByClassName("eagle-folder-select-photo"));
+                        selects.forEach(s => {
                             for (let option of s.options) option.selected = (option.value === select.value);
                         });
                     }
@@ -241,7 +251,9 @@ const TMD = (function () {
 
                 select.onclick = e => {
                     e.preventDefault();
-                    GM_setValue("eagle_last_folder", select.value);
+                    if (select.value !== "") {
+                        GM_setValue("eagle_last_folder", select.value);
+                    }
                 };
 
                 let img = li.querySelector("img");
@@ -249,7 +261,7 @@ const TMD = (function () {
                 if (img) img.appendChild(select);
             }));
         },
-        addSelectToList: async function (media_list) {
+        addSelectToList: async function(media_list) {
             if (document.getElementById('eagle-folder-select-floating')) return;
             let select = document.createElement("select");
             select.id = "eagle-folder-select-floating";
@@ -288,7 +300,9 @@ const TMD = (function () {
 
             select.onclick = e => {
                 e.preventDefault();
-                GM_setValue("eagle_last_folder", select.value);
+                if (select.value !== "") {
+                    GM_setValue("eagle_last_folder", select.value);
+                }
             };
             if (document.getElementById('eagle-folder-select-floating')) return;
             media_list.appendChild(select);
@@ -303,7 +317,10 @@ const TMD = (function () {
                             const folders = JSON.parse(res.responseText).data || []
                             const list = []
                             const appendFolder = (f, prefix = "") => {
-                                list.push({ id: f.id, name: prefix + f.name })
+                                list.push({
+                                    id: f.id,
+                                    name: prefix + f.name
+                                })
                                 if (f.children && f.children.length) {
                                     f.children.forEach(c => appendFolder(c, "└── " + prefix))
                                 }
@@ -322,10 +339,10 @@ const TMD = (function () {
                 })
             })
         },
-        keydown: async function (event, btn, status_id, is_exist, index) {
+        keydown: async function(event, btn, status_id, is_exist, index) {
             if (event.key === ";") this.clickDownload(btn, status_id, is_exist, index);
         },
-        clickDownload: async function (btn, status_id, is_exist, index) {
+        clickDownload: async function(btn, status_id, is_exist, index) {
             if (btn.classList.contains('loading')) return;
             //console.log("clickDownload",{btn, status_id, is_exist, index})
             this.status(btn, 'loading');
@@ -334,7 +351,23 @@ const TMD = (function () {
             let json = await this.fetchJson(status_id);
             let tweet = json.legacy;
             let user = json.core.user_results.result.legacy;
-            let invalid_chars = {'\\': '＼', '\/': '／', '\|': '｜', '<': '＜', '>': '＞', ':': '：', '*': '＊', '?': '？', '"': '＂', '\u200b': '', '\u200c': '', '\u200d': '', '\u2060': '', '\ufeff': '', '🔞': ''};
+            let invalid_chars = {
+                '\\': '＼',
+                '\/': '／',
+                '\|': '｜',
+                '<': '＜',
+                '>': '＞',
+                ':': '：',
+                '*': '＊',
+                '?': '？',
+                '"': '＂',
+                '\u200b': '',
+                '\u200c': '',
+                '\u200d': '',
+                '\u2060': '',
+                '\ufeff': '',
+                '🔞': ''
+            };
             let datetime = out.match(/{date-time(-local)?:[^{}]+}/) ? out.match(/{date-time(?:-local)?:([^{}]+)}/)[1].replace(/[\\/|<>*?:"]/g, v => invalid_chars[v]) : 'YYYYMMDD-hhmmss';
             let info = {};
             info['status-id'] = status_id;
@@ -384,7 +417,7 @@ const TMD = (function () {
                 this.status(btn, 'failed', 'MEDIA_NOT_FOUND');
             }
         },
-        status: function (btn, css, title, style) {
+        status: function(btn, css, title, style) {
             if (css) {
                 btn.classList.remove('download', 'completed', 'loading', 'failed');
                 btn.classList.add(css);
@@ -392,7 +425,7 @@ const TMD = (function () {
             if (title) btn.title = title;
             if (style) btn.style.cssText = style;
         },
-        settings: async function () {
+        settings: async function() {
             const $element = (parent, tag, style, content, css) => {
                 let el = document.createElement(tag);
                 if (style) el.style.cssText = style;
@@ -473,39 +506,39 @@ const TMD = (function () {
                 wapper.remove();
             };
         },
-        fetchJson: async function (status_id) {
+        fetchJson: async function(status_id) {
             let base_url = `https://${host}/i/api/graphql/NmCeCgkVlsRGS1cAwqtgmw/TweetDetail`;
             let variables = {
-                "focalTweetId":status_id,
-                "with_rux_injections":false,
-                "includePromotedContent":true,
-                "withCommunity":true,
-                "withQuickPromoteEligibilityTweetFields":true,
-                "withBirdwatchNotes":true,
-                "withVoice":true,
-                "withV2Timeline":true
+                "focalTweetId": status_id,
+                "with_rux_injections": false,
+                "includePromotedContent": true,
+                "withCommunity": true,
+                "withQuickPromoteEligibilityTweetFields": true,
+                "withBirdwatchNotes": true,
+                "withVoice": true,
+                "withV2Timeline": true
             };
             let features = {
-                "rweb_lists_timeline_redesign_enabled":true,
-                "responsive_web_graphql_exclude_directive_enabled":true,
-                "verified_phone_label_enabled":false,
-                "creator_subscriptions_tweet_preview_api_enabled":true,
-                "responsive_web_graphql_timeline_navigation_enabled":true,
-                "responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,
-                "tweetypie_unmention_optimization_enabled":true,
-                "responsive_web_edit_tweet_api_enabled":true,
-                "graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,
-                "view_counts_everywhere_api_enabled":true,
-                "longform_notetweets_consumption_enabled":true,
-                "responsive_web_twitter_article_tweet_consumption_enabled":false,
-                "tweet_awards_web_tipping_enabled":false,
-                "freedom_of_speech_not_reach_fetch_enabled":true,
-                "standardized_nudges_misinfo":true,
-                "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,
-                "longform_notetweets_rich_text_read_enabled":true,
-                "longform_notetweets_inline_media_enabled":true,
-                "responsive_web_media_download_video_enabled":false,
-                "responsive_web_enhance_cards_enabled":false,
+                "rweb_lists_timeline_redesign_enabled": true,
+                "responsive_web_graphql_exclude_directive_enabled": true,
+                "verified_phone_label_enabled": false,
+                "creator_subscriptions_tweet_preview_api_enabled": true,
+                "responsive_web_graphql_timeline_navigation_enabled": true,
+                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+                "tweetypie_unmention_optimization_enabled": true,
+                "responsive_web_edit_tweet_api_enabled": true,
+                "graphql_is_translatable_rweb_tweet_is_translatable_enabled": true,
+                "view_counts_everywhere_api_enabled": true,
+                "longform_notetweets_consumption_enabled": true,
+                "responsive_web_twitter_article_tweet_consumption_enabled": false,
+                "tweet_awards_web_tipping_enabled": false,
+                "freedom_of_speech_not_reach_fetch_enabled": true,
+                "standardized_nudges_misinfo": true,
+                "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
+                "longform_notetweets_rich_text_read_enabled": true,
+                "longform_notetweets_inline_media_enabled": true,
+                "responsive_web_media_download_video_enabled": false,
+                "responsive_web_enhance_cards_enabled": false,
                 "responsive_web_grok_image_annotation_enabled": false,
                 "responsive_web_grok_community_note_auto_translation_is_enabled": false,
                 "responsive_web_grok_share_attachment_enabled": false,
@@ -533,7 +566,9 @@ const TMD = (function () {
                 'x-csrf-token': cookies.ct0
             };
             if (cookies.ct0.length == 32) headers['x-guest-token'] = cookies.gt;
-            let tweet_detail = await fetch(url, {headers: headers}).then(result => result.json());
+            let tweet_detail = await fetch(url, {
+                headers: headers
+            }).then(result => result.json());
             //console.log(JSON.stringify(tweet_detail.data));
             let tweet_entrie = tweet_detail.data.threaded_conversation_with_injections_v2.instructions[1].entries.find(n => n.entryId == `tweet-${status_id}`);
             //console.log(tweet_entrie);
@@ -541,7 +576,7 @@ const TMD = (function () {
             //console.log(tweet_result);
             return tweet_result.tweet || tweet_result;
         },
-        getCookie: function (name) {
+        getCookie: function(name) {
             let cookies = {};
             document.cookie.split(';').filter(n => n.indexOf('=') > 0).forEach(n => {
                 n.replace(/^([^=]+)=(.+)$/, (match, name, value) => {
@@ -550,7 +585,7 @@ const TMD = (function () {
             });
             return name ? cookies[name] : cookies;
         },
-        storage: async function (value) {
+        storage: async function(value) {
             let data = await GM_getValue('download_history', []);
             let data_length = data.length;
             if (value) {
@@ -559,15 +594,15 @@ const TMD = (function () {
             } else return data;
             if (data.length > data_length) GM_setValue('download_history', data);
         },
-        storage_obsolete: function (is_remove) {
+        storage_obsolete: function(is_remove) {
             let data = JSON.parse(localStorage.getItem('history') || '[]');
             if (is_remove) localStorage.removeItem('history');
             else return data;
         },
-        formatDate: function (i, o, tz) {
+        formatDate: function(i, o, tz) {
             let d = new Date(i);
             if (tz) d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            let m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            let m = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
             let v = {
                 YYYY: d.getUTCFullYear().toString(),
                 YY: d.getUTCFullYear().toString(),
@@ -582,24 +617,30 @@ const TMD = (function () {
             };
             return o.replace(/(YY(YY)?|MMM?|DD|hh|mm|ss|h2|ap)/g, n => ('0' + v[n]).substr(-n.length));
         },
-        downloader: (function () {
-            let tasks = [], thread = 0, max_thread = 2, retry = 0, max_retry = 5, failed = 0, notifier, has_failed = false;
+        downloader: (function() {
+            let tasks = [],
+                thread = 0,
+                max_thread = 2,
+                retry = 0,
+                max_retry = 5,
+                failed = 0,
+                notifier, has_failed = false;
             return {
-                add: function (task) {
+                add: function(task) {
                     tasks.push(task);
                     if (thread < max_thread) {
                         thread += 1;
                         this.next();
                     } else this.update();
                 },
-                next: async function () {
+                next: async function() {
                     let task = tasks.shift();
                     await this.start(task);
                     if (tasks.length > 0 && thread <= max_thread) this.next();
                     else thread -= 1;
                     this.update();
                 },
-                start: async function (task) {
+                start: async function(task) {
                     this.update();
 
                     let folderId = GM_getValue("eagle_last_folder");
@@ -650,7 +691,7 @@ const TMD = (function () {
                         });
                     });
                 },
-                retry: function (task, result) {
+                retry: function(task, result) {
                     retry += 1;
                     if (retry == 3) max_thread = 1;
                     if (task.retry && task.retry >= max_retry ||
@@ -734,11 +775,81 @@ const TMD = (function () {
             };
         })(),
         language: {
-            en: {download: 'Download', completed: 'Download Completed', settings: 'Settings', dialog: {title: 'Download Settings', save: 'Save', save_history: 'Remember download history', clear_history: '(Clear)', clear_confirm: 'Clear download history?', show_sensitive: 'Always show sensitive content',update_select: 'Instant update of folder options', pattern: 'File Name Pattern'}},
-            ko: {download: '다운로드', completed: '다운로드 완려', settings: '세팅', dialog: {title: '다운로드 세팅', save: '저장', save_history: '다운로드 기록 저장', clear_history: '(비우기)', clear_confirm: '다운로드 히스토리를 비울까요?', show_sensitive: '민감한 이미지 표시',update_select: '폴더 옵션이 즉시 업데이트됩니다', pattern: '파일 이름 패턴'}},
-            ja: {download: 'ダウンロード', completed: 'ダウンロード完了', settings: '設定', dialog: {title: 'ダウンロード設定', save: '保存', save_history: 'ダウンロード履歴を保存する', clear_history: '(クリア)', clear_confirm: 'ダウンロード履歴を削除する？', show_sensitive: 'センシティブな内容を常に表示する',update_select: 'フォルダーオプションの即時更新', pattern: 'ファイル名パターン'}},
-            zh: {download: '下载', completed: '下载完成', settings: '设置', dialog: {title: '下载设置', save: '保存', save_history: '保存下载记录', clear_history: '(清除)', clear_confirm: '确认要清除下载记录？', show_sensitive: '自动显示敏感的内容',update_select: '資料夾選項即時更新', pattern: '文件名格式'}},
-            'zh-Hant': {download: '下載', completed: '下載完成', settings: '設置', dialog: {title: '下載設置', save: '保存', save_history: '保存下載記錄', clear_history: '(清除)', clear_confirm: '確認要清除下載記錄？', show_sensitive: '自動顯示敏感的内容',update_select: '資料夾選項即時更新', pattern: '文件名規則'}}
+            en: {
+                download: 'Download',
+                completed: 'Download Completed',
+                settings: 'Settings',
+                dialog: {
+                    title: 'Download Settings',
+                    save: 'Save',
+                    save_history: 'Remember download history',
+                    clear_history: '(Clear)',
+                    clear_confirm: 'Clear download history?',
+                    show_sensitive: 'Always show sensitive content',
+                    update_select: 'Instant update of folder options',
+                    pattern: 'File Name Pattern'
+                }
+            },
+            ko: {
+                download: '다운로드',
+                completed: '다운로드 완려',
+                settings: '세팅',
+                dialog: {
+                    title: '다운로드 세팅',
+                    save: '저장',
+                    save_history: '다운로드 기록 저장',
+                    clear_history: '(비우기)',
+                    clear_confirm: '다운로드 히스토리를 비울까요?',
+                    show_sensitive: '민감한 이미지 표시',
+                    update_select: '폴더 옵션이 즉시 업데이트됩니다',
+                    pattern: '파일 이름 패턴'
+                }
+            },
+            ja: {
+                download: 'ダウンロード',
+                completed: 'ダウンロード完了',
+                settings: '設定',
+                dialog: {
+                    title: 'ダウンロード設定',
+                    save: '保存',
+                    save_history: 'ダウンロード履歴を保存する',
+                    clear_history: '(クリア)',
+                    clear_confirm: 'ダウンロード履歴を削除する？',
+                    show_sensitive: 'センシティブな内容を常に表示する',
+                    update_select: 'フォルダーオプションの即時更新',
+                    pattern: 'ファイル名パターン'
+                }
+            },
+            zh: {
+                download: '下载',
+                completed: '下载完成',
+                settings: '设置',
+                dialog: {
+                    title: '下载设置',
+                    save: '保存',
+                    save_history: '保存下载记录',
+                    clear_history: '(清除)',
+                    clear_confirm: '确认要清除下载记录？',
+                    show_sensitive: '自动显示敏感的内容',
+                    update_select: '資料夾選項即時更新',
+                    pattern: '文件名格式'
+                }
+            },
+            'zh-Hant': {
+                download: '下載',
+                completed: '下載完成',
+                settings: '設置',
+                dialog: {
+                    title: '下載設置',
+                    save: '保存',
+                    save_history: '保存下載記錄',
+                    clear_history: '(清除)',
+                    clear_confirm: '確認要清除下載記錄？',
+                    show_sensitive: '自動顯示敏感的内容',
+                    update_select: '資料夾選項即時更新',
+                    pattern: '文件名規則'
+                }
+            }
         },
         css: `
 .tmd-down {margin-left: 12px; order: 99;}
@@ -788,7 +899,7 @@ li[role="listitem"]>div>div>div>div+div:last-child {display: none;}
 <g class="loading"><circle cx="12" cy="12" r="10" fill="none" stroke="#1DA1F2" stroke-width="4" opacity="0.4" /><path d="M12,2 a10,10 0 0 1 10,10" fill="none" stroke="#1DA1F2" stroke-width="4" stroke-linecap="round" /></g>
 <g class="failed"><circle cx="12" cy="12" r="11" fill="#f33" stroke="currentColor" stroke-width="2" opacity="0.8" /><path d="M14,5 a1,1 0 0 0 -4,0 l0.5,9.5 a1.5,1.5 0 0 0 3,0 z M12,17 a2,2 0 0 0 0,4 a2,2 0 0 0 0,-4" fill="#fff" stroke="none" /></g>
 `
-  };
+    };
 })();
 
 TMD.init();
