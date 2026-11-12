@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5B為你自動點選%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
-// @version      1.3.3
+// @version      1.4.0
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
@@ -627,8 +627,10 @@ class ClickTaskManager {
         });
     }
 
-    // 執行單條規則的自動點選，並返回是否成功
-    autoClick(rule, ruleIndex) {
+     // 執行單條規則的自動點選，並返回是否成功
+    async autoClick(rule, ruleIndex) {
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
         try {
             const urlRegex = new RegExp(rule.urlPattern);
             if (!urlRegex.test(window.location.href)) {
@@ -645,23 +647,38 @@ class ClickTaskManager {
                 console.warn(`${GM_info.script.name}: 規則 "${rule.ruleName}" 的 nthElement 無效：${rule.nthElement}，找到 ${elements.length} 個元素`);
                 return false;
             }
+
             let targetElement;
             if (rule.nthElement > 0) {
                 targetElement = elements[rule.nthElement - 1];
-            }else if (rule.nthElement < 0) {
+            } else if (rule.nthElement < 0) {
                 targetElement = elements[elements.length + rule.nthElement];
-            }else if (rule.nthElement === 0) {
+            } else if (rule.nthElement === 0) {
                 targetElement = [...elements];
             }
 
             if (targetElement) {
-                console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 成功點選元素：`, targetElement);
                 if (rule.ifLinkOpen && targetElement.tagName === "A" && targetElement.href) {
                     console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 開啟網頁`);
                     window.location.href = targetElement.href;
-                }else{
-                    if(targetElement.length) targetElement.forEach(ele => ele.click());
-                    else targetElement.click();
+                } else if (Array.isArray(targetElement)) {
+                    for (let i = 0; i < targetElement.length; i++) {
+                        const currentElements = this.getElements(rule.selectorType, rule.selector);
+                        const ele = currentElements[i] || targetElement[i];
+
+                        if (ele && document.body.contains(ele)) {
+                            ele.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                            console.log(`${GM_info.script.name}: 已點擊第 ${i + 1} 個元素`, targetElement);
+
+                            if (i < targetElement.length - 1) {
+                                await sleep(rule.clickDelay);
+                            }
+                        }
+                    }
+                } else {
+                    // 單一元素點擊
+                    targetElement.click();
+                    console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 已點選元素：`, targetElement);
                 }
                 return true;
             } else {
