@@ -23,14 +23,12 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5B為你自動點選%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
-// @version      1.3.2
+// @version      1.3.3
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_info
-// @downloadURL https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.user.js
-// @updateURL https://update.greasyfork.org/scripts/539191/click%20it%20for%20you.meta.js
 // ==/UserScript==
 
 class RuleManager {
@@ -474,8 +472,8 @@ class WebElementHandler {
                 urlPattern: document.getElementById('urlPattern').value,
                 selectorType: document.getElementById('selectorType').value,
                 selector: document.getElementById('selector').value,
-                nthElement: parseInt(document.getElementById('nthElement').value) || 1,
-                clickDelay: parseInt(document.getElementById('clickDelay').value) || 200,
+                nthElement: parseInt(document.getElementById('nthElement').value || '1' ,10),
+                clickDelay: parseInt(document.getElementById('clickDelay').value || '200',10),
                 keepClicking: document.getElementById('keepClicking').checked || false,
                 ifLinkOpen:Boolean(document.getElementById('ifLinkOpen').checked) || false,
                 enabled: true
@@ -539,11 +537,11 @@ class WebElementHandler {
                     urlPattern: document.getElementById(`updateUrlPattern${ruleIndex}`).value,
                     selectorType: document.getElementById(`updateSelectorType${ruleIndex}`).value,
                     selector: document.getElementById(`updateSelector${ruleIndex}`).value,
-                    nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value) || 1,
-                    clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value) || 1000,
-                    keepClicking: document.getElementById(`updateKeepSearching${ruleIndex}`).checked || false,
-                    ifLinkOpen: Boolean(document.getElementById(`updateIfLink${ruleIndex}`).checked) || false,
-                    enabled: Boolean(document.getElementById(`updateEnabled${ruleIndex}`).checked) || true
+                    nthElement: parseInt(document.getElementById(`updateNthElement${ruleIndex}`).value || '1', 10),
+                    clickDelay: parseInt(document.getElementById(`updateClickDelay${ruleIndex}`).value || '1000', 10),
+                    keepClicking: document.getElementById(`updateKeepSearching${ruleIndex}`).checked,
+                    ifLinkOpen: document.getElementById(`updateIfLink${ruleIndex}`).checked,
+                    enabled: document.getElementById(`updateEnabled${ruleIndex}`).checked
                 };
                 console.log("updatedRule2",updatedRule)
                 if (!this.validateRule(updatedRule)) return;
