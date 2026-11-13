@@ -23,7 +23,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5B為你自動點選%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
-// @version      1.4.0
+// @version      1.4.1
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
@@ -320,7 +320,7 @@ class WebElementHandler {
                     <label>${i18n.ruleName}</label>
                     <input type="text" id="updateRuleName${ruleIndex}" value="${rule.ruleName || ''}">
                     <div class="checkbox-container">
-                        <label>${i18n.Enabled}</label>
+                        <p>${i18n.Enabled}</p>
                         <input type="checkbox" id="updateEnabled${ruleIndex}" ${rule.enabled ? 'checked' : ''}>
                     </div>
                     <label>${i18n.urlPattern}</label>
@@ -613,8 +613,8 @@ class ClickTaskManager {
             if (rule.enabled && rule.selector && new RegExp(rule.urlPattern).test(window.location.href) && !this.intervalIds[index]) {
                 console.info(`${GM_info.script.name}：Rule Enabled↓`);
                 console.table({"ruleName":rule.ruleName,"clickDelay":rule.clickDelay,"urlPattern":rule.urlPattern,"selector":rule.selector,"nthElement":rule.nthElement,"keepClicking":rule.keepClicking,"ifLinkOpen":rule.ifLinkOpen});
-                const intervalId = setInterval(() => {
-                    const clicked = this.autoClick(rule, index);
+                const intervalId = setInterval(async () => {
+                    const clicked = await this.autoClick(rule, index);
                     if (clicked && !rule.keepClicking) {
                         clearInterval(this.intervalIds[index]);
                         delete this.intervalIds[index];
@@ -662,6 +662,7 @@ class ClickTaskManager {
                     console.log(`${GM_info.script.name}: 規則 "${rule.ruleName}" 開啟網頁`);
                     window.location.href = targetElement.href;
                 } else if (Array.isArray(targetElement)) {
+                    console.log(Array.isArray(targetElement))
                     for (let i = 0; i < targetElement.length; i++) {
                         const currentElements = this.getElements(rule.selectorType, rule.selector);
                         const ele = currentElements[i] || targetElement[i];
