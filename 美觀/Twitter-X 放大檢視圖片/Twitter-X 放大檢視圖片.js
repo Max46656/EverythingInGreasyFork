@@ -14,11 +14,11 @@
 // @description:lt Teikia vaizdo didinimo funkciją su 4 rodymo režimų ciklu (tilpti į langą / originalus / tilpti pagal plotį / tilpti pagal aukštį), dešinysis pelės klavišas režimo keitimui, kairysis pelės klavišas atidaryti/uždaryti, vilkimas pelės perkėlimui, ratukas peržiūros pagalbai, ESC uždarymui, pasirenkamai tik nuotraukų puslapyje// @author       Max
 //
 // @author       Max
-// @namespace    https://github.com/Max46656
-// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
+// @namespace    https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%BE%8E%E8%A7%80/Twitter-X%20%E6%94%BE%E5%A4%A7%E6%AA%A2%E8%A6%96%E5%9C%96%E7%89%87
+// @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BTwitter-X%20%E6%94%BE%E5%A4%A7%E6%AA%A2%E8%A6%96%E5%9C%96%E7%89%87%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
-// @version      1.7.2
+// @version      1.7.3
 // @match        https://x.com/*
 // @grant        GM_addStyle
 // @grant        GM_setValue
