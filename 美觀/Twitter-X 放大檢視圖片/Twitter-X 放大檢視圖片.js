@@ -18,7 +18,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues
 // @license      MPL2.0
 //
-// @version      1.7.0
+// @version      1.7.2
 // @match        https://x.com/*
 // @grant        GM_addStyle
 // @grant        GM_setValue
@@ -129,7 +129,8 @@ class ImageMagnifierForTwitter {
         e.preventDefault();
         e.stopPropagation();
         const url = new URL(img.src);
-        url.searchParams.set('name', 'orig');
+        url.searchParams.set('name', 'large');
+        console.log(url)
         this.openViewer(url.toString());
       }, { capture: true });
     });
@@ -205,7 +206,7 @@ class ImageMagnifierForTwitter {
     }, { passive: false });
 
     this.viewer.onmousedown = (e) => {
-      if (e.button !== 0) return;
+      if (e.button !== 1) return;
       this.isDragging = true;
       this.startX = e.clientX - this.translateX;
       this.startY = e.clientY - this.translateY;
@@ -216,7 +217,10 @@ class ImageMagnifierForTwitter {
       this.translateY = e.clientY - this.startY;
       this.updateTransform();
     };
-    window.onmouseup = () => { this.isDragging = false; };
+    window.onmouseup = (e) => {
+      if (e.button !== 1) return;
+      this.isDragging = false;
+    };
 
     this.viewer.addEventListener('contextmenu', (e) => {
       e.preventDefault();
