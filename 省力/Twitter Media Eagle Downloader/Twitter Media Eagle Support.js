@@ -11,7 +11,7 @@
 // @namespace   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Media%20Eagle%20Downloader
 // @supportURL  https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Twitter 媒體Eagle保存] 問題回報-v2.3.0
 //
-// @version     2.5.1
+// @version     2.5.4
 // @match       https://twitter.com/*
 // @match       https://x.com/*
 // @match       https://mobile.twitter.com/*
@@ -55,15 +55,16 @@ const TMD = (function() {
             });
         },
         detect: function(node) {
-            let article = node.tagName == 'ARTICLE' && node || node.tagName == 'DIV' && (node.querySelector('article') || node.closest('article'));
+            let article = node.tagName == 'ARTICLE' && node || node.tagName == 'LI' && (node.querySelector('article') || node.closest('article'));
             //console.log("article",article)
             if (article) this.addButtonTo(article);
-            let listitems = node.tagName == 'LI' && node.getAttribute('role') == 'listitem' && [node] || node.tagName == 'DIV' && node.querySelectorAll('li[role="listitem"]:not(li:has(div[data-testid="swipe-to-dismiss"]))');
+            let listitems = node.tagName == 'DIV' && node.getAttribute('role') == 'listitem' && [node] || node.tagName == 'DIV' && node.getAttribute('role') == 'list';
+            //console.log(listitems)
             if (listitems) this.addButtonToMedia(listitems);
-            let media_list = node.tagName == 'LI' && node.getAttribute('role') == 'listitem' && node.closest('section[role="region"]:has([role="listitem"])');
+            let media_list = node.tagName == 'DIV' && node.getAttribute('role') == 'listitem' && node.closest('div[id^="urt:photos"]');
             if (media_list) this.addSelectToList(media_list);
             let photo = node.tagName == 'DIV' && node.getAttribute('data-testid') == 'swipe-to-dismiss' || node.tagName == 'MAIN' && node.getAttribute('role') == 'main' && node.querySelectorAll(".r-iyfy8q") || node.tagName == 'UL' && node.querySelectorAll(".r-deolkf");
-            //console.log(photo)
+            //console.log("photo",photo)
             if (photo) this.addButtonToFullScreen(Array.from(photo));
         },
         addButtonTo: async function(article) {
@@ -71,7 +72,8 @@ const TMD = (function() {
             article.dataset.detected = 'true';
 
             let media_selector = [
-                'a[href*="/photo/1"]',
+                'a[href$="/photo/1"]',
+                'video',
                 'button[data-testid="playButton"]',
                 'div[tabindex="-1"]:has(img[src*="tweet_video_thumb"])',
                 'a[href="/settings/content_you_see"]', //hidden content
@@ -80,11 +82,12 @@ const TMD = (function() {
                 'div[aria-labelledby]>div:first-child>div[role="button"][tabindex="0"]' //for audio (experimental)
             ];
             let media = article.querySelector(media_selector.join(','));
+            console.log("media",media);
             //console.log(article,media)
             if (media) {
                 let status_id = article.querySelector('a[href*="/status/"]').href.split('/status/').pop().split('/').shift();
                 let btn_group = article.querySelector('div[role="group"]:last-of-type, ul.tweet-actions, ul.tweet-detail-actions');
-                let btn_share = Array.from(btn_group.querySelectorAll(':scope>div>div, li.tweet-action-item>a, li.tweet-detail-action-item>a')).pop().parentNode;
+                let btn_share = Array.from(btn_group.querySelectorAll(':scope>div>div, li.tweet-action-item>a, li.tweet-detail-action-item>a,div:last-of-type')).pop().parentNode;
                 let btn_down = btn_share.cloneNode(true);
                 let select = document.createElement("select");
                 select.classList.add("eagle-folder-select");
@@ -107,7 +110,7 @@ const TMD = (function() {
                         GM_setValue("eagle_last_folder", select.value);
                     }
                 }
-                btn_down.querySelector('button').removeAttribute('disabled');
+                btn_down.querySelector('button')?.removeAttribute('disabled');
                 if (is_tweetdeck) {
                     btn_down.firstElementChild.innerHTML = '<svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">' + this.svg + '</svg>';
                     btn_down.firstElementChild.removeAttribute('rel');
@@ -118,7 +121,8 @@ const TMD = (function() {
                 let is_exist = history.indexOf(status_id) >= 0;
                 this.status(btn_down, 'tmd-down');
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
-                btn_group.insertBefore(btn_down, btn_share.nextSibling);
+                //btn_group.insertBefore(btn_down, btn_share.nextSibling);
+                btn_group.appendChild(btn_down);
                 article.onkeydown = (e) => this.keydown(e, btn_down, status_id, is_exist);
                 btn_down.onclick = () => {
                     if (GM_getValue("update_select") === true && select.value !== "") GM_setValue("eagle_last_folder", select.value);
@@ -174,6 +178,7 @@ const TMD = (function() {
                         this.clickDownload(btn_down, status_id, is_exist, index);
                         //console.log("clickDownload",{btn_down, status_id, is_exist, index})
                     };
+                    //console.log("btn_down.parentElement",btn_down.parentElement)
                     btn_down.parentElement.appendChild(select);
                 }
             }
@@ -188,17 +193,20 @@ const TMD = (function() {
                 btn_down.innerHTML = '<div><div><svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">' + this.svg + '</svg></div></div>';
                 btn_down.style.position = 'absolute';
                 btn_down.style.bottom = '10px';
-                btn_down.style.right = '10px';
+                btn_down.style.left = '10px';
                 btn_down.classList.add('tmd-down', 'tmd-media');
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
                 let btn_nav = document.querySelector("a[href$='analytics']")?.parentElement;
+                console.log("btn_nav",btn_nav,btn_down)
                 if (btn_nav) btn_nav.appendChild(btn_down);
+                li.style.position = 'relative';
                 li.appendChild(btn_down);
                 btn_down.onclick = e => {
                     e.preventDefault();
                     this.clickDownload(btn_down, status_id, is_exist);
                 }
-            });
+            }
+          );
         },
         addButtonToFullScreen: async function(photo) {
             await Promise.all(photo.map(async (li, index) => {
@@ -263,6 +271,7 @@ const TMD = (function() {
         },
         addSelectToList: async function(media_list) {
             if (document.getElementById('eagle-folder-select-floating')) return;
+            this.addButtonToMedia(document.querySelectorAll("div[role='listitem']"));
             let select = document.createElement("select");
             select.id = "eagle-folder-select-floating";
             Object.assign(select.style, {
