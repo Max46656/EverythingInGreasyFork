@@ -18,7 +18,7 @@
 // @supportURL   https://github.com/Max46656/EverythingInGreasyFork/issues/new?template=bug_report.yml&labels=bug,userscript&title=%5BTwitter-X%20%E6%94%BE%E5%A4%A7%E6%AA%A2%E8%A6%96%E5%9C%96%E7%89%87%5D%20%E5%95%8F%E9%A1%8C%E5%9B%9E%E5%A0%B1
 // @license      MPL2.0
 //
-// @version      1.7.3
+// @version      1.8.0
 // @match        https://x.com/*
 // @grant        GM_addStyle
 // @grant        GM_setValue
@@ -36,6 +36,13 @@ class ImageMagnifierForTwitter {
     this.translateX = 0;
     this.translateY = 0;
     this.isDragging = false;
+
+    this.currentImages = [];
+    this.currentIndex = -1;
+    this.originalUrl = null;
+    this._keyHandler = null;
+    this._moveHandler = null;
+    this._upHandler = null;
 
     this.i18n = new I18nManager();
   }
@@ -56,7 +63,6 @@ class ImageMagnifierForTwitter {
       }
     );
 
-    // 語言設定 - 單一項目 + prompt 選擇
     GM_registerMenuCommand(this.i18n.t('menu.language'), () => {
       const avail = this.i18n.getAvailableLanguages();
       const list = avail.map(l => `${l.code.padEnd(6)} - ${l.name}`).join('\n');
@@ -117,33 +123,104 @@ class ImageMagnifierForTwitter {
     return /\/status\/\d+\/photo\/\d+$/.test(location.pathname);
   }
 
+  toLargeImageUrl(rawSrc) {
+    const url = new URL(rawSrc);
+    url.searchParams.set('name', 'large');
+    return url.toString();
+  }
+
+  getStatusHref(img) {
+    const anchor = img.closest('a[href*="/status/"]');
+    if (!anchor) return null;
+    try {
+      const parsed = new URL(anchor.href, location.origin);
+      if (!/\/status\/\d+/.test(parsed.pathname)) return null;
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+      return null;
+    }
+  }
+
+  syncUrlForCurrentImage() {
+    const item = this.currentImages[this.currentIndex];
+    if (!item || !item.pageHref) return;
+    const currentFull = `${location.pathname}${location.search}${location.hash}`;
+    if (currentFull !== item.pageHref) {
+      history.replaceState(history.state, '', item.pageHref);
+    }
+  }
+
+  collectPostImages(img) {
+    const container = img.closest('article, [data-testid="tweet"]') || document.body;
+    const selector = 'img[src^="https://pbs.twimg.com/media/"]:not(#twitter-floating-viewer img)';
+    const seen = new Set();
+    const list = [];
+
+    container.querySelectorAll(selector).forEach(el => {
+      const largeSrc = this.toLargeImageUrl(el.src);
+      if (!seen.has(largeSrc)) {
+        seen.add(largeSrc);
+        list.push({
+          src: largeSrc,
+          pageHref: this.getStatusHref(el)
+        });
+      }
+    });
+
+    const currentLarge = this.toLargeImageUrl(img.src);
+    let index = list.findIndex(item => item.src === currentLarge);
+    if (index === -1) {
+      index = 0;
+      if (list.length === 0) {
+        list.push({ src: currentLarge, pageHref: this.getStatusHref(img) });
+      }
+    }
+
+    return { images: list, index };
+  }
+
   tryBindImages() {
     const selector = 'img[src^="https://pbs.twimg.com/media/"]:not(#twitter-floating-viewer img)';
     document.querySelectorAll(selector).forEach(img => {
       if (img.dataset.floatingBound) return;
       img.dataset.floatingBound = 'true';
       img.style.cursor = 'zoom-in';
+
+      const { images, index } = this.collectPostImages(img);
+      img.dataset.postImages = JSON.stringify(images);
+      img.dataset.postImageIndex = String(index);
+
       img.addEventListener('click', (e) => {
         if (this.onlyPhotoPage && !this.isPhotoPage()) return;
         if (e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
-        const url = new URL(img.src);
-        url.searchParams.set('name', 'large');
-        console.log(url)
-        this.openViewer(url.toString());
+
+        const latest = this.collectPostImages(img);
+        const target = latest.images[latest.index] || {
+          src: this.toLargeImageUrl(img.src),
+          pageHref: this.getStatusHref(img)
+        };
+        console.log(target.src);
+        this.openViewer(target.src, latest.images, latest.index);
       }, { capture: true });
     });
   }
 
-  openViewer(src) {
+  openViewer(src, images = null, index = 0) {
     if (this.viewer) this.closeViewer();
+
+    this.originalUrl = `${location.pathname}${location.search}${location.hash}`;
+    this.currentImages = Array.isArray(images) && images.length > 0
+      ? images
+      : [{ src, pageHref: null }];
+    this.currentIndex = Math.min(Math.max(0, index), this.currentImages.length - 1);
 
     this.viewer = document.createElement('div');
     this.viewer.id = 'twitter-floating-viewer';
 
     this.img = document.createElement('img');
-    this.img.src = src;
+    this.img.src = this.currentImages[this.currentIndex].src;
 
     this.currentModeIndex = 0;
     this.applyModeStyles();
@@ -151,16 +228,34 @@ class ImageMagnifierForTwitter {
     this.viewer.appendChild(this.img);
     document.body.appendChild(this.viewer);
 
+    this.syncUrlForCurrentImage();
+
     this.img.onload = () => {
       this.resetToCenter();
       this.setupEvents();
     };
   }
 
+  switchImage(offset) {
+    if (!this.viewer || !this.img || this.currentImages.length <= 1) return;
+
+    const total = this.currentImages.length;
+    this.currentIndex = (this.currentIndex + offset + total) % total;
+    const nextItem = this.currentImages[this.currentIndex];
+
+    this.syncUrlForCurrentImage();
+
+    this.img.onload = () => {
+      this.resetToCenter();
+    };
+    this.img.src = nextItem.src;
+  }
+
   resetToCenter() {
     this.img.style.transform = '';
     this.scale = 1;
     requestAnimationFrame(() => {
+      if (!this.img) return;
       const rect = this.img.getBoundingClientRect();
       this.translateX = (window.innerWidth - rect.width) / 2;
       this.translateY = (window.innerHeight - rect.height) / 2;
@@ -180,14 +275,12 @@ class ImageMagnifierForTwitter {
   }
 
   setupEvents() {
-    // 滾輪行為依當前模式決定
     this.viewer.addEventListener('wheel', (e) => {
       e.preventDefault();
 
       const currentMode = this.modes[this.currentModeIndex];
 
       if (currentMode === 'fit-window' || currentMode === 'original') {
-        // 放大縮小
         const factor = Math.pow(0.999, e.deltaY);
         const oldScale = this.scale;
         const newScale = Math.min(Math.max(0.01, oldScale * factor), 50);
@@ -197,30 +290,58 @@ class ImageMagnifierForTwitter {
         this.translateY = mouseY - (mouseY - this.translateY) * (newScale / oldScale);
         this.scale = newScale;
       } else if (currentMode === 'fit-width') {
-        this.translateY -= e.deltaY * 1.5;  // 可調整靈敏度
+        this.translateY -= e.deltaY * 1.5;
       } else if (currentMode === 'fit-height') {
-        this.translateX -= e.deltaY * 1.5;  // 可調整靈敏度
+        this.translateX -= e.deltaY * 1.5;
       }
 
       this.updateTransform();
     }, { passive: false });
 
-    this.viewer.onmousedown = (e) => {
+    const handleSideButton = (e) => {
+      if (e.button === 3) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.switchImage(-1);
+      } else if (e.button === 4) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.switchImage(1);
+      }
+    };
+
+    this.viewer.addEventListener('mousedown', (e) => {
+      if (e.button === 3 || e.button === 4) {
+        handleSideButton(e);
+        return;
+      }
       if (e.button !== 1) return;
       this.isDragging = true;
       this.startX = e.clientX - this.translateX;
       this.startY = e.clientY - this.translateY;
-    };
-    window.onmousemove = (e) => {
+    });
+
+    this.viewer.addEventListener('auxclick', (e) => {
+      if (e.button === 3 || e.button === 4) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+
+    this._moveHandler = (e) => {
       if (!this.isDragging) return;
       this.translateX = e.clientX - this.startX;
       this.translateY = e.clientY - this.startY;
       this.updateTransform();
     };
-    window.onmouseup = (e) => {
+
+    this._upHandler = (e) => {
       if (e.button !== 1) return;
       this.isDragging = false;
     };
+
+    window.addEventListener('mousemove', this._moveHandler);
+    window.addEventListener('mouseup', this._upHandler);
 
     this.viewer.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -231,25 +352,49 @@ class ImageMagnifierForTwitter {
     });
 
     this.viewer.addEventListener('click', (e) => {
+      if (e.button !== 0) return;
       if (this.isDragging) return;
       this.closeViewer();
     });
 
-    const escHandler = (e) => {
+    if (this._keyHandler) {
+      document.removeEventListener('keydown', this._keyHandler);
+    }
+    this._keyHandler = (e) => {
       if (e.key === 'Escape') {
         this.closeViewer();
-        document.removeEventListener('keydown', escHandler);
       }
     };
-    document.addEventListener('keydown', escHandler);
+    document.addEventListener('keydown', this._keyHandler);
   }
 
   closeViewer() {
+    if (this._keyHandler) {
+      document.removeEventListener('keydown', this._keyHandler);
+      this._keyHandler = null;
+    }
+    if (this._moveHandler) {
+      window.removeEventListener('mousemove', this._moveHandler);
+      this._moveHandler = null;
+    }
+    if (this._upHandler) {
+      window.removeEventListener('mouseup', this._upHandler);
+      this._upHandler = null;
+    }
+    if (this.originalUrl) {
+      const currentFull = `${location.pathname}${location.search}${location.hash}`;
+      if (currentFull !== this.originalUrl) {
+        history.replaceState(history.state, '', this.originalUrl);
+      }
+      this.originalUrl = null;
+    }
     if (this.viewer) {
       this.viewer.remove();
       this.viewer = null;
       this.img = null;
       this.isDragging = false;
+      this.currentImages = [];
+      this.currentIndex = -1;
     }
   }
 }
@@ -270,8 +415,8 @@ class I18nManager {
         'menu.language.prompt':   'Enter language code (supported: zh-TW, en, ja, de, cs, lt):'
       },
       'ja': {
-        'menu.onlyPhotoPage.on':  'クリック制限：写真ページのみ',
-        'menu.onlyPhotoPage.off': 'クリック制限：すべてのページの画像',
+        'menu.onlyPhotoPage.on':  'クリック制限：寫真ページのみ',
+        'menu.onlyPhotoPage.off': 'クリック制限：すべてのページの畫像',
         'menu.language':          '言語',
         'menu.language.prompt':   '言語コードを入力してください（対応：zh-TW, en, ja, de, cs, lt）：'
       },
