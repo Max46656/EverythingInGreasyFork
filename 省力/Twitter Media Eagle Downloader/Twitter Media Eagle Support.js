@@ -11,7 +11,7 @@
 // @namespace   https://github.com/Max46656/EverythingInGreasyFork/tree/main/%E7%9C%81%E5%8A%9B/Twitter%20Media%20Eagle%20Downloader
 // @supportURL  https://github.com/Max46656/EverythingInGreasyFork/issues/new?assignees=&labels=bug%2Cuserscript&projects=&template=bug_report.yml&title=[Twitter 媒體Eagle保存] 問題回報-v2.3.0
 //
-// @version     2.5.4
+// @version     2.5.6
 // @match       https://twitter.com/*
 // @match       https://x.com/*
 // @match       https://mobile.twitter.com/*
@@ -29,10 +29,11 @@
 // ==/UserScript==
 // Forked from https://greasyfork.org/zh-TW/scripts/501681-twitter-x-media-downloader
 
+// 修正部分article沒有被偵測到的問題
 const filename = 'twitter_{user-name}(@{user-id})_{date-time}_{status-id}_{file-type}';
 
 const TMD = (function() {
-    let lang, host, history, show_sensitive, is_tweetdeck;
+    let lang, host, history, show_sensitive, is_tweetdeck, folders;
     return {
         init: async function() {
             GM_registerMenuCommand((this.language[navigator.language] || this.language.en).settings, this.settings);
@@ -53,9 +54,13 @@ const TMD = (function() {
                 subtree: true,
                 attributes: true
             });
+            folders = await this.getEagleFolderList().catch(err => {
+                    this._foldersPromise = null;
+                    return [];
+                });
         },
         detect: function(node) {
-            let article = node.tagName == 'ARTICLE' && node || node.tagName == 'LI' && (node.querySelector('article') || node.closest('article'));
+            let article = node.tagName == 'ARTICLE' && node || (node.tagName == 'LI' || node.tagName == 'DIV') && (node.querySelector('article') || node.closest('article'));
             //console.log("article",article)
             if (article) this.addButtonTo(article);
             let listitems = node.tagName == 'DIV' && node.getAttribute('role') == 'listitem' && [node] || node.tagName == 'DIV' && node.getAttribute('role') == 'list';
@@ -68,119 +73,167 @@ const TMD = (function() {
             if (photo) this.addButtonToFullScreen(Array.from(photo));
         },
         addButtonTo: async function(article) {
-            if (article.dataset.detected) return;
-            article.dataset.detected = 'true';
+            if (!(article instanceof Element) || article.dataset.detected === 'true') return;
 
-            let media_selector = [
+            const now = () => performance.now();
+            const t0 = now();
+            const marks = {};
+            let last = t0;
+
+            const mark = (stepName) => {
+                const current = now();
+                marks[stepName] = +(current - last).toFixed(2);
+                last = current;
+            };
+
+            const statusLink = article.querySelector('a[href*="/status/"]');
+            const media_selector = [
                 'a[href$="/photo/1"]',
                 'video',
                 'button[data-testid="playButton"]',
                 'div[tabindex="-1"]:has(img[src*="tweet_video_thumb"])',
-                'a[href="/settings/content_you_see"]', //hidden content
-                'div.media-image-container', // for tweetdeck
-                'div.media-preview-container', // for tweetdeck
-                'div[aria-labelledby]>div:first-child>div[role="button"][tabindex="0"]' //for audio (experimental)
+                'a[href="/settings/content_you_see"]',
+                'div.media-image-container',
+                'div.media-preview-container',
+                'div[aria-labelledby]>div:first-child>div[role="button"][tabindex="0"]'
             ];
-            let media = article.querySelector(media_selector.join(','));
-            console.log("media",media);
-            //console.log(article,media)
-            if (media) {
-                let status_id = article.querySelector('a[href*="/status/"]').href.split('/status/').pop().split('/').shift();
-                let btn_group = article.querySelector('div[role="group"]:last-of-type, ul.tweet-actions, ul.tweet-detail-actions');
-                let btn_share = Array.from(btn_group.querySelectorAll(':scope>div>div, li.tweet-action-item>a, li.tweet-detail-action-item>a,div:last-of-type')).pop().parentNode;
-                let btn_down = btn_share.cloneNode(true);
-                let select = document.createElement("select");
-                select.classList.add("eagle-folder-select");
-                select.style.padding = "5px";
-                select.style.fontSize = "14px";
+            const media = article.querySelector(media_selector.join(','));
+            const imgs = Array.from(article.querySelectorAll('a[href*="/photo/"]')).filter(a => a.querySelector('img'));
+            mark('1_querySelector_media_and_imgs');
 
-                let lastFolderId = GM_getValue("eagle_last_folder", select.value);
+            if (!statusLink || (!media && imgs.length === 0)) return;
 
-                const folders = await this.getEagleFolderList();
-                folders.forEach(f => {
-                    const option = document.createElement("option");
-                    option.value = f.id;
-                    option.textContent = f.name;
-                    if (f.id === lastFolderId) option.selected = true;
-                    select.appendChild(option);
-                });
-                select.onclick = e => {
+            article.dataset.detected = 'true';
+
+            const status_id = statusLink.href.split('/status/').pop().split('/').shift();
+            const is_exist = history.includes(status_id);
+            mark('2_parse_status_and_history');
+
+            const createEmptySelect = () => {
+                const select = document.createElement('select');
+                select.className = 'eagle-folder-select';
+                select.style.padding = '5px';
+                select.style.fontSize = '14px';
+
+                select.addEventListener('click', (e) => {
                     e.preventDefault();
-                    if (select.value !== "") {
-                        GM_setValue("eagle_last_folder", select.value);
+                    if (select.value !== '') {
+                        GM_setValue('eagle_last_folder', select.value);
                     }
-                }
-                btn_down.querySelector('button')?.removeAttribute('disabled');
-                if (is_tweetdeck) {
-                    btn_down.firstElementChild.innerHTML = '<svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">' + this.svg + '</svg>';
-                    btn_down.firstElementChild.removeAttribute('rel');
-                    btn_down.classList.replace("pull-left", "pull-right");
-                } else {
-                    btn_down.querySelector('svg').innerHTML = this.svg;
-                }
-                let is_exist = history.indexOf(status_id) >= 0;
-                this.status(btn_down, 'tmd-down');
-                this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
-                //btn_group.insertBefore(btn_down, btn_share.nextSibling);
-                btn_group.appendChild(btn_down);
-                article.onkeydown = (e) => this.keydown(e, btn_down, status_id, is_exist);
-                btn_down.onclick = () => {
-                    if (GM_getValue("update_select") === true && select.value !== "") GM_setValue("eagle_last_folder", select.value);
-                    this.clickDownload(btn_down, status_id, is_exist);
-                }
-                if (show_sensitive) {
-                    let btn_show = article.querySelector('div[aria-labelledby] div[role="button"][tabindex="0"]:not([data-testid]) > div[dir] > span > span');
-                    if (btn_show) btn_show.clickDownload();
-                }
-                btn_down.parentElement.appendChild(select);
-            }
-            let imgs = article.querySelectorAll('a[href*="/photo/"]');
-            if (imgs.length > 1) {
-                let status_id = article.querySelector('a[href*="/status/"]').href.split('/status/').pop().split('/').shift();
-                let btn_group = article.querySelector('div.r-3o4zer');
-                for (let img of imgs) {
-                    let select = document.createElement("select");
-                    select.classList.add("eagle-folder-select");
-                    select.style.padding = "5px";
-                    select.style.fontSize = "14px";
-                    let lastFolderId = GM_getValue("eagle_last_folder", select.value);
-                    let folders = await this.getEagleFolderList();
-                    for (let folder of folders) {
-                        const option = document.createElement("option");
-                        option.value = folder.id;
-                        option.textContent = folder.name;
-                        if (folder.id === lastFolderId) option.selected = true;
-                        select.appendChild(option);
+                });
+
+                select.addEventListener('change', () => {
+                    if (select.value !== '') {
+                        GM_setValue('eagle_last_folder', select.value);
                     }
-                    select.onclick = e => {
-                        e.preventDefault();
-                        if (select.value !== "") {
-                            GM_setValue("eagle_last_folder", select.value);
-                        }
+                });
+
+                return select;
+            };
+
+            const syncAllSelects = (value) => {
+                document.querySelectorAll('select.eagle-folder-select').forEach(s => {
+                    s.value = value;
+                });
+            };
+
+            // 1. 動作列下載按鈕
+            if (media) {
+                const btn_group = article.querySelector('div[role="group"]:last-of-type, ul.tweet-actions, ul.tweet-detail-actions');
+                const actionTarget = btn_group
+                    ? Array.from(btn_group.querySelectorAll(':scope>div>div, li.tweet-action-item>a, li.tweet-detail-action-item>a, div:last-of-type')).pop()
+                    : null;
+                const btn_share = actionTarget?.parentNode;
+
+                if (btn_group && btn_share && !btn_group.querySelector('.tmd-down')) {
+                    const btn_down = btn_share.cloneNode(true);
+                    const select = createEmptySelect();
+
+                    btn_down.querySelector('button')?.removeAttribute('disabled');
+                    if (is_tweetdeck) {
+                        btn_down.firstElementChild.innerHTML = `<svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">${this.svg}</svg>`;
+                        btn_down.firstElementChild.removeAttribute('rel');
+                        btn_down.classList.replace('pull-left', 'pull-right');
+                    } else {
+                        const svg = btn_down.querySelector('svg');
+                        if (svg) svg.innerHTML = this.svg;
                     }
 
-                    let index = img.href.split('/status/').pop().split('/').pop();
-                    let is_exist = history.indexOf(status_id) >= 0;
-                    let btn_down = document.createElement('div');
-                    btn_down.innerHTML = '<div><div><svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">' + this.svg + '</svg></div></div>';
+                    this.status(btn_down, 'tmd-down');
+                    this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
+
+                    btn_down.onclick = () => {
+                        if (GM_getValue('update_select') === true && select.value !== '') {
+                            GM_setValue('eagle_last_folder', select.value);
+                            syncAllSelects(select.value);
+                        }
+                        this.clickDownload(btn_down, status_id, is_exist);
+                    };
+
+                    const fragment = document.createDocumentFragment();
+                    fragment.appendChild(btn_down);
+                    fragment.appendChild(select);
+                    btn_group.appendChild(fragment);
+                }
+            }
+            mark('3_action_bar_button');
+
+            // 2. 多圖貼文按鈕
+            if (imgs.length > 1) {
+                const seenParents = new Set();
+                for (const img of imgs) {
+                    const parent = img.parentNode;
+                    if (!parent || seenParents.has(parent) || parent.querySelector('.tmd-down')) continue;
+                    seenParents.add(parent);
+
+                    const select = createEmptySelect();
+                    const index = img.href.split('/status/').pop().split('/').pop();
+
+                    const btn_down = document.createElement('div');
+                    btn_down.innerHTML = `<div><div><svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">${this.svg}</svg></div></div>`;
                     btn_down.classList.add('tmd-down', 'tmd-img');
                     this.status(btn_down, 'download');
-                    img.parentNode.appendChild(btn_down);
-                    btn_down.onclick = e => {
+
+                    btn_down.onclick = (e) => {
                         e.preventDefault();
-                        if (GM_getValue("update_select") === true && select.value !== "") {
-                            GM_setValue("eagle_last_folder", select.value);
-                            let selects = Array.from(document.getElementsByClassName("eagle-folder-select"))
-                            selects.forEach(s => {
-                                for (let option of s.options) option.selected = (option.value === select.value);
-                            });
+                        if (GM_getValue('update_select') === true && select.value !== '') {
+                            GM_setValue('eagle_last_folder', select.value);
+                            syncAllSelects(select.value);
                         }
                         this.clickDownload(btn_down, status_id, is_exist, index);
-                        //console.log("clickDownload",{btn_down, status_id, is_exist, index})
                     };
-                    //console.log("btn_down.parentElement",btn_down.parentElement)
-                    btn_down.parentElement.appendChild(select);
+
+                    const fragment = document.createDocumentFragment();
+                    fragment.appendChild(btn_down);
+                    fragment.appendChild(select);
+                    parent.appendChild(fragment);
                 }
+            }
+            mark('4_multi_image_buttons');
+
+            mark('5_await_folders');
+
+            if (folders.length > 0) {
+                const lastFolderId = GM_getValue('eagle_last_folder', '');
+                article.querySelectorAll('select.eagle-folder-select').forEach(select => {
+                    if (select.options.length > 0) return;
+                    const fragment = document.createDocumentFragment();
+                    for (const f of folders) {
+                        const option = document.createElement('option');
+                        option.value = f.id;
+                        option.textContent = f.name;
+                        if (f.id === lastFolderId) option.selected = true;
+                        fragment.appendChild(option);
+                    }
+                    select.appendChild(fragment);
+                });
+            }
+            mark('6_populate_select_options');
+
+            const total = +(now() - t0).toFixed(2);
+            // 只紀錄異常慢的node
+            if (total > 400) {
+                console.warn(`[addButtonTo slow] status_id=${status_id}, total=${total}ms`, marks);
             }
         },
         addButtonToMedia: async function(listitems) {
@@ -197,7 +250,7 @@ const TMD = (function() {
                 btn_down.classList.add('tmd-down', 'tmd-media');
                 this.status(btn_down, is_exist ? 'completed' : 'download', is_exist ? lang.completed : lang.download);
                 let btn_nav = document.querySelector("a[href$='analytics']")?.parentElement;
-                console.log("btn_nav",btn_nav,btn_down)
+                //console.log("btn_nav",btn_nav,btn_down)
                 if (btn_nav) btn_nav.appendChild(btn_down);
                 li.style.position = 'relative';
                 li.appendChild(btn_down);
@@ -227,8 +280,6 @@ const TMD = (function() {
                 select.style.padding = "5px";
                 select.style.fontSize = "14px";
                 select.style.marginLeft = "5px";
-
-                const folders = await this.getEagleFolderList();
 
                 folders.forEach(f => {
                     const option = document.createElement("option");
@@ -292,7 +343,6 @@ const TMD = (function() {
                 isolation: 'isolate',
                 pointerEvents: 'auto',
             });
-            const folders = await this.getEagleFolderList();
 
             folders.forEach(f => {
                 const option = document.createElement("option");
